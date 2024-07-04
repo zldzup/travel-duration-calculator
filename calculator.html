@@ -1,197 +1,197 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>出境时长计算器</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            width: 90%;
-            max-width: 600px;
-            text-align: center;
-        }
-        .entry-group {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .entry-group label {
-            width: 15%;
-            padding: 10px;
-            font-size: 16px;
-        }
-        .entry-group input {
-            width: 35%;
-            padding: 10px;
-            font-size: 16px;
-        }
-        .entry-group button {
-            width: 10%;
-            padding: 10px;
-            font-size: 16px;
-        }
-        .results {
-            margin-top: 20px;
-            text-align: left;
-        }
-        .results p {
-            text-align: left;
-        }
-        .total-duration {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        @media (max-width: 600px) {
-            .entry-group {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .entry-group label, .entry-group input, .entry-group button {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-            .entry-group button {
-                width: auto;
-            }
-            .results {
-                text-align: left;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出境时长计算器</title>
+<style>
+body {
+font-family: Arial, sans-serif;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 20px;
+margin: 0;
+}
+.container {
+width: 90%;
+max-width: 600px;
+text-align: center;
+}
+.entry-group {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 10px;
+}
+.entry-group label {
+width: 15%;
+padding: 10px;
+font-size: 16px;
+}
+.entry-group input {
+width: 35%;
+padding: 10px;
+font-size: 16px;
+}
+.entry-group button {
+width: 10%;
+padding: 10px;
+font-size: 16px;
+}
+.results {
+margin-top: 20px;
+text-align: left;
+}
+.results p {
+text-align: left;
+}
+.total-duration {
+margin-top: 20px;
+font-size: 18px;
+font-weight: bold;
+}
+@media (max-width: 600px) {
+.entry-group {
+flex-direction: column;
+align-items: flex-start;
+}
+.entry-group label, .entry-group input, .entry-group button {
+width: 100%;
+margin-bottom: 10px;
+}
+.entry-group button {
+width: auto;
+}
+.results {
+text-align: left;
+}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <button onclick="toggleLanguage()">中文/English</button>
-        <h1 id="title">出境时长计算器</h1>
-        <hr>
-        <div class="results" id="results"></div>
-        <div class="total-duration" id="total-duration">总出境时长: 0 天</div>
-        <p></p>
-        <p></p>
-        <div id="entry-container" class="results"></div>
-        <button class="results" onclick="addEntry()">+添加出入境记录</button>
-    </div>
-    <hr>
-    <hr>
-    <span id="info">适用于出国留学“境外学习时间”的计算。例如，上海的留学生落户政策，就要求满足境外学习时长：</span>
-    <hr>
-    <span id="phd">博士：大于360天</span>
-    <span id="master">硕士：大于180天</span>
-    <span id="bachelor">学士：大于720天</span>
-    
-    <script>
-        let entryCount = 0;
-        let isEnglish = false;
+<div class="container">
+<button onclick="toggleLanguage()">中文/English</button>
+<h1 id="title">出境时长计算器</h1>
+<hr>
+<div class="results" id="results"></div>
+<div class="total-duration" id="total-duration">总出境时长: 0 天</div>
+<p></p>
+<p></p>
+<div id="entry-container" class="results"></div>
+<button class="results" onclick="addEntry()">+添加出入境记录</button>
+</div>
+<hr>
+<hr>
+<span id="info">适用于出国留学“境外学习时间”的计算。例如，上海的留学生落户政策，就要求满足境外学习时长：</span>
+<hr>
+<span id="phd">博士：大于360天</span>
+<span id="master">硕士：大于180天</span>
+<span id="bachelor">学士：大于720天</span>
 
-        function toggleLanguage() {
-            isEnglish = !isEnglish;
-            document.getElementById('title').innerText = isEnglish ? 'Travel Duration Calculator' : '出境时长计算器';
-            document.getElementById('total-duration').innerText = isEnglish ? 'Total Duration Abroad: 0 days' : '总出境时长: 0 天';
-            document.querySelector('button[onclick="addEntry()"]').innerText = isEnglish ? '+Add Entry' : '+添加出入境记录';
-            document.getElementById('info').innerText = isEnglish ? 'This calculator is for calculating the duration of study abroad.' : '适用于出国留学“境外学习时间”的计算。例如，上海的留学生落户政策，就要求满足境外学习时长：';
-            document.getElementById('phd').innerText = isEnglish ? 'PhD: more than 360 days' : '博士：大于360天';
-            document.getElementById('master').innerText = isEnglish ? 'Master: more than 180 days' : '硕士：大于180天';
-            document.getElementById('bachelor').innerText = isEnglish ? 'Bachelor: more than 720 days' : '学士：大于720天';
+<script>
+let entryCount = 0;
+let isEnglish = false;
 
-            const entryGroups = document.getElementsByClassName('entry-group');
-            for (let i = 0; i < entryGroups.length; i++) {
-                const labels = entryGroups[i].getElementsByTagName('label');
-                labels[0].innerText = isEnglish ? '1. Exit Date' : '1.出境日期';
-                labels[1].innerText = isEnglish ? '2. Entry Date' : '2.入境日期';
-            }
-            calculateDurations();
-        }
+function toggleLanguage() {
+isEnglish = !isEnglish;
+document.getElementById('title').innerText = isEnglish ? 'Travel Duration Calculator' : '出境时长计算器';
+document.getElementById('total-duration').innerText = isEnglish ? 'Total Duration Abroad: 0 days' : '总出境时长: 0 天';
+document.querySelector('button[onclick="addEntry()"]').innerText = isEnglish ? '+Add Entry' : '+添加出入境记录';
+document.getElementById('info').innerText = isEnglish ? 'This calculator is for calculating the duration of study abroad.' : '适用于出国留学“境外学习时间”的计算。例如，上海的留学生落户政策，就要求满足境外学习时长：';
+document.getElementById('phd').innerText = isEnglish ? 'PhD: more than 360 days' : '博士：大于360天';
+document.getElementById('master').innerText = isEnglish ? 'Master: more than 180 days' : '硕士：大于180天';
+document.getElementById('bachelor').innerText = isEnglish ? 'Bachelor: more than 720 days' : '学士：大于720天';
 
-        function addEntry() {
-            const entryContainer = document.getElementById('entry-container');
-            const entryGroup = document.createElement('div');
-            entryGroup.className = 'entry-group';
-            entryGroup.innerHTML = `
-                <label for="exit-date-${entryCount}">${isEnglish ? '1. Exit Date' : '1.出境日期'}</label>
-                <input type="date" id="exit-date-${entryCount}" placeholder="${isEnglish ? 'Exit Date' : '出境日期'}" oninput="handleExitDateChange(${entryCount})">
-                <label for="entry-date-${entryCount}">${isEnglish ? '2. Entry Date' : '2.入境日期'}</label>
-                <input type="date" id="entry-date-${entryCount}" placeholder="${isEnglish ? 'Entry Date' : '入境日期'}" disabled oninput="calculateDurations()">
-                <button onclick="removeEntry(${entryCount})">${isEnglish ? 'Delete' : '删除'}</button>
-            `;
-            entryContainer.appendChild(entryGroup);
-            entryCount++;
-        }
+const entryGroups = document.getElementsByClassName('entry-group');
+for (let i = 0; i < entryGroups.length; i++) {
+const labels = entryGroups[i].getElementsByTagName('label');
+labels[0].innerText = isEnglish ? '1. Exit Date' : '1.出境日期';
+labels[1].innerText = isEnglish ? '2. Entry Date' : '2.入境日期';
+}
+calculateDurations();
+}
 
-        function removeEntry(id) {
-            const entryGroup = document.getElementById(`exit-date-${id}`).parentElement;
-            entryGroup.remove();
-            calculateDurations(); 
-        }
+function addEntry() {
+const entryContainer = document.getElementById('entry-container');
+const entryGroup = document.createElement('div');
+entryGroup.className = 'entry-group';
+entryGroup.innerHTML = `
+<label for="exit-date-${entryCount}">${isEnglish ? '1. Exit Date' : '1.出境日期'}</label>
+<input type="date" id="exit-date-${entryCount}" placeholder="${isEnglish ? 'Exit Date' : '出境日期'}" oninput="handleExitDateChange(${entryCount})">
+<label for="entry-date-${entryCount}">${isEnglish ? '2. Entry Date' : '2.入境日期'}</label>
+<input type="date" id="entry-date-${entryCount}" placeholder="${isEnglish ? 'Entry Date' : '入境日期'}" disabled oninput="calculateDurations()">
+<button onclick="removeEntry(${entryCount})">${isEnglish ? 'Delete' : '删除'}</button>
+`;
+entryContainer.appendChild(entryGroup);
+entryCount++;
+}
 
-        function handleExitDateChange(id) {
-            const exitDateElem = document.getElementById(`exit-date-${id}`);
-            const entryDateElem = document.getElementById(`entry-date-${id}`);
-            entryDateElem.min = exitDateElem.value; 
-            entryDateElem.disabled = false; 
-            calculateDurations();
-        }
+function removeEntry(id) {
+const entryGroup = document.getElementById(`exit-date-${id}`).parentElement;
+entryGroup.remove();
+calculateDurations(); 
+}
 
-        function calculateDurations() {
-            const resultsContainer = document.getElementById('results');
-            const totalDurationElem = document.getElementById('total-duration');
-            resultsContainer.innerHTML = '';
-            let totalDays = 0;
+function handleExitDateChange(id) {
+const exitDateElem = document.getElementById(`exit-date-${id}`);
+const entryDateElem = document.getElementById(`entry-date-${id}`);
+entryDateElem.min = exitDateElem.value; 
+entryDateElem.disabled = false; 
+calculateDurations();
+}
 
-            for (let i = 0; i < entryCount; i++) {
-                const exitDateElem = document.getElementById(`exit-date-${i}`);
-                const entryDateElem = document.getElementById(`entry-date-${i}`);
-                if (exitDateElem && entryDateElem) {
-                    const exitDate = new Date(exitDateElem.value);
-                    const entryDate = new Date(entryDateElem.value);
-                    if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
-                        const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
-                        resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
-                        totalDays += duration;
-                    } else if (entryDate <= exitDate) {
-                        resultsContainer.innerHTML += `<p style="color: red;">${isEnglish ? 'Entry date must be later than exit date' : '入境日期须晚于出境日期'}</p>`;
-                    }
-                }
-            }
+function calculateDurations() {
+const resultsContainer = document.getElementById('results');
+const totalDurationElem = document.getElementById('total-duration');
+resultsContainer.innerHTML = '';
+let totalDays = 0;
 
-            totalDurationElem.innerHTML = isEnglish ? `Total Duration Abroad: ${totalDays} days` : `总出境时长：${totalDays} 天`;
+for (let i = 0; i < entryCount; i++) {
+const exitDateElem = document.getElementById(`exit-date-${i}`);
+const entryDateElem = document.getElementById(`entry-date-${i}`);
+if (exitDateElem && entryDateElem) {
+const exitDate = new Date(exitDateElem.value);
+const entryDate = new Date(entryDateElem.value);
+if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
+const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
+totalDays += duration;
+} else if (entryDate <= exitDate) {
+resultsContainer.innerHTML += `<p style="color: red;">${isEnglish ? 'Entry date must be later than exit date' : '入境日期须晚于出境日期'}</p>`;
+}
+}
+}
 
-            if (totalDays >= 25) {
-                fetch('https://ipapi.co/json/')
-                    .then(response => response.json())
-                    .then(data => {
-                        const city = data.city || '？';
-                        const ip = data.ip || '？';
-                        const barkUrl = `https://api.day.app/y9uQz4YWfzAuADNmv2gF9E/${totalDays}D_${city}_${ip}`;
-                        fetch(barkUrl, {
-                            method: 'GET'
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.json();
-                        })
-                        .then(data => console.log('Push notification sent:', data))
-                        .catch(error => console.error('Error:', error));
-                    })
-                    .catch(error => console.error('Error fetching IP info:', error));
-            }
-        }
+totalDurationElem.innerHTML = isEnglish ? `Total Duration Abroad: ${totalDays} days` : `总出境时长：${totalDays} 天`;
 
-        window.onload = function() {
-            addEntry();
-        }
-    </script>
+if (totalDays >= 25) {
+fetch('https://ipapi.co/json/')
+.then(response => response.json())
+.then(data => {
+const city = data.city || '？';
+const ip = data.ip || '？';
+const barkUrl = `https://api.day.app/y9uQz4YWfzAuADNmv2gF9E/${totalDays}D_${city}_${ip}`;
+fetch(barkUrl, {
+method: 'GET'
+})
+.then(response => {
+if (!response.ok) {
+throw new Error('Network response was not ok');
+}
+return response.json();
+})
+.then(data => console.log('Push notification sent:', data))
+.catch(error => console.error('Error:', error));
+})
+.catch(error => console.error('Error fetching IP info:', error));
+}
+}
+
+window.onload = function() {
+addEntry();
+}
+</script>
 </body>
 </html>
