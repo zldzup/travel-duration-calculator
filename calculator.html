@@ -116,42 +116,46 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
 
         .entry-group label {
             width: 15%;
             padding: 1px;
             font-size: 16px;
-            padding: 5px;
+            padding: 2px;
         }
 
         .entry-group input {
             width: 35%;
             padding: 10px;
             font-size: 16px;
-            padding: 5px;
+            padding: 2px;
         }
 
         .entry-group button {
             width: 10%;
             padding: 10px;
             font-size: 16px;
-            padding: 5px;
+            padding: 2px;
         }
 
         .results {
-            font-size: 16px;
-            margin-top: 20px;
+            font-size: 12px;
+            margin-top: 5px;
             text-align: left;
+            
+            
         }
 
         .results p {
             text-align: left;
+            margin: 1px 0; /* 修改这个值来调整行间距 */
+            
         }
 
         .total-duration {
-            margin-top: 20px;
+            margin-top: 10px;
             font-size: 18px;
             font-weight: bold;
         }
@@ -210,12 +214,12 @@
     <script>
         // Firebase configuration
         var firebaseConfig = {
-            apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
-            authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
-            projectId: "travel-duration-calculat-b511e",
-            storageBucket: "travel-duration-calculat-b511e.appspot.com",
-            messagingSenderId: "745521797119",
-            appId: "1:745521797119:web:4258b69db047193eda79ca"
+              apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
+  authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
+  projectId: "travel-duration-calculat-b511e",
+  storageBucket: "travel-duration-calculat-b511e.appspot.com",
+  messagingSenderId: "745521797119",
+  appId: "1:745521797119:web:4258b69db047193eda79ca"
         };
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -277,45 +281,67 @@
         }
 
         function calculateDurations() {
-            const resultsContainer = document.getElementById('results');
-            const totalDurationElem = document.getElementById('total-duration');
-            resultsContainer.innerHTML = '';
-            let totalDays = 0;
-            let durations = [];
-            let dates = [];
+    const resultsContainer = document.getElementById('results');
+    const totalDurationElem = document.getElementById('total-duration');
+    resultsContainer.innerHTML = '';
+    let totalDays = 0;
+    let yearlyDurations = {};
+    let dates = [];
 
-            for (let i = 0; i < entryCount; i++) {
-                const exitDateElem = document.getElementById(`exit-date-${i}`);
-                const entryDateElem = document.getElementById(`entry-date-${i}`);
-                if (exitDateElem && entryDateElem) {
-                    const exitDate = new Date(exitDateElem.value);
-                    const entryDate = new Date(entryDateElem.value);
-                    if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
-                        const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
-                        resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
-                        totalDays += duration;
-                        durations.push(duration);
-                        dates.push({ start: exitDate, end: entryDate });
-                    } else if (entryDate <= exitDate) {
-                        resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
-                        showToast("入境日期须晚于出境日期");
+    for (let i = 0; i < entryCount; i++) {
+        const exitDateElem = document.getElementById(`exit-date-${i}`);
+        const entryDateElem = document.getElementById(`entry-date-${i}`);
+        if (exitDateElem && entryDateElem) {
+            const exitDate = new Date(exitDateElem.value);
+            const entryDate = new Date(entryDateElem.value);
+            if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
+                const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                const exitYear = exitDate.getFullYear();
+                const entryYear = entryDate.getFullYear();
+                
+                // 累加每年的境外时长
+                for (let year = exitYear; year <= entryYear; year++) {
+                    let daysInYear = 0;
+                    if (year === exitYear && year === entryYear) {
+                        daysInYear = duration;
+                    } else if (year === exitYear) {
+                        daysInYear = (new Date(`${exitYear}-12-31`) - exitDate) / (1000 * 60 * 60 * 24) + 1;
+                    } else if (year === entryYear) {
+                        daysInYear = (entryDate - new Date(`${entryYear}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                    } else {
+                        daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
                     }
+
+                    if (!yearlyDurations[year]) {
+                        yearlyDurations[year] = 0;
+                    }
+                    yearlyDurations[year] += daysInYear;
                 }
-            }
 
-            if (checkOverlappingDates(dates)) {
-                resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
-                showToast("警告：存在日期重叠！请检查输入的出入境记录。");
-            }
-
-            totalDurationElem.innerHTML = `总出境时长：${totalDays} 天`;
-
-            saveEntries();
-            if (totalDays > 0 && !checkOverlappingDates(dates)) {
-                saveToFirestore(totalDays);
-                displayPieChart(durations);
+                resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
+                totalDays += duration;
+                dates.push({ start: exitDate, end: entryDate });
+            } else if (entryDate <= exitDate) {
+                resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
+                showToast("入境日期须晚于出境日期");
             }
         }
+    }
+
+    if (checkOverlappingDates(dates)) {
+        resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
+        showToast("警告：存在日期重叠！请检查输入的出入境记录。");
+    }
+
+    totalDurationElem.innerHTML = `总出境时长：${totalDays} 天`;
+
+    saveEntries();
+    if (totalDays > 0 && !checkOverlappingDates(dates)) {
+        saveToFirestore(totalDays);
+        displayYearlyChart(yearlyDurations);
+    }
+}
+
 
         function saveEntries() {
             const entries = [];
@@ -377,37 +403,33 @@
             }
         }
 
-        function displayPieChart(durations) {
-            const ctx = document.getElementById('myChart').getContext('2d');
-            if (chart) {
-                chart.destroy();
-            }
-            chart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: durations.map((_, i) => `记录 ${i + 1}`),
-                    datasets: [{
-                        data: durations,
-                        backgroundColor: durations.map(() => `hsl(${Math.random() * 360}, 100%, 75%)`)
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    return `${context.label}: ${context.raw} 天`;
-                                }
-                            }
-                        }
-                    }
+        function displayYearlyChart(yearlyDurations) {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    if (chart) {
+        chart.destroy();
+    }
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(yearlyDurations),
+            datasets: [{
+                label: '每年境外时间 (天)',
+                data: Object.values(yearlyDurations),
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
-            });
+            }
         }
+    });
+}
+
 
         window.onload = function () {
             loadEntries(); // 加载本地存储的记录
