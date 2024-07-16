@@ -3,6 +3,32 @@
 
 <head>
     <style>
+            body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+        #content {
+            padding: 20px;
+            background-color: lightblue;
+        }
+        button {
+            margin: 2px;
+            padding: 1px 1px;
+            font-size: 16px;
+        }
+      #capture {
+            width: 300px;
+            height: 200px;
+            background-color: lightblue;
+            padding: 10px;
+            text-align: center;
+            line-height: 200px;
+            font-size: 24px;
+        }
+        canvas {
+            display: none;
+        }
+        
         a {
             TEXT-DECORATION: none
         }
@@ -15,8 +41,8 @@
         .toast {
             visibility: hidden;
             min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
+            margin-left: -55px;
+            background-color: #6363638e;
             color: #fff;
             text-align: center;
             border-radius: 2px;
@@ -24,7 +50,7 @@
             z-index: 1;
             left: 50%;
             bottom: 30px;
-            font-size: 17px;
+            font-size: 14px;
         }
 
         .toast.show {
@@ -102,7 +128,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 10px;
             margin: 0;
         }
 
@@ -140,13 +166,7 @@
             padding: 2px;
         }
 
-        .results {
-            font-size: 12px;
-            margin-top: 5px;
-            text-align: left;
-            
-            
-        }
+       
 
         .results p {
             text-align: left;
@@ -179,6 +199,8 @@
 
             .results {
                 text-align: left;
+                font-weight:bold;
+
             }
         }
     </style>
@@ -187,51 +209,38 @@
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
     <!-- Include Chart.js library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
-    authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
-    projectId: "travel-duration-calculat-b511e",
-    storageBucket: "travel-duration-calculat-b511e.appspot.com",
-    messagingSenderId: "745521797119",
-    appId: "1:745521797119:web:4258b69db047193eda79ca",
-    measurementId: "G-XST5BTZTEK"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+    <script>
+       
+   </script>
+  
 </head>
 
 <body>
 
     <div class="container">
-        <h1 id="title">境外学习时长计算器</h1>
+        <h2 id="title">境外学习时长计算器</h2>
         <hr>
-        <div class="total-duration" id="total-duration">总出境时长: 0 天</div>
+        <div class="total-duration" id="total-duration">您的总出境时长为: 0 天</div>
         <div class="results" id="results"></div>
         <div id="entry-container" class="results"></div>
-        <button class="results" onclick="addEntry()">+添加出入境记录</button>
-        <canvas id="myChart"></canvas>
     </div>
-    <hr>
-    <span id="info">适用于出国留学“境外学习时间”的计算</span>
-    <span id="info">例:上海的留学生落户政策，需满足境外学习时长</span>
+    <button class="results" onclick="addEntry()">+添加出入境记录</button>
+    <canvas id="myChart"></canvas>
+
+    <span id="info">适用于出国留学“境外学习时间”的计算。</span>
+    <span id="info">例:上海的留学生落户政策，需满足境外学习时长：</span>
     <span id="phd">博士：大于360天</span>
     <span id="master">硕士：大于180天</span>
     <span id="bachelor">学士：大于720天</span>
+    <button id="screenshotBtn">截图并保存本页</button>
+    <p>如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html">点击查看</a></p>
+  
+       <canvas id="canvas"></canvas>
+
     <p></p>
     <div class="delayed-element" id="delayedElement"></div>
-    <p></p>
     <div id="toast" class="toast">这是一个吐司提示</div>
 
     <script>
@@ -322,7 +331,6 @@
                 const exitYear = exitDate.getFullYear();
                 const entryYear = entryDate.getFullYear();
                 
-                // 累加每年的境外时长
                 for (let year = exitYear; year <= entryYear; year++) {
                     let daysInYear = 0;
                     if (year === exitYear && year === entryYear) {
@@ -356,15 +364,15 @@
         showToast("警告：存在日期重叠！请检查输入的出入境记录。");
     }
 
-    totalDurationElem.innerHTML = `总出境时长：${totalDays} 天`;
+    totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
 
     saveEntries();
     if (totalDays > 0 && !checkOverlappingDates(dates)) {
-        saveToFirestore(totalDays);
         displayYearlyChart(yearlyDurations);
     }
-}
 
+    return totalDays; // 返回总出境时长
+}
 
         function saveEntries() {
             const entries = [];
@@ -400,34 +408,102 @@
             calculateDurations();
         }
 
-        function saveToFirestore(totalDays) {
-            const entries = JSON.parse(localStorage.getItem('entries')) || [];
-            if (entries.every(entry => entry.exitDate && entry.entryDate)) {
-                fetch('https://ipapi.co/json/')
-                    .then(response => response.json())
-                    .then(data => {
-                        const city = data.city || '？';
-                        const ip = data.ip || '？';
-                        const userData = {
-                            totalDuration: totalDays,
-                            entries: entries,
-                            ip: ip,
-                            location: city
-                        };
-                        db.collection("users").add(userData)
-                            .then((docRef) => {
-                                console.log("Document written with ID: ", docRef.id);
-                            })
-                            .catch((error) => {
-                                console.error("Error adding document: ", error);
-                            });
+function saveToFirestore(totalDays) {
+    const entries = JSON.parse(localStorage.getItem('entries')) || [];
+    if (entries.every(entry => entry.exitDate && entry.entryDate)) {
+        fetch('https://ipapi.co/json/')
+            .then(response => response.json())
+            .then(data => {
+                const city = data.city || 'Unknown';
+                const ip = data.ip || 'Unknown';
+                const userData = {
+                    totalDuration: totalDays,
+                    entries: entries,
+                    ip: ip,
+                    location: city
+                };
+                db.collection("users").add(userData)
+                    .then((docRef) => {
+                        console.log("Document written with ID: ", docRef.id);
+                        updateCityChart(city);
                     })
-                    .catch(error => console.error('Error fetching IP info:', error));
-            }
-        }
+                    .catch((error) => {
+                        console.error("Error adding document: ", error);
+                    });
+            })
+            .catch(error => console.error('Error fetching IP info:', error));
+    }
+}
+document.getElementById('screenshotBtn').addEventListener('click', function() {
+    const totalDays = calculateDurations();
+    if (totalDays > 0) {
+        saveToFirestore(totalDays); // 在截图前保存到Firestore
+    }
 
-        function displayYearlyChart(yearlyDurations) {
+    // 添加延迟，确保所有元素都已经渲染完毕
+    setTimeout(() => {
+        html2canvas(document.body, {
+            scrollX: 0,
+            scrollY: 0,
+            width: document.body.scrollWidth,
+            height: document.body.scrollHeight,
+            useCORS: true // 使用 CORS 选项
+        }).then(function(canvas) {
+            var imgData = canvas.toDataURL("image/png");
+
+            var now = new Date();
+            var year = now.getFullYear();
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var day = String(now.getDate()).padStart(2, '0');
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            var seconds = String(now.getSeconds()).padStart(2, '0');
+            var formattedTime = `${year}${month}${day}_${hours}${minutes}${seconds}`;
+            var filename = `screenshot_${formattedTime}.png`;
+
+            var link = document.createElement('a');
+            link.href = imgData;
+            link.download = filename;
+            link.click();
+        }).catch(function(error) {
+            console.error('截图失败:', error);
+        });
+    }, 1000); // 0.5秒延迟
+});
+
+
+
+
+function saveToFirestore(totalDays) {
+    const entries = JSON.parse(localStorage.getItem('entries')) || [];
+    if (entries.every(entry => entry.exitDate && entry.entryDate)) {
+        fetch('https://ipapi.co/json/')
+            .then(response => response.json())
+            .then(data => {
+                const city = data.city || 'Unknown';
+                const ip = data.ip || 'Unknown';
+                const userData = {
+                    totalDuration: totalDays,
+                    entries: entries,
+                    ip: ip,
+                    location: city
+                };
+                db.collection("users").add(userData)
+                    .then((docRef) => {
+                        console.log("Document written with ID: ", docRef.id);
+                        updateCityChart(city);
+                    })
+                    .catch((error) => {
+                        console.error("Error adding document: ", error);
+                    });
+            })
+            .catch(error => console.error('Error fetching IP info:', error));
+    }
+}
+
+function displayYearlyChart(yearlyDurations) {
     const ctx = document.getElementById('myChart').getContext('2d');
+    document.getElementById('myChart').style.display = 'block'; // 确保 canvas 元素可见
     if (chart) {
         chart.destroy();
     }
@@ -452,7 +528,6 @@
         }
     });
 }
-
 
         window.onload = function () {
             loadEntries(); // 加载本地存储的记录
