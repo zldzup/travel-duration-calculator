@@ -12,6 +12,8 @@
         gtag('config', 'G-XST5BTZTEK');
     </script>
     <style>
+        
+        
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
@@ -232,7 +234,8 @@
         <div class="results" id="results"></div>
         <div id="entry-container" class="results"></div>
     </div>
-    <button class="results" onclick="addEntry()">+添加出入境记录</button>
+    <button class="results" onclick="addEntry()">第1步:+添加出入境记录</button>
+    
     <canvas id="myChart"></canvas>
 
     <span id="info">适用于出国留学“境外学习时间”的计算。</span>
@@ -240,7 +243,7 @@
     <span id="phd">博士：大于360天</span>
     <span id="master">硕士：大于180天</span>
     <span id="bachelor">学士：大于720天</span>
-    <button id="screenshotBtn">保存到本地</button>
+    <button id="screenshotBtn">第2步:保存到本地</button>
     <p>如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html">点击查看</a></p>
 
     <canvas id="canvas"></canvas>
@@ -402,9 +405,9 @@
                 const entryGroup = document.createElement('div');
                 entryGroup.className = 'entry-group';
                 entryGroup.innerHTML = `
-                    <label for="exit-date-${index}">1.出境日期</label>
+                    <label for="exit-date-${index}">1.出境日期（出国）</label>
                     <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
-                    <label for="entry-date-${index}">2.入境日期</label>
+                    <label for="entry-date-${index}">2.入境日期（回国）</abel>
                     <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
                     <button onclick="removeEntry(${index})">删除</button>
                 `;
