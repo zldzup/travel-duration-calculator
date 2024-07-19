@@ -265,28 +265,6 @@
         let entryCount = 0;
         let chart = null;
 
-        function generateUUID() {
-            // 生成一个UUID (v4)
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-
-        window.onload = function() {
-            // 检查本地存储中是否已有用户ID
-            let userID = localStorage.getItem('userID');
-            if (!userID) {
-                // 生成一个新的UUID
-                userID = generateUUID();
-                // 将用户ID保存到本地存储
-                localStorage.setItem('userID', userID);
-            }
-            console.log("User ID:", userID); // 调试日志，确认用户ID
-            loadEntries(); // 加载本地存储的记录
-        }
-
         function addEntry() {
             const entryContainer = document.getElementById('entry-container');
             const entryGroup = document.createElement('div');
@@ -434,22 +412,19 @@
             });
             calculateDurations();
         }
-
-        async function getBatteryStatus() {
-            const battery = await navigator.getBattery();
-            return {
-                level: battery.level * 100 + '%',
-                charging: battery.charging
-            };
-        }
-
-        async function saveToFirestore(totalDays) {
+        function generateUUID() {
+    // 生成一个UUID (v4)
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+        function saveToFirestore(totalDays) {
             const entries = JSON.parse(localStorage.getItem('entries')) || [];
             const userID = localStorage.getItem('userID'); // 获取用户ID
-            console.log("Retrieved userID:", userID); // 添加调试日志
             const submitTimeCell = new Date().toISOString(); // 获取当前时间
             if (entries.every(entry => entry.exitDate && entry.entryDate)) {
-                const batteryStatus = await getBatteryStatus();
                 fetch('https://ipapi.co/json/')
                     .then(response => response.json())
                     .then(data => {
@@ -461,9 +436,7 @@
                             ip: ip,
                             location: city,
                             userID: userID, // 添加用户ID
-                            submitTimeCell: submitTimeCell, // 添加提交时间
-                            batteryLevel: batteryStatus.level, // 添加电池电量
-                            batteryCharging: batteryStatus.charging // 添加电池是否充电
+                            submitTimeCell: submitTimeCell // 添加提交时间
                         };
                         console.log("userData:", userData); // 添加调试日志
                         db.collection("users").add(userData)
@@ -479,10 +452,10 @@
             }
         }
 
-        document.getElementById('screenshotBtn').addEventListener('click', async function() {
+        document.getElementById('screenshotBtn').addEventListener('click', function () {
             const totalDays = calculateDurations();
             if (totalDays > 0) {
-                await saveToFirestore(totalDays); // 在截图前保存到Firestore
+                saveToFirestore(totalDays); // 在截图前保存到Firestore
             }
 
             // 添加延迟，确保所有元素都已经渲染完毕
@@ -493,7 +466,7 @@
                     width: document.body.scrollWidth,
                     height: document.body.scrollHeight,
                     useCORS: true // 使用 CORS 选项
-                }).then(function(canvas) {
+                }).then(function (canvas) {
                     var imgData = canvas.toDataURL("image/png");
 
                     var now = new Date();
@@ -510,7 +483,7 @@
                     link.href = imgData;
                     link.download = filename;
                     link.click();
-                }).catch(function(error) {
+                }).catch(function (error) {
                     console.error('截图失败:', error);
                 });
             }, 1000); // 1秒延迟
@@ -543,6 +516,22 @@
                 }
             });
         }
+
+        window.onload = function () {
+            loadEntries(); // 加载本地存储的记录
+        }
+        window.onload = function() {
+    // 检查本地存储中是否已有用户ID
+    let userID = localStorage.getItem('userID');
+    if (!userID) {
+        // 生成一个新的UUID
+        userID = generateUUID();
+        // 将用户ID保存到本地存储
+        localStorage.setItem('userID', userID);
+    }
+    console.log("User ID:", userID); // 调试日志，确认用户ID
+    loadEntries(); // 加载本地存储的记录
+}
     </script>
 
 </body>
