@@ -3,34 +3,29 @@
 
 <head>
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XST5BTZTEK"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XST5BTZTEK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-        gtag('config', 'G-XST5BTZTEK');
-    </script>
+  gtag('config', 'G-XST5BTZTEK');
+</script>
     <style>
-        
-        
-        body {
+            body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
         }
-
         #content {
             padding: 20px;
             background-color: lightblue;
         }
-
         button {
             margin: 2px;
             padding: 1px 1px;
             font-size: 16px;
         }
-
-        #capture {
+      #capture {
             width: 300px;
             height: 200px;
             background-color: lightblue;
@@ -39,11 +34,10 @@
             line-height: 200px;
             font-size: 24px;
         }
-
         canvas {
             display: none;
         }
-
+        
         a {
             TEXT-DECORATION: none
         }
@@ -181,9 +175,12 @@
             padding: 2px;
         }
 
+       
+
         .results p {
             text-align: left;
-            margin: 1px 0;
+            margin: 1px 0; /* 修改这个值来调整行间距 */
+            
         }
 
         .total-duration {
@@ -211,7 +208,8 @@
 
             .results {
                 text-align: left;
-                font-weight: bold;
+                font-weight:bold;
+
             }
         }
     </style>
@@ -221,8 +219,9 @@
     <!-- Include Chart.js library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
+<!-- Global site tag (gtag.js) - Google Analytics -->
 
+  
 </head>
 
 <body>
@@ -234,8 +233,7 @@
         <div class="results" id="results"></div>
         <div id="entry-container" class="results"></div>
     </div>
-    <button class="results" onclick="addEntry()">第1步:+添加出入境记录</button>
-    
+    <button class="results" onclick="addEntry()">+添加出入境记录</button>
     <canvas id="myChart"></canvas>
 
     <span id="info">适用于出国留学“境外学习时间”的计算。</span>
@@ -243,10 +241,10 @@
     <span id="phd">博士：大于360天</span>
     <span id="master">硕士：大于180天</span>
     <span id="bachelor">学士：大于720天</span>
-    <button id="screenshotBtn">第2步:保存到本地</button>
+    <button id="screenshotBtn">截图并保存本页</button>
     <p>如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html">点击查看</a></p>
-
-    <canvas id="canvas"></canvas>
+  
+       <canvas id="canvas"></canvas>
 
     <p></p>
     <div class="delayed-element" id="delayedElement"></div>
@@ -255,12 +253,12 @@
     <script>
         // Firebase configuration
         var firebaseConfig = {
-            apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
-            authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
-            projectId: "travel-duration-calculat-b511e",
-            storageBucket: "travel-duration-calculat-b511e.appspot.com",
-            messagingSenderId: "745521797119",
-            appId: "1:745521797119:web:4258b69db047193eda79ca"
+              apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
+  authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
+  projectId: "travel-duration-calculat-b511e",
+  storageBucket: "travel-duration-calculat-b511e.appspot.com",
+  messagingSenderId: "745521797119",
+  appId: "1:745521797119:web:4258b69db047193eda79ca"
         };
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -322,66 +320,66 @@
         }
 
         function calculateDurations() {
-            const resultsContainer = document.getElementById('results');
-            const totalDurationElem = document.getElementById('total-duration');
-            resultsContainer.innerHTML = '';
-            let totalDays = 0;
-            let yearlyDurations = {};
-            let dates = [];
+    const resultsContainer = document.getElementById('results');
+    const totalDurationElem = document.getElementById('total-duration');
+    resultsContainer.innerHTML = '';
+    let totalDays = 0;
+    let yearlyDurations = {};
+    let dates = [];
 
-            for (let i = 0; i < entryCount; i++) {
-                const exitDateElem = document.getElementById(`exit-date-${i}`);
-                const entryDateElem = document.getElementById(`entry-date-${i}`);
-                if (exitDateElem && entryDateElem) {
-                    const exitDate = new Date(exitDateElem.value);
-                    const entryDate = new Date(entryDateElem.value);
-                    if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
-                        const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
-                        const exitYear = exitDate.getFullYear();
-                        const entryYear = entryDate.getFullYear();
-
-                        for (let year = exitYear; year <= entryYear; year++) {
-                            let daysInYear = 0;
-                            if (year === exitYear && year === entryYear) {
-                                daysInYear = duration;
-                            } else if (year === exitYear) {
-                                daysInYear = (new Date(`${exitYear}-12-31`) - exitDate) / (1000 * 60 * 60 * 24) + 1;
-                            } else if (year === entryYear) {
-                                daysInYear = (entryDate - new Date(`${entryYear}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
-                            } else {
-                                daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
-                            }
-
-                            if (!yearlyDurations[year]) {
-                                yearlyDurations[year] = 0;
-                            }
-                            yearlyDurations[year] += daysInYear;
-                        }
-
-                        resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
-                        totalDays += duration;
-                        dates.push({ start: exitDate, end: entryDate });
-                    } else if (entryDate <= exitDate) {
-                        resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
-                        showToast("入境日期须晚于出境日期");
+    for (let i = 0; i < entryCount; i++) {
+        const exitDateElem = document.getElementById(`exit-date-${i}`);
+        const entryDateElem = document.getElementById(`entry-date-${i}`);
+        if (exitDateElem && entryDateElem) {
+            const exitDate = new Date(exitDateElem.value);
+            const entryDate = new Date(entryDateElem.value);
+            if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
+                const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                const exitYear = exitDate.getFullYear();
+                const entryYear = entryDate.getFullYear();
+                
+                for (let year = exitYear; year <= entryYear; year++) {
+                    let daysInYear = 0;
+                    if (year === exitYear && year === entryYear) {
+                        daysInYear = duration;
+                    } else if (year === exitYear) {
+                        daysInYear = (new Date(`${exitYear}-12-31`) - exitDate) / (1000 * 60 * 60 * 24) + 1;
+                    } else if (year === entryYear) {
+                        daysInYear = (entryDate - new Date(`${entryYear}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                    } else {
+                        daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
                     }
+
+                    if (!yearlyDurations[year]) {
+                        yearlyDurations[year] = 0;
+                    }
+                    yearlyDurations[year] += daysInYear;
                 }
+
+                resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
+                totalDays += duration;
+                dates.push({ start: exitDate, end: entryDate });
+            } else if (entryDate <= exitDate) {
+                resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
+                showToast("入境日期须晚于出境日期");
             }
-
-            if (checkOverlappingDates(dates)) {
-                resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
-                showToast("警告：存在日期重叠！请检查输入的出入境记录。");
-            }
-
-            totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
-
-            saveEntries();
-            if (totalDays > 0 && !checkOverlappingDates(dates)) {
-                displayYearlyChart(yearlyDurations);
-            }
-
-            return totalDays; // 返回总出境时长
         }
+    }
+
+    if (checkOverlappingDates(dates)) {
+        resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
+        showToast("警告：存在日期重叠！请检查输入的出入境记录。");
+    }
+
+    totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
+
+    saveEntries();
+    if (totalDays > 0 && !checkOverlappingDates(dates)) {
+        displayYearlyChart(yearlyDurations);
+    }
+
+    return totalDays; // 返回总出境时长
+}
 
         function saveEntries() {
             const entries = [];
@@ -405,9 +403,9 @@
                 const entryGroup = document.createElement('div');
                 entryGroup.className = 'entry-group';
                 entryGroup.innerHTML = `
-                    <label for="exit-date-${index}">1.出境日期（出国）</label>
+                    <label for="exit-date-${index}">1.出境日期</label>
                     <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
-                    <label for="entry-date-${index}">2.入境日期（回国）</abel>
+                    <label for="entry-date-${index}">2.入境日期</label>
                     <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
                     <button onclick="removeEntry(${index})">删除</button>
                 `;
@@ -417,67 +415,126 @@
             calculateDurations();
         }
 
-        document.getElementById('screenshotBtn').addEventListener('click', function () {
-            calculateDurations(); // 计算总出境时长
+function saveToFirestore(totalDays) {
+    const entries = JSON.parse(localStorage.getItem('entries')) || [];
+    if (entries.every(entry => entry.exitDate && entry.entryDate)) {
+        fetch('https://ipapi.co/json/')
+            .then(response => response.json())
+            .then(data => {
+                const city = data.city || 'Unknown';
+                const ip = data.ip || 'Unknown';
+                const userData = {
+                    totalDuration: totalDays,
+                    entries: entries,
+                    ip: ip,
+                    location: city
+                };
+                db.collection("users").add(userData)
+                    .then((docRef) => {
+                        console.log("Document written with ID: ", docRef.id);
+                        updateCityChart(city);
+                    })
+                    .catch((error) => {
+                        console.error("Error adding document: ", error);
+                    });
+            })
+            .catch(error => console.error('Error fetching IP info:', error));
+    }
+}
+document.getElementById('screenshotBtn').addEventListener('click', function() {
+    const totalDays = calculateDurations();
+    if (totalDays > 0) {
+        saveToFirestore(totalDays); // 在截图前保存到Firestore
+    }
 
-            // 添加延迟，确保所有元素都已经渲染完毕
-            setTimeout(() => {
-                html2canvas(document.body, {
-                    scrollX: 0,
-                    scrollY: 0,
-                    width: document.body.scrollWidth,
-                    height: document.body.scrollHeight,
-                    useCORS: true // 使用 CORS 选项
-                }).then(function (canvas) {
-                    var imgData = canvas.toDataURL("image/png");
+    // 添加延迟，确保所有元素都已经渲染完毕
+    setTimeout(() => {
+        html2canvas(document.body, {
+            scrollX: 0,
+            scrollY: 0,
+            width: document.body.scrollWidth,
+            height: document.body.scrollHeight,
+            useCORS: true // 使用 CORS 选项
+        }).then(function(canvas) {
+            var imgData = canvas.toDataURL("image/png");
 
-                    var now = new Date();
-                    var year = now.getFullYear();
-                    var month = String(now.getMonth() + 1).padStart(2, '0');
-                    var day = String(now.getDate()).padStart(2, '0');
-                    var hours = String(now.getHours()).padStart(2, '0');
-                    var minutes = String(now.getMinutes()).padStart(2, '0');
-                    var seconds = String(now.getSeconds()).padStart(2, '0');
-                    var formattedTime = `${year}${month}${day}_${hours}${minutes}${seconds}`;
-                    var filename = `screenshot_${formattedTime}.png`;
+            var now = new Date();
+            var year = now.getFullYear();
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var day = String(now.getDate()).padStart(2, '0');
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            var seconds = String(now.getSeconds()).padStart(2, '0');
+            var formattedTime = `${year}${month}${day}_${hours}${minutes}${seconds}`;
+            var filename = `screenshot_${formattedTime}.png`;
 
-                    var link = document.createElement('a');
-                    link.href = imgData;
-                    link.download = filename;
-                    link.click();
-                }).catch(function (error) {
-                    console.error('截图失败:', error);
-                });
-            }, 1000); // 1秒延迟
+            var link = document.createElement('a');
+            link.href = imgData;
+            link.download = filename;
+            link.click();
+        }).catch(function(error) {
+            console.error('截图失败:', error);
         });
+    }, 1000); // 0.5秒延迟
+});
 
-        function displayYearlyChart(yearlyDurations) {
-            const ctx = document.getElementById('myChart').getContext('2d');
-            document.getElementById('myChart').style.display = 'block'; // 确保 canvas 元素可见
-            if (chart) {
-                chart.destroy();
-            }
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(yearlyDurations),
-                    datasets: [{
-                        label: '每年境外时间 (天)',
-                        data: Object.values(yearlyDurations),
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
+
+
+
+function saveToFirestore(totalDays) {
+    const entries = JSON.parse(localStorage.getItem('entries')) || [];
+    if (entries.every(entry => entry.exitDate && entry.entryDate)) {
+        fetch('https://ipapi.co/json/')
+            .then(response => response.json())
+            .then(data => {
+                const city = data.city || 'Unknown';
+                const ip = data.ip || 'Unknown';
+                const userData = {
+                    totalDuration: totalDays,
+                    entries: entries,
+                    ip: ip,
+                    location: city
+                };
+                db.collection("users").add(userData)
+                    .then((docRef) => {
+                        console.log("Document written with ID: ", docRef.id);
+                        updateCityChart(city);
+                    })
+                    .catch((error) => {
+                        console.error("Error adding document: ", error);
+                    });
+            })
+            .catch(error => console.error('Error fetching IP info:', error));
+    }
+}
+
+function displayYearlyChart(yearlyDurations) {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    document.getElementById('myChart').style.display = 'block'; // 确保 canvas 元素可见
+    if (chart) {
+        chart.destroy();
+    }
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(yearlyDurations),
+            datasets: [{
+                label: '每年境外时间 (天)',
+                data: Object.values(yearlyDurations),
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
-            });
+            }
         }
+    });
+}
 
         window.onload = function () {
             loadEntries(); // 加载本地存储的记录
