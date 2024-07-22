@@ -225,6 +225,7 @@
 
 <div class="container">
    <h2 id="title">境外学习时长计算器</h2>
+    <hr>
    <div class="total-duration" id="total-duration">您的总出境时长为: 0 天</div>
    <div class="results" id="results"></div>
    <div id="entry-container" class="results"></div>
@@ -393,7 +394,7 @@
            const entryGroup = document.createElement('div');
            entryGroup.className = 'entry-group';
            entryGroup.innerHTML = `
-               <label for="exit-date-${index}">1.出境日期</label>
+               <label for="exit-date-${index}">1.出境日期(离开中国)</label>
                <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
                <label for="entry-date-${index}">2.入境日期</label>
                <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
