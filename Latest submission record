@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最新提交记录</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1px;
+            background-color: #f4f4f4;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .record {
+            background-color: #ffffff;
+            padding: 10px;
+            margin: 5px;
+            width: calc(50% - 20px);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            vertical-align: top;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        .record h3 {
+            margin: 0 0 5px;
+            font-size: 16px;
+        }
+
+        .record p {
+            margin: 3px 0;
+            font-size: 14px;
+        }
+
+        .record span {
+            font-weight: bold;
+        }
+
+        .pagination {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .pagination button {
+            padding: 5px 10px;
+            margin: 0 5px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .pagination button:disabled {
+            background-color: #cccccc;
+        }
+
+        .pagination span {
+            margin: 0 10px;
+            font-size: 14px;
+        }
+
+        .records-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .skeleton {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .skeleton .record {
+            background-color: #e0e0e0;
+            animation: skeleton-loading 1s linear infinite alternate;
+        }
+
+        @keyframes skeleton-loading {
+            0% {
+                background-color: #e0e0e0;
+            }
+            100% {
+                background-color: #c0c0c0;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .record {
+                width: calc(50% - 10px);
+            }
+        }
+    </style>
+    <!-- 引入Firebase库 -->
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
+</head>
+
+<body>
+    <button class="back-button" onclick="goBack()">返回</button>
+    <h2>最新提交记录</h2>
+    <div id="skeleton-container" class="skeleton">
+        <div class="record"></div>
+        <div class="record"></div>
+        <div class="record"></div>
+        <div class="record"></div>
+        <div class="record"></div>
+        <div class="record"></div>
+        <div class="record"></div>
+        <div class="record"></div>
+        <div class="record"></div>
+        <div class="record"></div>
+    </div>
+    <div id="records-container" class="records-container" style="display: none;"></div>
+    <div class="pagination">
+        <button id="prev-button" onclick="fetchPreviousPage()" disabled>上一页</button>
+        <span id="page-info">第 1 页</span>
+        <button id="next-button" onclick="fetchNextPage()">下一页</button>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>详细出入境时长</h3>
+            <div id="details-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase配置
+        var firebaseConfig = {
+            apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
+            authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
+            projectId: "travel-duration-calculat-b511e",
+            storageBucket: "travel-duration-calculat-b511e.appspot.com",
+            messagingSenderId: "745521797119",
+            appId: "1:745521797119:web:4258b69db047193eda79ca"
+        };
+        // 初始化Firebase
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+
+        var lastVisible = null;
+        var firstVisible = null;
+        var pageSize = 10;
+        var currentPage = 1;
+
+        // 获取所有记录并过滤最新记录
+        function fetchRecords(direction) {
+            var query = db.collection("users")
+                .orderBy("submitTimeCell", "desc");
+
+            query.get().then((querySnapshot) => {
+                var userRecords = {};
+                querySnapshot.forEach((doc) => {
+                    const recordData = doc.data();
+                    const userID = recordData.userID;
+                    if (!userRecords[userID] || new Date(recordData.submitTimeCell) > new Date(userRecords[userID].submitTimeCell)) {
+                        userRecords[userID] = recordData;
+                    }
+                });
+
+                var records = Object.values(userRecords);
+                if (direction === 'next') {
+                    records = records.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+                } else if (direction === 'prev') {
+                    records = records.slice((currentPage - 2) * pageSize, (currentPage - 1) * pageSize);
+                }
+
+                displayRecords(records);
+                toggleButtons(records.length);
+                updatePageInfo();
+            }).catch((error) => {
+                console.error("Error fetching records: ", error);
+            });
+        }
+
+        // 显示记录
+        function displayRecords(records) {
+            const recordsContainer = document.getElementById('records-container');
+            const skeletonContainer = document.getElementById('skeleton-container');
+            recordsContainer.style.display = 'flex';
+            skeletonContainer.style.display = 'none'; // 隐藏骨架屏
+            recordsContainer.innerHTML = ''; // 清空容器
+
+            records.forEach((recordData) => {
+                const recordElement = document.createElement('div');
+                recordElement.className = 'record';
+                recordElement.onclick = () => fetchUserDetails(recordData.userID);
+                recordElement.innerHTML = `
+                    <h3>用户记录</h3>
+                    <p><span>城市:</span> ${recordData.location}</p>
+                    <p><span>提交时间:</span> ${new Date(recordData.submitTimeCell).toLocaleString()}</p>
+                    <p><span>总出境时长:</span> ${recordData.totalDuration} 天</p>
+                `;
+                recordsContainer.appendChild(recordElement);
+            });
+        }
+
+        // 获取用户详细信息
+        function fetchUserDetails(userID) {
+            db.collection("users").where("userID", "==", userID)
+                .orderBy("submitTimeCell", "desc")
+                .get().then((querySnapshot) => {
+                    const detailsContainer = document.getElementById('details-container');
+                    detailsContainer.innerHTML = ''; // 清空容器
+                    querySnapshot.forEach((doc) => {
+                        const recordData = doc.data();
+                        const detailElement = document.createElement('div');
+                        detailElement.innerHTML = `
+                            <p><span>出境日期:</span> ${new Date(recordData.exitDate).toLocaleDateString()}</p>
+                            <p><span>入境日期:</span> ${new Date(recordData.entryDate).toLocaleDateString()}</p>
+                            <p><span>时长:</span> ${recordData.duration} 天</p>
+                            <hr>
+                        `;
+                        detailsContainer.appendChild(detailElement);
+                    });
+                    openModal();
+                }).catch((error) => {
+                    console.error("Error fetching user details: ", error);
+                });
+        }
+
+        // 打开模态框
+        function openModal() {
+            document.getElementById('detailModal').style.display = "block";
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('detailModal').style.display = "none";
+        }
+
+        // 切换分页按钮状态
+        function toggleButtons(size) {
+            document.getElementById('prev-button').disabled = currentPage === 1;
+            document.getElementById('next-button').disabled = size < pageSize;
+        }
+
+        // 更新页面信息
+        function updatePageInfo() {
+            document.getElementById('page-info').textContent = `第 ${currentPage} 页`;
+        }
+
+        function fetchNextPage() {
+            currentPage++;
+            fetchRecords('next');
+        }
+
+        function fetchPreviousPage() {
+            currentPage--;
+            fetchRecords('prev');
+        }
+
+        // 返回上一页
+        function goBack() {
+            window.history.back();
+        }
+
+        window.onload = function () {
+            fetchRecords('next'); // 页面加载时获取第一页记录
+        }
+    </script>
+</body>
+
+</html>
