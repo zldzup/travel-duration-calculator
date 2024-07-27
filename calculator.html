@@ -1,52 +1,89 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-
-        gtag('config', 'G-XST5BTZTEK');
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>留学/工作出境时长计算器</title>
     <style>
+        .aaaa {
+            font-size: 12px;
+            color: brown;
+        }
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            margin: 0;
         }
 
-        #content {
-            padding: 20px;
-            background-color: lightblue;
+        .container {
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            position: relative; /* 添加相对定位 */
         }
 
-        button {
-            margin: 2px;
-            padding: 1px 1px;
+        .entry-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+
+        .entry-group label {
+            width: 15%;
+            padding: 1px;
             font-size: 16px;
         }
 
-        #capture {
-            width: 300px;
-            height: 200px;
-            background-color: lightblue;
-            padding: 10px;
-            text-align: center;
-            line-height: 200px;
-            font-size: 24px;
+        .entry-group input {
+            width: 35%;
+            padding: 2px;
+            font-size: 16px;
         }
 
-        canvas {
-            display: none;
+        .entry-group button {
+            width: 10%;
+            padding: 2px;
+            font-size: 16px;
         }
 
-        a {
-            TEXT-DECORATION: none
+        .results p {
+            text-align: left;
+            margin: 1px 0;
         }
 
-        #myChart {
-            width: 100px;
-            height: 100px;
+        .total-duration {
+            margin-top: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .entry-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .entry-group label,
+            .entry-group input,
+            .entry-group button {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+
+            .entry-group button {
+                width: auto;
+            }
+
+            .results {
+                text-align: left;
+                font-weight: bold;
+            }
         }
 
         .toast {
@@ -117,98 +154,18 @@
                 opacity: 0;
             }
         }
-    </style>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>留学/工作出境时长计算器</title>
-    <style>
-        .delayed-element {
-            display: none;
-            opacity: 0;
-            transition: opacity 1s;
-        }
-
-        .show {
-            display: block;
-            opacity: 1;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
+        .title-container {
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            padding: 10px;
-            margin: 0;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 600px;
-            text-align: center;
-        }
-
-        .entry-group {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 2px;
+            position: relative; /* 添加相对定位 */
         }
-
-        .entry-group label {
-            width: 15%;
-            padding: 1px;
-            font-size: 16px;
-            padding: 2px;
-        }
-
-        .entry-group input {
-            width: 35%;
-            padding: 10px;
-            font-size: 16px;
-            padding: 2px;
-        }
-
-        .entry-group button {
-            width: 10%;
-            padding: 10px;
-            font-size: 16px;
-            padding: 2px;
-        }
-
-        .results p {
-            text-align: left;
-            margin: 1px 0;
-        }
-
-        .total-duration {
-            margin-top: 10px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        @media (max-width: 600px) {
-            .entry-group {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .entry-group label,
-            .entry-group input,
-            .entry-group button {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-
-            .entry-group button {
-                width: auto;
-            }
-
-            .results {
-                text-align: left;
-                font-weight: bold;
-            }
+        .floating-image {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 70px;
+            height: 70px;
         }
     </style>
     <!-- 引入Firebase库 -->
@@ -221,24 +178,45 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <!-- 引入Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XST5BTZTEK"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-XST5BTZTEK');
+    </script>
 </head>
 <body>
-
 <div class="container">
-    <h2 id="title">境外学习时长计算器</h2>
+    <div class="title-container">
+        <h3 id="title">｜境外学习时长计算器｜</h3>
+        <img class="floating-image" src="https://firebasestorage.googleapis.com/v0/b/travel-duration-calculat-b511e.appspot.com/o/QR%E8%AE%A1%E7%AE%97%E5%99%A8.png?alt=media&token=ff1ca1a9-61cc-4ea0-87e0-a2eb254401bc" alt="动态图片">
+    </div>
     <hr>
-    <div class="total-duration" id="total-duration">您的总出境时长为: 0 天</div>
+    <div class="total-duration" id="total-duration">您的总出境时长为： 0 天</div>
     <div class="results" id="results"></div>
+    <hr>
     <div id="entry-container" class="results"></div>
+    <div id="planned-stay-result" class="aaaa"></div>
     <button class="results" onclick="addEntry()">+添加出入境记录</button>
+    <select id="planned-stay" class="results">
+        <option value="">选择计划停留总时长</option>
+        <option value="90">入境: 90天</option>
+        <option value="180">硕士: 180天</option>
+        <option value="360">博士: 360天</option>
+        <option value="720">本科: 720天</option>
+        <option value="custom">自定义天数</option>
+    </select>
+    <input type="number" id="custom-planned-stay" class="results" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()">
+
+ 
     <canvas id="myChart"></canvas>
 </div>
-<span id="info">适用于出国留学“境外学习时间”的计算。</span>
-<span id="info">例:上海的留学生落户政策，需满足境外学习时长：</span>
-<span id="phd">博士:大于360天</span>
-<span id="master">硕士:大于180天</span>
-<span id="bachelor">学士:大于720天</span>
-
+    <span id="info">适用于出国留学“境外学习时间”的计算。</span>
+    <span id="info">例：上海的留学生落户政策，需满足境外学习时长</span>
+    <span id="phd">博士：大于360天</span>
+    <span id="master">硕士：大于180天</span>
+    <span id="bachelor">学士：大于720天</span>
 <p>如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html">点击查看</a></p>
 
 <script>
@@ -259,6 +237,17 @@
     let entryCount = 0;
     let chart = null;
 
+    document.getElementById('planned-stay').addEventListener('change', function() {
+        const customStay = document.getElementById('custom-planned-stay');
+        if (this.value === 'custom') {
+            customStay.style.display = 'inline';
+        } else {
+            customStay.style.display = 'none';
+            customStay.value = ''; // 重置自定义输入框
+            calculateDurations();
+        }
+    });
+
     function addEntry() {
         const entryContainer = document.getElementById('entry-container');
         const entryGroup = document.createElement('div');
@@ -273,7 +262,6 @@
         entryContainer.appendChild(entryGroup);
         entryCount++;
         saveEntries();
-        captureAndUploadScreenshot();
     }
 
     function removeEntry(id) {
@@ -281,7 +269,6 @@
         entryGroup.remove();
         calculateDurations();
         saveEntries();
-        captureAndUploadScreenshot();
     }
 
     function handleExitDateChange(id) {
@@ -291,7 +278,6 @@
         entryDateElem.disabled = false;
         calculateDurations();
         saveEntries();
-        captureAndUploadScreenshot();
     }
 
     function checkOverlappingDates(dates) {
@@ -317,10 +303,13 @@
     function calculateDurations() {
         const resultsContainer = document.getElementById('results');
         const totalDurationElem = document.getElementById('total-duration');
+        const plannedStayResult = document.getElementById('planned-stay-result');
         resultsContainer.innerHTML = '';
+        plannedStayResult.innerHTML = '';
         let totalDays = 0;
         let yearlyDurations = {};
         let dates = [];
+        let allEntriesComplete = true;
 
         for (let i = 0; i < entryCount; i++) {
             const exitDateElem = document.getElementById(`exit-date-${i}`);
@@ -357,26 +346,45 @@
                 } else if (entryDate <= exitDate) {
                     resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
                     showToast("入境日期须晚于出境日期");
+                    allEntriesComplete = false;
+                } else {
+                    allEntriesComplete = false;
                 }
+            } else {
+                allEntriesComplete = false;
             }
         }
 
         if (checkOverlappingDates(dates)) {
             resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
             showToast("警告：存在日期重叠！请检查输入的出入境记录。");
+            allEntriesComplete = false;
         }
 
         totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
 
-        saveEntries();
-        if (totalDays > 0 && !checkOverlappingDates(dates)) {
-            displayYearlyChart(yearlyDurations);
+        // 计算计划停留时长与总境外时长的差异
+        const plannedStay = document.getElementById('planned-stay').value;
+        const customPlannedStay = document.getElementById('custom-planned-stay').value;
+        let plannedDays = 0;
+        if (plannedStay === 'custom') {
+            plannedDays = parseInt(customPlannedStay, 10) || 0;
+        } else {
+            plannedDays = parseInt(plannedStay, 10) || 0;
+        }
+        if (plannedDays > 0) {
+            const difference = plannedDays - totalDays;
+            plannedStayResult.innerHTML = `亲,您的境外时长还差 = ${difference}天`;
         }
 
-        saveToFirestore(totalDays); // 在计算完出境时长后自动保存到Firestore
-        captureAndUploadScreenshot();
+        saveEntries();
+        displayYearlyChart(yearlyDurations);
 
-        return totalDays; // 返回总出境时长
+        captureAndUploadScreenshot(); // 移动到这里，确保每次都进行截图
+
+        saveToFirestore(totalDays, plannedDays); // Pass the plannedDays to the function
+
+        return totalDays;
     }
 
     function saveEntries() {
@@ -408,8 +416,8 @@
                 <button onclick="removeEntry(${index})">删除</button>
             `;
             entryContainer.appendChild(entryGroup);
-            entryCount = entries.length;
         });
+        entryCount = entries.length;
         calculateDurations();
     }
 
@@ -421,7 +429,7 @@
         });
     }
 
-    function saveToFirestore(totalDays) {
+    function saveToFirestore(totalDays, plannedDays) {
         const entries = JSON.parse(localStorage.getItem('entries')) || [];
         const userID = localStorage.getItem('userID'); // 获取用户ID
         const submitTimeCell = new Date().toISOString(); // 获取当前时间
@@ -433,6 +441,7 @@
                     const ip = data.ip || 'Unknown';
                     const userData = {
                         totalDuration: totalDays,
+                        plannedDuration: plannedDays, // 添加计划停留时长
                         entries: entries,
                         ip: ip,
                         location: city,
@@ -486,13 +495,14 @@
             html2canvas(document.body, { scale: 0.85 }).then(function (canvas) { // 压缩截图质量
                 canvas.toBlob(function (blob) {
                     const userID = localStorage.getItem('userID');
-                    const screenshotRef = storage.ref().child(`screenshots/${userID}/${new Date().toISOString()}.png`); // 使用用户ID作为文件夹
+                    const today = new Date().toISOString().split('T')[0]; // 获取当前日期，格式为 YYYY-MM-DD
+                    const screenshotRef = storage.ref().child(`screenshots/${userID}/${today}/${new Date().toISOString()}.png`); // 使用用户ID和当前日期作为文件夹
                     screenshotRef.put(blob).then(function (snapshot) {
                         console.log('Screenshot uploaded successfully!');
                     }).catch(function (error) {
                         console.error('Error uploading screenshot:', error);
                     });
-                }, 'image/png', 0.1); // 设置图片质量为0.3
+                }, 'image/png', 0.1); // 设置图片质量为0.1
             });
         }, 1500); // 延迟1秒
     }
@@ -503,10 +513,9 @@
             userID = generateUUID();
             localStorage.setItem('userID', userID);
         }
-        console.log("User ID:", userID); // 调试日志，确认用户ID
+        console.log("User ID:", userID);
         loadEntries(); // 加载本地存储的记录
     }
 </script>
-
 </body>
 </html>
