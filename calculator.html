@@ -38,7 +38,6 @@
 
         canvas {
             display: none;
-         
         }
 
         a {
@@ -180,7 +179,7 @@
 
         .results p {
             text-align: left;
-            margin: 1px 0; /* 修改这个值来调整行间距 */
+            margin: 1px 0;
         }
 
         .total-duration {
@@ -212,26 +211,26 @@
             }
         }
     </style>
-   <!-- 引入Firebase库 -->
-   <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
-   <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
-   <!-- 引入Chart.js库 -->
-   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-   <!-- 引入html2canvas库 -->
-   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-   <!-- 引入Google Analytics -->
-   <script async src="https://www.googletagmanager.com/gtag/js?id=G-XST5BTZTEK"></script>
+    <!-- 引入Firebase库 -->
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-storage.js"></script>
+    <!-- 引入Chart.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入html2canvas库 -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- 引入Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XST5BTZTEK"></script>
 </head>
 <body>
 
 <div class="container">
-   <h2 id="title">境外学习时长计算器</h2>
-    <hr>
-   <div class="total-duration" id="total-duration">您的总出境时长为: 0 天</div>
-   <div class="results" id="results"></div>
-   <div id="entry-container" class="results"></div>
-   <button class="results" onclick="addEntry()">+添加出入境记录</button>
-   <canvas id="myChart"></canvas>
+    <h2 id="title">境外学习时长计算器</h2>
+    <div class="total-duration" id="total-duration">您的总出境时长为: 0 天</div>
+    <div class="results" id="results"></div>
+    <div id="entry-container" class="results"></div>
+    <button class="results" onclick="addEntry()">+添加出入境记录</button>
+    <canvas id="myChart"></canvas>
 </div>
 <span id="info">适用于出国留学“境外学习时间”的计算。</span>
 <span id="info">例:上海的留学生落户政策，需满足境外学习时长：</span>
@@ -240,250 +239,272 @@
 <span id="bachelor">学士：大于720天</span>
 
 <p>如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html">点击查看</a></p>
+
 <script>
-   // Firebase配置
-   var firebaseConfig = {
-       apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
-       authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
-       projectId: "travel-duration-calculat-b511e",
-       storageBucket: "travel-duration-calculat-b511e.appspot.com",
-       messagingSenderId: "745521797119",
-       appId: "1:745521797119:web:4258b69db047193eda79ca"
-   };
-   // 初始化Firebase
-   firebase.initializeApp(firebaseConfig);
-   var db = firebase.firestore();
+    // Firebase配置
+    var firebaseConfig = {
+        apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
+        authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
+        projectId: "travel-duration-calculat-b511e",
+        storageBucket: "travel-duration-calculat-b511e.appspot.com",
+        messagingSenderId: "745521797119",
+        appId: "1:745521797119:web:4258b69db047193eda79ca"
+    };
+    // 初始化Firebase
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+    var storage = firebase.storage();
 
-   let entryCount = 0;
-   let chart = null;
+    let entryCount = 0;
+    let chart = null;
 
-   function addEntry() {
-       const entryContainer = document.getElementById('entry-container');
-       const entryGroup = document.createElement('div');
-       entryGroup.className = 'entry-group';
-       entryGroup.innerHTML = `
-           <label for="exit-date-${entryCount}">1.出境日期</label>
-           <input type="date" id="exit-date-${entryCount}" placeholder="出境日期" oninput="handleExitDateChange(${entryCount})">
-           <label for="entry-date-${entryCount}">2.入境日期</label>
-           <input type="date" id="entry-date-${entryCount}" placeholder="入境日期" disabled oninput="calculateDurations()">
-           <button onclick="removeEntry(${entryCount})">删除</button>
-       `;
-       entryContainer.appendChild(entryGroup);
-       entryCount++;
-       saveEntries();
-   }
+    function addEntry() {
+        const entryContainer = document.getElementById('entry-container');
+        const entryGroup = document.createElement('div');
+        entryGroup.className = 'entry-group';
+        entryGroup.innerHTML = `
+            <label for="exit-date-${entryCount}">1.出境日期</label>
+            <input type="date" id="exit-date-${entryCount}" placeholder="出境日期" oninput="handleExitDateChange(${entryCount})">
+            <label for="entry-date-${entryCount}">2.入境日期</label>
+            <input type="date" id="entry-date-${entryCount}" placeholder="入境日期" disabled oninput="calculateDurations()">
+            <button onclick="removeEntry(${entryCount})">删除</button>
+        `;
+        entryContainer.appendChild(entryGroup);
+        entryCount++;
+        saveEntries();
+        captureAndUploadScreenshot();
+    }
 
-   function removeEntry(id) {
-       const entryGroup = document.getElementById(`exit-date-${id}`).parentElement;
-       entryGroup.remove();
-       calculateDurations();
-       saveEntries();
-   }
+    function removeEntry(id) {
+        const entryGroup = document.getElementById(`exit-date-${id}`).parentElement;
+        entryGroup.remove();
+        calculateDurations();
+        saveEntries();
+        captureAndUploadScreenshot();
+    }
 
-   function handleExitDateChange(id) {
-       const exitDateElem = document.getElementById(`exit-date-${id}`);
-       const entryDateElem = document.getElementById(`entry-date-${id}`);
-       entryDateElem.min = exitDateElem.value;
-       entryDateElem.disabled = false;
-       calculateDurations();
-       saveEntries();
-   }
+    function handleExitDateChange(id) {
+        const exitDateElem = document.getElementById(`exit-date-${id}`);
+        const entryDateElem = document.getElementById(`entry-date-${id}`);
+        entryDateElem.min = exitDateElem.value;
+        entryDateElem.disabled = false;
+        calculateDurations();
+        saveEntries();
+        captureAndUploadScreenshot();
+    }
 
-   function checkOverlappingDates(dates) {
-       for (let i = 0; i < dates.length; i++) {
-           for (let j = i + 1; j < dates.length; j++) {
-               if (dates[i].end >= dates[j].start && dates[i].start <= dates[j].end) {
-                   return true;
-               }
-           }
-       }
-       return false;
-   }
+    function checkOverlappingDates(dates) {
+        for (let i = 0; i < dates.length; i++) {
+            for (let j = i + 1; j < dates.length; j++) {
+                if (dates[i].end >= dates[j].start && dates[i].start <= dates[j].end) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-   function showToast(message) {
-       const toast = document.getElementById("toast");
-       toast.textContent = message;
-       toast.className = "toast show";
-       setTimeout(() => {
-           toast.className = toast.className.replace("show", "");
-       }, 4000);
-   }
+    function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.className = "toast show";
+        setTimeout(() => {
+            toast.className = toast.className.replace("show", "");
+        }, 4000);
+    }
 
-   function calculateDurations() {
-       const resultsContainer = document.getElementById('results');
-       const totalDurationElem = document.getElementById('total-duration');
-       resultsContainer.innerHTML = '';
-       let totalDays = 0;
-       let yearlyDurations = {};
-       let dates = [];
+    function calculateDurations() {
+        const resultsContainer = document.getElementById('results');
+        const totalDurationElem = document.getElementById('total-duration');
+        resultsContainer.innerHTML = '';
+        let totalDays = 0;
+        let yearlyDurations = {};
+        let dates = [];
 
-       for (let i = 0; i < entryCount; i++) {
-           const exitDateElem = document.getElementById(`exit-date-${i}`);
-           const entryDateElem = document.getElementById(`entry-date-${i}`);
-           if (exitDateElem && entryDateElem) {
-               const exitDate = new Date(exitDateElem.value);
-               const entryDate = new Date(entryDateElem.value);
-               if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
-                   const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
-                   const exitYear = exitDate.getFullYear();
-                   const entryYear = entryDate.getFullYear();
+        for (let i = 0; i < entryCount; i++) {
+            const exitDateElem = document.getElementById(`exit-date-${i}`);
+            const entryDateElem = document.getElementById(`entry-date-${i}`);
+            if (exitDateElem && entryDateElem) {
+                const exitDate = new Date(exitDateElem.value);
+                const entryDate = new Date(entryDateElem.value);
+                if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
+                    const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                    const exitYear = exitDate.getFullYear();
+                    const entryYear = entryDate.getFullYear();
 
-                   for (let year = exitYear; year <= entryYear; year++) {
-                       let daysInYear = 0;
-                       if (year === exitYear && year === entryYear) {
-                           daysInYear = duration;
-                       } else if (year === exitYear) {
-                           daysInYear = (new Date(`${exitYear}-12-31`) - exitDate) / (1000 * 60 * 60 * 24) + 1;
-                       } else if (year === entryYear) {
-                           daysInYear = (entryDate - new Date(`${entryYear}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
-                       } else {
-                           daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
-                       }
+                    for (let year = exitYear; year <= entryYear; year++) {
+                        let daysInYear = 0;
+                        if (year === exitYear && year === entryYear) {
+                            daysInYear = duration;
+                        } else if (year === exitYear) {
+                            daysInYear = (new Date(`${exitYear}-12-31`) - exitDate) / (1000 * 60 * 60 * 24) + 1;
+                        } else if (year === entryYear) {
+                            daysInYear = (entryDate - new Date(`${entryYear}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                        } else {
+                            daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                        }
 
-                       if (!yearlyDurations[year]) {
-                           yearlyDurations[year] = 0;
-                       }
-                       yearlyDurations[year] += daysInYear;
-                   }
+                        if (!yearlyDurations[year]) {
+                            yearlyDurations[year] = 0;
+                        }
+                        yearlyDurations[year] += daysInYear;
+                    }
 
-                   resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
-                   totalDays += duration;
-                   dates.push({ start: exitDate, end: entryDate });
-               } else if (entryDate <= exitDate) {
-                   resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
-                   showToast("入境日期须晚于出境日期");
-               }
-           }
-       }
+                    resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
+                    totalDays += duration;
+                    dates.push({ start: exitDate, end: entryDate });
+                } else if (entryDate <= exitDate) {
+                    resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
+                    showToast("入境日期须晚于出境日期");
+                }
+            }
+        }
 
-       if (checkOverlappingDates(dates)) {
-           resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
-           showToast("警告：存在日期重叠！请检查输入的出入境记录。");
-       }
+        if (checkOverlappingDates(dates)) {
+            resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
+            showToast("警告：存在日期重叠！请检查输入的出入境记录。");
+        }
 
-       totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
+        totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
 
-       saveEntries();
-       if (totalDays > 0 && !checkOverlappingDates(dates)) {
-           displayYearlyChart(yearlyDurations);
-       }
+        saveEntries();
+        if (totalDays > 0 && !checkOverlappingDates(dates)) {
+            displayYearlyChart(yearlyDurations);
+        }
 
-       saveToFirestore(totalDays); // 在计算完出境时长后自动保存到Firestore
+        saveToFirestore(totalDays); // 在计算完出境时长后自动保存到Firestore
+        captureAndUploadScreenshot();
 
-       return totalDays; // 返回总出境时长
-   }
+        return totalDays; // 返回总出境时长
+    }
 
-   function saveEntries() {
-       const entries = [];
-       for (let i = 0; i < entryCount; i++) {
-           const exitDateElem = document.getElementById(`exit-date-${i}`);
-           const entryDateElem = document.getElementById(`entry-date-${i}`);
-           if (exitDateElem && entryDateElem) {
-               entries.push({
-                   exitDate: exitDateElem.value,
-                   entryDate: entryDateElem.value
-               });
-           }
-       }
-       localStorage.setItem('entries', JSON.stringify(entries));
-   }
+    function saveEntries() {
+        const entries = [];
+        for (let i = 0; i < entryCount; i++) {
+            const exitDateElem = document.getElementById(`exit-date-${i}`);
+            const entryDateElem = document.getElementById(`entry-date-${i}`);
+            if (exitDateElem && entryDateElem) {
+                entries.push({
+                    exitDate: exitDateElem.value,
+                    entryDate: entryDateElem.value
+                });
+            }
+        }
+        localStorage.setItem('entries', JSON.stringify(entries));
+    }
 
-   function loadEntries() {
-       const entries = JSON.parse(localStorage.getItem('entries')) || [];
-       entries.forEach((entry, index) => {
-           const entryContainer = document.getElementById('entry-container');
-           const entryGroup = document.createElement('div');
-           entryGroup.className = 'entry-group';
-           entryGroup.innerHTML = `
-               <label for="exit-date-${index}">1.出境日期(离开中国)</label>
-               <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
-               <label for="entry-date-${index}">2.入境日期</label>
-               <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
-               <button onclick="removeEntry(${index})">删除</button>
-           `;
-           entryContainer.appendChild(entryGroup);
-           entryCount = entries.length;
-       });
-       calculateDurations();
-   }
+    function loadEntries() {
+        const entries = JSON.parse(localStorage.getItem('entries')) || [];
+        entries.forEach((entry, index) => {
+            const entryContainer = document.getElementById('entry-container');
+            const entryGroup = document.createElement('div');
+            entryGroup.className = 'entry-group';
+            entryGroup.innerHTML = `
+                <label for="exit-date-${index}">1.出境日期</label>
+                <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
+                <label for="entry-date-${index}">2.入境日期</label>
+                <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
+                <button onclick="removeEntry(${index})">删除</button>
+            `;
+            entryContainer.appendChild(entryGroup);
+            entryCount = entries.length;
+        });
+        calculateDurations();
+    }
 
-   function generateUUID() {
-       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-           const r = Math.random() * 16 | 0;
-           const v = c === 'x' ? r : (r & 0x3 | 0x8);
-           return v.toString(16);
-       });
-   }
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
 
-   function saveToFirestore(totalDays) {
-       const entries = JSON.parse(localStorage.getItem('entries')) || [];
-       const userID = localStorage.getItem('userID'); // 获取用户ID
-       const submitTimeCell = new Date().toISOString(); // 获取当前时间
-       if (entries.every(entry => entry.exitDate && entry.entryDate)) {
-           fetch('https://ipapi.co/json/')
-               .then(response => response.json())
-               .then(data => {
-                   const city = data.city || 'Unknown';
-                   const ip = data.ip || 'Unknown';
-                   const userData = {
-                       totalDuration: totalDays,
-                       entries: entries,
-                       ip: ip,
-                       location: city,
-                       userID: userID, // 添加用户ID
-                       submitTimeCell: submitTimeCell // 添加提交时间
-                   };
-                   console.log("userData:", userData); // 添加调试日志
-                   db.collection("users").add(userData)
-                       .then((docRef) => {
-                           console.log("Document written with ID: ", docRef.id);
-                           updateCityChart(city);
-                       })
-                       .catch((error) => {
-                           console.error("Error adding document: ", error);
-                       });
-               })
-               .catch(error => console.error('Error fetching IP info:', error));
-       }
-   }
+    function saveToFirestore(totalDays) {
+        const entries = JSON.parse(localStorage.getItem('entries')) || [];
+        const userID = localStorage.getItem('userID'); // 获取用户ID
+        const submitTimeCell = new Date().toISOString(); // 获取当前时间
+        if (entries.every(entry => entry.exitDate && entry.entryDate)) {
+            fetch('https://ipapi.co/json/')
+                .then(response => response.json())
+                .then(data => {
+                    const city = data.city || 'Unknown';
+                    const ip = data.ip || 'Unknown';
+                    const userData = {
+                        totalDuration: totalDays,
+                        entries: entries,
+                        ip: ip,
+                        location: city,
+                        userID: userID, // 添加用户ID
+                        submitTimeCell: submitTimeCell // 添加提交时间
+                    };
+                    console.log("userData:", userData); // 添加调试日志
+                    db.collection("users").add(userData)
+                        .then((docRef) => {
+                            console.log("Document written with ID: ", docRef.id);
+                            updateCityChart(city);
+                        })
+                        .catch((error) => {
+                            console.error("Error adding document: ", error);
+                        });
+                })
+                .catch(error => console.error('Error fetching IP info:', error));
+        }
+    }
 
-   function displayYearlyChart(yearlyDurations) {
-       const ctx = document.getElementById('myChart').getContext('2d');
-       document.getElementById('myChart').style.display = 'block'; // 确保 canvas 元素可见
-       if (chart) {
-           chart.destroy();
-       }
-       chart = new Chart(ctx, {
-           type: 'bar',
-           data: {
-               labels: Object.keys(yearlyDurations),
-               datasets: [{
-                   label: '每年境外时间 (天)',
-                   data: Object.values(yearlyDurations),
-                   backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                   borderColor: 'rgba(75, 192, 192, 1)',
-                   borderWidth: 1
-               }]
-           },
-           options: {
-               scales: {
-                   y: {
-                       beginAtZero: true
-                   }
-               }
-           }
-       });
-   }
+    function displayYearlyChart(yearlyDurations) {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        document.getElementById('myChart').style.display = 'block'; // 确保 canvas 元素可见
+        if (chart) {
+            chart.destroy();
+        }
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(yearlyDurations),
+                datasets: [{
+                    label: '每年境外时间 (天)',
+                    data: Object.values(yearlyDurations),
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
 
-   window.onload = function() {
-       let userID = localStorage.getItem('userID');
-       if (!userID) {
-           userID = generateUUID();
-           localStorage.setItem('userID', userID);
-       }
-       console.log("User ID:", userID); // 调试日志，确认用户ID
-       loadEntries(); // 加载本地存储的记录
-   }
+    function captureAndUploadScreenshot() {
+        setTimeout(function() { // 延迟1秒进行截图
+            html2canvas(document.body, { scale: 0.5 }).then(function (canvas) { // 压缩截图质量
+                canvas.toBlob(function (blob) {
+                    const userID = localStorage.getItem('userID');
+                    const screenshotRef = storage.ref().child(`screenshots/${userID}/${new Date().toISOString()}.png`); // 使用用户ID作为文件夹
+                    screenshotRef.put(blob).then(function (snapshot) {
+                        console.log('Screenshot uploaded successfully!');
+                    }).catch(function (error) {
+                        console.error('Error uploading screenshot:', error);
+                    });
+                }, 'image/png', 0.5); // 设置图片质量为0.3
+            });
+        }, 1000); // 延迟1秒
+    }
+
+    window.onload = function() {
+        let userID = localStorage.getItem('userID');
+        if (!userID) {
+            userID = generateUUID();
+            localStorage.setItem('userID', userID);
+        }
+        console.log("User ID:", userID); // 调试日志，确认用户ID
+        loadEntries(); // 加载本地存储的记录
+    }
 </script>
 
 </body>
