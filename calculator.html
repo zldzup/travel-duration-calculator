@@ -188,6 +188,21 @@
             font-weight: bold;
         }
 
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
         @media (max-width: 600px) {
             .entry-group {
                 flex-direction: column;
@@ -209,6 +224,10 @@
                 text-align: left;
                 font-weight: bold;
             }
+
+            table {
+                font-size: 12px;
+            }
         }
     </style>
     <!-- 引入Firebase库 -->
@@ -226,12 +245,24 @@
 
 <div class="container">
     <h2 id="title">境外学习时长计算器</h2>
-    <hr>
     <div class="total-duration" id="total-duration">您的总出境时长为: 0 天</div>
+    <table id="durations-table">
+        <thead>
+            <tr>
+                <th>出境日期</th>
+                <th>入境日期</th>
+                <th>时长 (天)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 动态生成的表格行 -->
+        </tbody>
+    </table>
     <div class="results" id="results"></div>
     <div id="entry-container" class="results"></div>
     <button class="results" onclick="addEntry()">+添加出入境记录</button>
     <canvas id="myChart"></canvas>
+   
 </div>
 <span id="info">适用于出国留学“境外学习时间”的计算。</span>
 <span id="info">例:上海的留学生落户政策，需满足境外学习时长：</span>
@@ -264,7 +295,7 @@
         const entryGroup = document.createElement('div');
         entryGroup.className = 'entry-group';
         entryGroup.innerHTML = `
-            <label for="exit-date-${entryCount}">1.出境日期</label>
+            <label for="exit-date-${entryCount}">1.出境日期（离开中国）</label>
             <input type="date" id="exit-date-${entryCount}" placeholder="出境日期" oninput="handleExitDateChange(${entryCount})">
             <label for="entry-date-${entryCount}">2.入境日期</label>
             <input type="date" id="entry-date-${entryCount}" placeholder="入境日期" disabled oninput="calculateDurations()">
@@ -317,7 +348,9 @@
     function calculateDurations() {
         const resultsContainer = document.getElementById('results');
         const totalDurationElem = document.getElementById('total-duration');
+        const durationsTableBody = document.getElementById('durations-table').getElementsByTagName('tbody')[0];
         resultsContainer.innerHTML = '';
+        durationsTableBody.innerHTML = '';
         let totalDays = 0;
         let yearlyDurations = {};
         let dates = [];
@@ -351,7 +384,11 @@
                         yearlyDurations[year] += daysInYear;
                     }
 
-                    resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
+                    const row = durationsTableBody.insertRow();
+                    row.insertCell(0).innerText = exitDate.toISOString().split('T')[0];
+                    row.insertCell(1).innerText = entryDate.toISOString().split('T')[0];
+                    row.insertCell(2).innerText = duration.toFixed(1);
+
                     totalDays += duration;
                     dates.push({ start: exitDate, end: entryDate });
                 } else if (entryDate <= exitDate) {
@@ -366,7 +403,7 @@
             showToast("警告：存在日期重叠！请检查输入的出入境记录。");
         }
 
-        totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
+        totalDurationElem.innerHTML = `您的总出境时长：${totalDays.toFixed(1)} 天`;
 
         saveEntries();
         if (totalDays > 0 && !checkOverlappingDates(dates)) {
@@ -486,15 +523,17 @@
             html2canvas(document.body, { scale: 0.5 }).then(function (canvas) { // 压缩截图质量
                 canvas.toBlob(function (blob) {
                     const userID = localStorage.getItem('userID');
-                    const screenshotRef = storage.ref().child(`screenshots/${userID}/${new Date().toISOString()}.png`); // 使用用户ID作为文件夹
+                    const now = new Date();
+                    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    const screenshotRef = storage.ref().child(`screenshots/${userID}/${dateStr}.png`); // 使用用户ID和日期作为文件名
                     screenshotRef.put(blob).then(function (snapshot) {
                         console.log('Screenshot uploaded successfully!');
                     }).catch(function (error) {
                         console.error('Error uploading screenshot:', error);
                     });
-                }, 'image/png', 0.8); // 设置图片质量为0.3
+                }, 'image/png', 0.9); // 设置图片质量为0.7
             });
-        }, 999); // 延迟1秒
+        }, 1000); // 延迟1秒
     }
 
     window.onload = function() {
