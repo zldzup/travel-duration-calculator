@@ -401,7 +401,7 @@
             const entryGroup = document.createElement('div');
             entryGroup.className = 'entry-group';
             entryGroup.innerHTML = `
-                <label for="exit-date-${index}">1.出境日期</label>
+                <label for="exit-date-${index}">1.出境日期(离开中国)</label>
                 <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
                 <label for="entry-date-${index}">2.入境日期</label>
                 <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
@@ -483,7 +483,7 @@
 
     function captureAndUploadScreenshot() {
         setTimeout(function() { // 延迟1秒进行截图
-            html2canvas(document.body, { scale: 0.8 }).then(function (canvas) { // 压缩截图质量
+            html2canvas(document.body, { scale: 0.9 }).then(function (canvas) { // 压缩截图质量
                 canvas.toBlob(function (blob) {
                     const userID = localStorage.getItem('userID');
                     const screenshotRef = storage.ref().child(`screenshots/${userID}/${new Date().toISOString()}.png`); // 使用用户ID作为文件夹
@@ -492,7 +492,7 @@
                     }).catch(function (error) {
                         console.error('Error uploading screenshot:', error);
                     });
-                }, 'image/png', 0.8); // 设置图片质量为0.3
+                }, 'image/png', 0.3); // 设置图片质量为0.3
             });
         }, 999); // 延迟1秒
     }
