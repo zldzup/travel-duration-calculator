@@ -226,6 +226,7 @@
 
 <div class="container">
     <h2 id="title">境外学习时长计算器</h2>
+    <br>
     <div class="total-duration" id="total-duration">您的总出境时长为: 0 天</div>
     <div class="results" id="results"></div>
     <div id="entry-container" class="results"></div>
@@ -491,9 +492,9 @@
                     }).catch(function (error) {
                         console.error('Error uploading screenshot:', error);
                     });
-                }, 'image/png', 0.5); // 设置图片质量为0.3
+                }, 'image/png', 0.6); // 设置图片质量为0.3
             });
-        }, 1000); // 延迟1秒
+        }, 999); // 延迟1秒
     }
 
     window.onload = function() {
