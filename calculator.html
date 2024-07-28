@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>留学/工作出境时长计算器24年7月28日版本</title>
+    <title>留学/工作出境时长计算器</title>
     <style>
           .entry-controls {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        width: 100%;
-        margin-top: 10px;
+        width: 88%;
+        margin-top: 1px;
 
     }
 
@@ -20,14 +20,14 @@
     }
 
     .entry-controls button {
-        width: 55%;
+        width: 50%;
     }
         .aaaa{
             color: brown;
         }
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.5;
+            line-height: 1.4;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -65,15 +65,15 @@
             position: absolute;
             top: 0;
             right: 0;
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
         }
 
         .entry-group {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+          
             width: 100%;
         }
 
@@ -118,7 +118,7 @@
        
             border: none;
             padding: 10px 20px;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             border-radius: 5px;
             margin-top: 10px;
@@ -145,13 +145,15 @@
             border-radius: 5px;
             margin-top: 5px;
             text-align: left;
-            font-size: 12px;
+            font-size: 10px;
             color: #757373dc;
+            font-weight: bold;
         }
 
         .info a {
             color: #4CAF50;
             text-decoration: none;
+            font-weight: bold;
         }
 
         .info a:hover {
@@ -283,18 +285,20 @@
  
     <div class="entry-controls">
         <select id="planned-stay" onchange="updatePlannedStay()">
-            <option value="">选择计划时长</option>
+            <option value="">计划时长</option>
             <option value="90">入境: 90天</option>
+            <option value="90">疫情: 120天</option>
             <option value="180">硕士: 180天</option>
             <option value="360">博士: 360天</option>
             <option value="720">本科: 720天</option>
             <option value="custom">自定义天数</option>
         </select>
-        <button onclick="addEntry()">+ 添加出入境记录</button>
+        <button onclick="addEntry()">+添加出入境记录</button>
     </div>
-    <input type="number" id="custom-planned-stay" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()">
+    <input type="number" id="custom-planned-stay" placeholder="🔢请填写" style="display:none;" oninput="calculateDurations()">
     <div id="planned-stay-result" class="aaaa"></div>
     <canvas id="myChart"></canvas>
+    <p class="info">如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html"> 点击查看</a></p>
     <div class="info">
         <p>适用于出国留学“境外学习时间”的计算。</p>
         <p>例：上海的留学生落户政策，需满足境外学习时长</p>
@@ -302,8 +306,8 @@
         <p id="master">硕士：大于180天</p>
         <p id="bachelor">学士：大于720天</p>
     </div>
-    <p class="info">如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html"> 点击查看</a></p>
-    <button onclick="exportToPDF()">导出PDF</button>
+    <p class="info">Krirk University Student在泰（生活/学习篇）<a href="https://s5il75yuk5.feishu.cn/docx/doxcnQ7fFjrEWJIukz8t3rhDCsb"> 点击查看</a></p>
+    <button onclick="exportToPDF()">导出.PDF</button>
 </div>
 
 <div id="toast" class="toast">这是一个Toast消息</div>
