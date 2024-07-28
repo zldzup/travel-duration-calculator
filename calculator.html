@@ -3,9 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>留学/工作出境时长计算器</title>
+    <title>留学/工作出境时长计算器24年7月28日版本</title>
     <style>
-        .aaaa {
+          .entry-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-top: 10px;
+
+    }
+
+    .entry-controls select {
+        width: 45%;
+        margin-right: 5px;
+    }
+
+    .entry-controls button {
+        width: 55%;
+    }
+        .aaaa{
             color: brown;
         }
         body {
@@ -20,33 +37,38 @@
             background-color: #f9f9f9;
             color: #333;
         }
+
         .container {
-            width: 90%;
+            width: 93%;
             max-width: 800px;
             text-align: center;
             background-color: #fff;
             padding: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border-radius: 10px;
-            margin-top: 20px;
+            margin-top: 1px;
         }
+
         .title-container {
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
+
         .title-container h3 {
             margin: 0;
         }
+
         .floating-image {
             position: absolute;
             top: 0;
             right: 0;
-            width: 70px;
-            height: 70px;
+            width: 60px;
+            height: 60px;
         }
+
         .entry-group {
             display: flex;
             justify-content: space-between;
@@ -54,41 +76,46 @@
             margin-bottom: 10px;
             width: 100%;
         }
+
         .entry-group label {
             width: 30%;
             text-align: left;
         }
+
         .entry-group input {
             width: 40%;
             padding: 5px;
             font-size: 14px;
         }
+
         .entry-group button {
             width: 20%;
             padding: 5px;
             font-size: 14px;
-            background-color: #ff4d4d;
-            color: white;
+        
             border: none;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
         .entry-group button:hover {
             background-color: #e60000;
         }
+
         .results p {
             text-align: left;
             margin: 5px 0;
         }
+
         .total-duration {
-            margin-top: 20px;
-            font-size: 18px;
+            margin-top: 1px;
+            font-size: 22px;
             font-weight: bold;
         }
+
         button {
-            background-color: #4CAF50;
-            color: white;
+       
             border: none;
             padding: 10px 20px;
             font-size: 16px;
@@ -97,9 +124,12 @@
             margin-top: 10px;
             transition: background-color 0.3s ease;
         }
+
         button:hover {
-            background-color: #45a049;
+           
+            font-weight: bold;
         }
+
         select, input[type="number"] {
             padding: 10px;
             font-size: 16px;
@@ -108,6 +138,7 @@
             border: 1px solid #ccc;
             width: 100%;
         }
+
         .info {
             background-color: #f0f0f0;
             padding: 5px;
@@ -115,34 +146,41 @@
             margin-top: 5px;
             text-align: left;
             font-size: 12px;
-            color: #878484dc;
+            color: #757373dc;
         }
+
         .info a {
             color: #4CAF50;
             text-decoration: none;
         }
+
         .info a:hover {
             text-decoration: underline;
         }
+
         @media (max-width: 600px) {
             .entry-group {
                 flex-direction: column;
                 align-items: flex-start;
             }
+
             .entry-group label,
             .entry-group input,
             .entry-group button {
                 width: 100%;
                 margin-bottom: 5px;
             }
+
             .entry-group button {
                 width: auto;
             }
+
             .results {
                 text-align: left;
                 font-weight: bold;
             }
         }
+
         .toast {
             visibility: hidden;
             min-width: 250px;
@@ -157,86 +195,103 @@
             bottom: 30px;
             font-size: 14px;
         }
+
         .toast.show {
             visibility: visible;
             -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
             animation: fadein 0.5s, fadeout 0.5s 2.5s;
         }
+
         @-webkit-keyframes fadein {
             from {
                 bottom: 0;
                 opacity: 0;
             }
+
             to {
                 bottom: 30px;
                 opacity: 1;
             }
         }
+
         @keyframes fadein {
             from {
                 bottom: 0;
                 opacity: 0;
             }
+
             to {
                 bottom: 30px;
                 opacity: 1;
             }
         }
+
         @-webkit-keyframes fadeout {
             from {
                 bottom: 30px;
                 opacity: 1;
             }
+
             to {
                 bottom: 0;
                 opacity: 0;
             }
         }
+
         @keyframes fadeout {
             from {
                 bottom: 30px;
                 opacity: 1;
             }
+
             to {
                 bottom: 0;
                 opacity: 0;
             }
         }
     </style>
+    <!-- 引入Firebase库 -->
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-storage.js"></script>
+    <!-- 引入Chart.js库 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入html2canvas库 -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- 引入jsPDF库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <!-- 引入Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XST5BTZTEK"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
+
         gtag('config', 'G-XST5BTZTEK');
     </script>
 </head>
 <body>
 <div class="container">
     <div class="title-container">
-        <h2 id="title">｜境外学习时长计算器｜</h2>
         <img class="floating-image" src="https://firebasestorage.googleapis.com/v0/b/travel-duration-calculat-b511e.appspot.com/o/QR%E8%AE%A1%E7%AE%97%E5%99%A8.png?alt=media&token=ff1ca1a9-61cc-4ea0-87e0-a2eb254401bc" alt="动态图片">
     </div>
-    <hr>
+  
     <div class="total-duration" id="total-duration">您的总出境时长为： 0 天</div>
     <div class="results" id="results"></div>
     <hr>
     <div id="entry-container" class="results"></div>
-    <button onclick="addEntry()">+ 添加出入境记录</button>
-    <select id="planned-stay" onchange="updatePlannedStay()">
-        <option value="">选择计划停留总时长</option>
-        <option value="90">入境: 90天</option>
-        <option value="180">硕士: 180天</option>
-        <option value="360">博士: 360天</option>
-        <option value="720">本科: 720天</option>
-        <option value="custom">自定义天数</option>
-    </select>
+ 
+    <div class="entry-controls">
+        <select id="planned-stay" onchange="updatePlannedStay()">
+            <option value="">选择计划时长</option>
+            <option value="90">入境: 90天</option>
+            <option value="180">硕士: 180天</option>
+            <option value="360">博士: 360天</option>
+            <option value="720">本科: 720天</option>
+            <option value="custom">自定义天数</option>
+        </select>
+        <button onclick="addEntry()">+ 添加出入境记录</button>
+    </div>
     <input type="number" id="custom-planned-stay" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()">
     <div id="planned-stay-result" class="aaaa"></div>
     <canvas id="myChart"></canvas>
@@ -250,8 +305,11 @@
     <p class="info">如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html"> 点击查看</a></p>
     <button onclick="exportToPDF()">导出PDF</button>
 </div>
+
 <div id="toast" class="toast">这是一个Toast消息</div>
+
 <script>
+    // Firebase配置
     var firebaseConfig = {
         apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
         authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
@@ -260,29 +318,33 @@
         messagingSenderId: "745521797119",
         appId: "1:745521797119:web:4258b69db047193eda79ca"
     };
+    // 初始化Firebase
     firebase.initializeApp(firebaseConfig);
     var db = firebase.firestore();
     var storage = firebase.storage();
+
     let entryCount = 0;
     let chart = null;
+
     document.getElementById('planned-stay').addEventListener('change', function() {
         const customStay = document.getElementById('custom-planned-stay');
         if (this.value === 'custom') {
             customStay.style.display = 'inline';
         } else {
             customStay.style.display = 'none';
-            customStay.value = '';
+            customStay.value = ''; // 重置自定义输入框
             calculateDurations();
         }
     });
+
     function addEntry() {
         const entryContainer = document.getElementById('entry-container');
         const entryGroup = document.createElement('div');
         entryGroup.className = 'entry-group';
         entryGroup.innerHTML = `
-            <label for="exit-date-${entryCount}">出境日期</label>
+            <label for="exit-date-${entryCount}">1.出境日期(出中国）</label>
             <input type="date" id="exit-date-${entryCount}" placeholder="出境日期" oninput="handleExitDateChange(${entryCount})">
-            <label for="entry-date-${entryCount}">入境日期</label>
+            <label for="entry-date-${entryCount}">入2.境日期(回中国)</label>
             <input type="date" id="entry-date-${entryCount}" placeholder="入境日期" disabled oninput="calculateDurations()">
             <button onclick="removeEntry(${entryCount})">删除</button>
         `;
@@ -290,12 +352,14 @@
         entryCount++;
         saveEntries();
     }
+
     function removeEntry(id) {
         const entryGroup = document.getElementById(`exit-date-${id}`).parentElement;
         entryGroup.remove();
         calculateDurations();
         saveEntries();
     }
+
     function handleExitDateChange(id) {
         const exitDateElem = document.getElementById(`exit-date-${id}`);
         const entryDateElem = document.getElementById(`entry-date-${id}`);
@@ -304,6 +368,7 @@
         calculateDurations();
         saveEntries();
     }
+
     function checkOverlappingDates(dates) {
         for (let i = 0; i < dates.length; i++) {
             for (let j = i + 1; j < dates.length; j++) {
@@ -314,6 +379,7 @@
         }
         return false;
     }
+
     function showToast(message) {
         const toast = document.getElementById("toast");
         toast.textContent = message;
@@ -322,6 +388,7 @@
             toast.className = toast.className.replace("show", "");
         }, 4000);
     }
+
     function calculateDurations() {
         const resultsContainer = document.getElementById('results');
         const totalDurationElem = document.getElementById('total-duration');
@@ -332,6 +399,7 @@
         let yearlyDurations = {};
         let dates = [];
         let allEntriesComplete = true;
+
         for (let i = 0; i < entryCount; i++) {
             const exitDateElem = document.getElementById(`exit-date-${i}`);
             const entryDateElem = document.getElementById(`entry-date-${i}`);
@@ -342,6 +410,7 @@
                     const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
                     const exitYear = exitDate.getFullYear();
                     const entryYear = entryDate.getFullYear();
+
                     for (let year = exitYear; year <= entryYear; year++) {
                         let daysInYear = 0;
                         if (year === exitYear && year === entryYear) {
@@ -353,11 +422,13 @@
                         } else {
                             daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
                         }
+
                         if (!yearlyDurations[year]) {
                             yearlyDurations[year] = 0;
                         }
                         yearlyDurations[year] += daysInYear;
                     }
+
                     resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
                     totalDays += duration;
                     dates.push({ start: exitDate, end: entryDate });
@@ -372,12 +443,16 @@
                 allEntriesComplete = false;
             }
         }
+
         if (checkOverlappingDates(dates)) {
-            resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重句！请检查输入的出入境记录。</p>`;
+            resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
             showToast("警告：存在日期重叠！请检查输入的出入境记录。");
             allEntriesComplete = false;
         }
+
         totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
+
+        // 计算计划停留时长与总境外时长的差异
         const plannedStay = document.getElementById('planned-stay').value;
         const customPlannedStay = document.getElementById('custom-planned-stay').value;
         let plannedDays = 0;
@@ -394,12 +469,17 @@
                 plannedStayResult.innerHTML = `您的境外时长还差 ${difference} 天～`;
             }
         }
+
         saveEntries();
         displayYearlyChart(yearlyDurations);
-        captureAndUploadScreenshot();
-        saveToFirestore(totalDays, plannedDays);
+
+        captureAndUploadScreenshot(); // 移动到这里，确保每次都进行截图
+
+        saveToFirestore(totalDays, plannedDays); // Pass the plannedDays to the function
+
         return totalDays;
     }
+
     function saveEntries() {
         const entries = [];
         for (let i = 0; i < entryCount; i++) {
@@ -414,6 +494,7 @@
         }
         localStorage.setItem('entries', JSON.stringify(entries));
     }
+
     function loadEntries() {
         const entries = JSON.parse(localStorage.getItem('entries')) || [];
         entries.forEach((entry, index) => {
@@ -421,9 +502,9 @@
             const entryGroup = document.createElement('div');
             entryGroup.className = 'entry-group';
             entryGroup.innerHTML = `
-                <label for="exit-date-${index}">出境日期(离开中国)</label>
+                <label for="exit-date-${index}">1.出境日期(离开中国)</label>
                 <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
-                <label for="entry-date-${index}">入境日期(回到中国）</label>
+                <label for="entry-date-${index}">2.入境日期(回到中国）</label>
                 <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
                 <button onclick="removeEntry(${index})">删除</button>
             `;
@@ -432,6 +513,7 @@
         entryCount = entries.length;
         calculateDurations();
     }
+
     function generateUUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             const r = Math.random() * 16 | 0;
@@ -439,10 +521,11 @@
             return v.toString(16);
         });
     }
+
     function saveToFirestore(totalDays, plannedDays) {
         const entries = JSON.parse(localStorage.getItem('entries')) || [];
-        const userID = localStorage.getItem('userID');
-        const submitTimeCell = new Date().toISOString();
+        const userID = localStorage.getItem('userID'); // 获取用户ID
+        const submitTimeCell = new Date().toISOString(); // 获取当前时间
         if (entries.every(entry => entry.exitDate && entry.entryDate)) {
             fetch('https://ipapi.co/json/')
                 .then(response => response.json())
@@ -451,14 +534,14 @@
                     const ip = data.ip || 'Unknown';
                     const userData = {
                         totalDuration: totalDays,
-                        plannedDuration: plannedDays,
+                        plannedDuration: plannedDays, // 添加计划停留时长
                         entries: entries,
                         ip: ip,
                         location: city,
-                        userID: userID,
-                        submitTimeCell: submitTimeCell
+                        userID: userID, // 添加用户ID
+                        submitTimeCell: submitTimeCell // 添加提交时间
                     };
-                    console.log("userData:", userData);
+                    console.log("userData:", userData); // 添加调试日志
                     db.collection("users").add(userData)
                         .then((docRef) => {
                             console.log("Document written with ID: ", docRef.id);
@@ -471,9 +554,10 @@
                 .catch(error => console.error('Error fetching IP info:', error));
         }
     }
+
     function displayYearlyChart(yearlyDurations) {
         const ctx = document.getElementById('myChart').getContext('2d');
-        document.getElementById('myChart').style.display = 'block';
+        document.getElementById('myChart').style.display = 'block'; // 确保 canvas 元素可见
         if (chart) {
             chart.destroy();
         }
@@ -498,25 +582,28 @@
             }
         });
     }
+
     function captureAndUploadScreenshot() {
-        setTimeout(function() {
-            html2canvas(document.body, { scale: 0.85 }).then(function (canvas) {
+        setTimeout(function() { // 延迟1秒进行截图
+            html2canvas(document.body, { scale: 0.85 }).then(function (canvas) { // 压缩截图质量
                 canvas.toBlob(function (blob) {
                     const userID = localStorage.getItem('userID');
-                    const today = new Date().toISOString().split('T')[0];
-                    const screenshotRef = storage.ref().child(`screenshots/${userID}/${today}/${new Date().toISOString()}.png`);
+                    const today = new Date().toISOString().split('T')[0]; // 获取当前日期，格式为 YYYY-MM-DD
+                    const screenshotRef = storage.ref().child(`screenshots/${userID}/${today}/${new Date().toISOString()}.png`); // 使用用户ID和当前日期作为文件夹
                     screenshotRef.put(blob).then(function (snapshot) {
                         console.log('Screenshot uploaded successfully!');
                     }).catch(function (error) {
                         console.error('Error uploading screenshot:', error);
                     });
-                }, 'image/png', 0.1);
+                }, 'image/png', 0.1); // 设置图片质量为0.1
             });
-        }, 1500);
+        }, 1500); // 延迟1秒
     }
+
     function exportToPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'pt', 'a4');
+
         html2canvas(document.body, { scale: 2, useCORS: true }).then(function(canvas) {
             const imgData = canvas.toDataURL('image/png');
             const imgWidth = 595.28;
@@ -524,27 +611,50 @@
             const imgHeight = canvas.height * imgWidth / canvas.width;
             let heightLeft = imgHeight;
             let position = 0;
+
             doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
             heightLeft -= pageHeight;
+
             while (heightLeft >= 0) {
                 position = heightLeft - imgHeight;
                 doc.addPage();
                 doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pageHeight;
             }
+
             const userLocalTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/[\s:]/g, '-');
             doc.save(`境外时长计算器-${userLocalTime}.pdf`);
         });
     }
+
     window.onload = function() {
-        let userID = localStorage.getItem('userID');
-        if (!userID) {
-            userID = generateUUID();
-            localStorage.setItem('userID', userID);
-        }
-        console.log("User ID:", userID);
-        loadEntries();
+    let userID = localStorage.getItem('userID');
+    if (!userID) {
+        userID = generateUUID();
+        localStorage.setItem('userID', userID);
     }
+    console.log("User ID:", userID);
+
+    loadEntries(); // 加载本地存储的记录
+
+    const entries = JSON.parse(localStorage.getItem('entries')) || [];
+    if (entries.length === 0) {
+        const entryContainer = document.getElementById('entry-container');
+        const entryGroup = document.createElement('div');
+        entryGroup.className = 'entry-group';
+        entryGroup.innerHTML = `
+            <label for="exit-date-0">1.出境日期(出中国）</label>
+            <input type="date" id="exit-date-0" placeholder="出境日期" oninput="handleExitDateChange(0)">
+            <label for="entry-date-0">入2.境日期(回中国)</label>
+            <input type="date" id="entry-date-0" placeholder="入境日期" oninput="calculateDurations()">
+            <button onclick="removeEntry(0)">删除</button>
+        `;
+        entryContainer.appendChild(entryGroup);
+        entryCount = 1;
+        saveEntries();
+    }
+}
+
 </script>
 </body>
 </html>
