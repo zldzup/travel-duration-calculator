@@ -189,6 +189,7 @@
 <body>
 <div class="container">
     <div class="total-duration" id="total-duration">您的总出境时长为： 0 天</div>
+    <p></p>
     <div class="results" id="results"></div>
     <hr>
     <div id="entry-container" class="results"></div>
@@ -198,9 +199,9 @@
         <option value="">请选择计划天数</option>
         <option value="90">入境: 90天</option>
         <option value="120">疫情: 120天</option>
+        <option value="720">本科: 720天</option>
         <option value="180">硕士: 180天</option>
         <option value="360">博士: 360天</option>
-        <option value="720">本科: 720天</option>
         <option value="custom">自定义天数</option>
     </select>
     <input type="number" id="custom-planned-stay" class="results" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()">
@@ -251,7 +252,7 @@
         entryGroup.innerHTML = `
             <label for="exit-date-${entryCount}">1.出境日期(离开中国)</label>
             <input type="date" id="exit-date-${entryCount}" placeholder="出境日期" oninput="handleExitDateChange(${entryCount})">
-            <label for="entry-date-${entryCount}">2.入境日期</label>
+            <label for="entry-date-${entryCount}">2.入境日期(回到中国)</label>
             <input type="date" id="entry-date-${entryCount}" placeholder="入境日期" disabled oninput="calculateDurations()">
             <button onclick="removeEntry(${entryCount})">删除</button>
         `;
@@ -369,19 +370,19 @@
             plannedDays = parseInt(plannedStay, 10) || 0;
         }
         if (plannedDays > 0) {
-            const difference = plannedDays - totalDays;
-            if (totalDays >= plannedDays) {
-                plannedStayResult.innerHTML = `你已经超出 ${Math.abs(difference)} 天～`;
-            } else {
-                plannedStayResult.innerHTML = `您的境外时长还差 ${difference} 天～`;
-            }
+        const difference = plannedDays - totalDays;
+        if (totalDays >= plannedDays) {
+            plannedStayResult.innerHTML = `您的境外时已超出 ${Math.abs(difference)} 天～`;
+        } else {
+            plannedStayResult.innerHTML = `您的境外时长还差 ${difference} 天～`;
         }
+    } else {
+        plannedStayResult.innerHTML = `请选择计划时长↗️`;
+    }
 
         saveEntries();
         displayYearlyChart(yearlyDurations);
-
         captureAndUploadScreenshot(); // 移动到这里，确保每次都进行截图
-
         saveToFirestore(totalDays, plannedDays); // Pass the plannedDays to the function
 
         return totalDays;
@@ -411,7 +412,7 @@
             entryGroup.innerHTML = `
                 <label for="exit-date-${index}">1.出境日期(离开中国)</label>
                 <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
-                <label for="entry-date-${index}">2.入境日期</label>
+                <label for="entry-date-${index}">2.入境日期(回到中国)</label>
                 <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
                 <button onclick="removeEntry(${index})">删除</button>
             `;
