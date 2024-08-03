@@ -640,6 +640,7 @@
 
                 const todayStr = formatDateTime(today).split(' ')[0];
                 const yesterdayStr = formatDateTime(yesterday).split(' ')[0];
+                const currentUserID = localStorage.getItem('userID');
 
                 db.collection("users")
                     .where("submitTimeCell", ">=", yesterdayStr + "T00:00:00.000Z")
@@ -651,9 +652,9 @@
                         let latestRecords = {};
                         querySnapshot.forEach((doc) => {
                             const data = doc.data();
-                           if (data.totalDuration > 32 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
+                            if (data.userID !== currentUserID && data.totalDuration > 32 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
                         latestRecords[data.userID] = data;
-                            }
+                    }
                         });
                         resolve(Object.values(latestRecords));
                     })
