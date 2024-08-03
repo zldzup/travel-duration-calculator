@@ -310,8 +310,8 @@
             messagingSenderId: "745521797119",
             appId: "1:745521797119:web:4258b69db047193eda79ca"
         };
-        // 初始化Firebase
-        firebase.initializeApp(firebaseConfig);
+       // 初始化Firebase
+       firebase.initializeApp(firebaseConfig);
         var db = firebase.firestore();
         var storage = firebase.storage();
 
@@ -615,7 +615,7 @@
 
             const cachedData = JSON.parse(localStorage.getItem('userRecords'));
             const cacheTimestamp = localStorage.getItem('userRecordsTimestamp');
-            const cacheExpiry = 1000 * 60 * 1000; // 缓存有效期（10分钟）
+            const cacheExpiry = 1000 * 60 * 10; // 缓存有效期（10分钟）
             const now = new Date().getTime();
 
             if (cachedData && cacheTimestamp && (now - cacheTimestamp < cacheExpiry)) {
@@ -657,15 +657,14 @@
                     .where("submitTimeCell", ">=", yesterdayStr + "T00:00:00.000Z")
                     .where("submitTimeCell", "<=", todayStr + "T23:59:59.999Z")
                     .orderBy("submitTimeCell", "desc") // 按时间倒序排列
-
                     .get()
                     .then((querySnapshot) => {
                         let latestRecords = {};
                         querySnapshot.forEach((doc) => {
                             const data = doc.data(); // 32天
                             if (data.userID !== currentUserID && data.totalDuration > 32 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
-                        latestRecords[data.userID] = data;
-                    }
+                                latestRecords[data.userID] = data;
+                            }
                         });
                         resolve(Object.values(latestRecords));
                     })
