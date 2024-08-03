@@ -379,106 +379,104 @@
                 toast.className = toast.className.replace("show", "");
             }, 4000);
         }
-lse;
-function calculateDurations() {
-    const resultsContainer = document.getElementById('results');
-    const totalDurationElem = document.getElementById('total-duration');
-    const plannedStayResult = document.getElementById('planned-stay-result');
-    const chartCanvas = document.getElementById('myChart');
-    resultsContainer.innerHTML = '';
-    plannedStayResult.innerHTML = '';
-    let totalDays = 0;
-    let yearlyDurations = {};
-    let dates = [];
-    let allEntriesComplete = true;
 
-    for (let i = 0; i < entryCount; i++) {
-        const exitDateElem = document.getElementById(`exit-date-${i}`);
-        const entryDateElem = document.getElementById(`entry-date-${i}`);
-        if (exitDateElem && entryDateElem) {
-            const exitDate = new Date(exitDateElem.value);
-            const entryDate = new Date(entryDateElem.value);
-            if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
-                const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
-                const exitYear = exitDate.getFullYear();
-                const entryYear = entryDate.getFullYear();
+        function calculateDurations() {
+            const resultsContainer = document.getElementById('results');
+            const totalDurationElem = document.getElementById('total-duration');
+            const plannedStayResult = document.getElementById('planned-stay-result');
+            const chartCanvas = document.getElementById('myChart');
+            resultsContainer.innerHTML = '';
+            plannedStayResult.innerHTML = '';
+            let totalDays = 0;
+            let yearlyDurations = {};
+            let dates = [];
+            let allEntriesComplete = true;
 
-                for (let year = exitYear; year <= entryYear; year++) {
-                    let daysInYear = 0;
-                    if (year === exitYear && year === entryYear) {
-                        daysInYear = duration;
-                    } else if (year === exitYear) {
-                        daysInYear = (new Date(`${exitYear}-12-31`) - exitDate) / (1000 * 60 * 60 * 24) + 1;
-                    } else if (year === entryYear) {
-                        daysInYear = (entryDate - new Date(`${entryYear}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+            for (let i = 0; i < entryCount; i++) {
+                const exitDateElem = document.getElementById(`exit-date-${i}`);
+                const entryDateElem = document.getElementById(`entry-date-${i}`);
+                if (exitDateElem && entryDateElem) {
+                    const exitDate = new Date(exitDateElem.value);
+                    const entryDate = new Date(entryDateElem.value);
+                    if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
+                        const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                        const exitYear = exitDate.getFullYear();
+                        const entryYear = entryDate.getFullYear();
+
+                        for (let year = exitYear; year <= entryYear; year++) {
+                            let daysInYear = 0;
+                            if (year === exitYear && year === entryYear) {
+                                daysInYear = duration;
+                            } else if (year === exitYear) {
+                                daysInYear = (new Date(`${exitYear}-12-31`) - exitDate) / (1000 * 60 * 60 * 24) + 1;
+                            } else if (year === entryYear) {
+                                daysInYear = (entryDate - new Date(`${entryYear}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                            } else {
+                                daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                            }
+
+                            if (!yearlyDurations[year]) {
+                                yearlyDurations[year] = 0;
+                            }
+                            yearlyDurations[year] += daysInYear;
+                        }
+
+                        resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
+                        totalDays += duration;
+                        dates.push({ start: exitDate, end: entryDate });
+                    } else if (entryDate <= exitDate) {
+                        resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
+                        showToast("入境日期须晚于出境日期");
+                        allEntriesComplete = false;
                     } else {
-                        daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                        allEntriesComplete = false;
                     }
-
-                    if (!yearlyDurations[year]) {
-                        yearlyDurations[year] = 0;
-                    }
-                    yearlyDurations[year] += daysInYear;
+                } else {
+                    allEntriesComplete = false;
                 }
+            }
 
-                resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
-                totalDays += duration;
-                dates.push({ start: exitDate, end: entryDate });
-            } else if (entryDate <= exitDate) {
-                resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
-                showToast("入境日期须晚于出境日期");
-                allEntriesComplete = false;
-            } else {
+            if (checkOverlappingDates(dates)) {
+                resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
+                showToast("警告：存在日期重叠！请检查输入的出入境记录。");
                 allEntriesComplete = false;
             }
-        } else {
-            allEntriesComplete = false;
+
+            totalDurationElem.innerHTML = `|您的总出境时长：${totalDays} 天|`;
+
+            const plannedStay = document.getElementById('planned-stay').value;
+            const customPlannedStay = document.getElementById('custom-planned-stay').value;
+            let plannedDays = 0;
+            if (plannedStay === 'custom') {
+                plannedDays = parseInt(customPlannedStay, 10) || 0;
+            } else {
+                plannedDays = parseInt(plannedStay, 10) || 0;
+            }
+            if (plannedDays > 0) {
+                const difference = plannedDays - totalDays;
+                if (totalDays >= plannedDays) {
+                    plannedStayResult.innerHTML = `您的境外时已超出 ${Math.abs(difference)} 天～`;
+                } else {
+                    plannedStayResult.innerHTML = `您的境外时长还差 ${difference} 天～`;
+                }
+            } else {
+                plannedStayResult.innerHTML = `请选择计划时长↗️`;
+            }
+
+            saveEntries();
+
+            if (totalDays > 0) {
+                chartCanvas.style.display = 'block';
+                displayYearlyChart(yearlyDurations);
+            } else {
+                chartCanvas.style.display = 'none';
+            }
+
+            captureAndUploadScreenshot();
+            saveToFirestore(totalDays, plannedDays);
+
+            return totalDays;
         }
-    }
-
-    if (checkOverlappingDates(dates)) {
-        resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
-        showToast("警告：存在日期重叠！请检查输入的出入境记录。");
-        allEntriesComplete = false;
-    }
-
-    totalDurationElem.innerHTML = `|您的总出境时长：${totalDays} 天|`;
-
-    const plannedStay = document.getElementById('planned-stay').value;
-    const customPlannedStay = document.getElementById('custom-planned-stay').value;
-    let plannedDays = 0;
-    if (plannedStay === 'custom') {
-        plannedDays = parseInt(customPlannedStay, 10) || 0;
-    } else {
-        plannedDays = parseInt(plannedStay, 10) || 0;
-    }
-    if (plannedDays > 0) {
-        const difference = plannedDays - totalDays;
-        if (totalDays >= plannedDays) {
-            plannedStayResult.innerHTML = `您的境外时已超出 ${Math.abs(difference)} 天～`;
-        } else {
-            plannedStayResult.innerHTML = `您的境外时长还差 ${difference} 天～`;
-        }
-    } else {
-        plannedStayResult.innerHTML = `请选择计划时长↗️`;
-    }
-
-    saveEntries();
-
-    if (totalDays > 0) {
-        chartCanvas.style.display = 'block';
-        displayYearlyChart(yearlyDurations);
-    } else {
-        chartCanvas.style.display = 'none';
-    }
-
-    captureAndUploadScreenshot();
-    saveToFirestore(totalDays, plannedDays);
-
-    return totalDays;
-}
-
-
 
         function saveEntries() {
             const entries = [];
@@ -616,7 +614,7 @@ function calculateDurations() {
 
             const cachedData = JSON.parse(localStorage.getItem('userRecords'));
             const cacheTimestamp = localStorage.getItem('userRecordsTimestamp');
-            const cacheExpiry = 1000 * 60 * 1000; // 缓存有效期（100分钟）
+            const cacheExpiry = 1000 * 60 * 1000; // 缓存有效期（10分钟）
             const now = new Date().getTime();
 
             if (cachedData && cacheTimestamp && (now - cacheTimestamp < cacheExpiry)) {
