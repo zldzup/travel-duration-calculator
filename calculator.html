@@ -27,7 +27,6 @@
             max-width: 600px;
             text-align: center;
             position: relative;
-            /* 添加相对定位 */
         }
 
         .entry-group {
@@ -163,7 +162,6 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            /* 添加相对定位 */
         }
 
         .floating-image {
@@ -174,10 +172,8 @@
             height: 70px;
         }
 
-        /* 弹窗的样式 */
         .modal {
             display: none;
-            /* 默认隐藏 */
             position: fixed;
             z-index: 1;
             left: 0;
@@ -222,9 +218,7 @@
             font-size: 14px;
             text-align: left;
             border: 1px solid #00000042;
-            /* 蓝色边框，宽度为3px */
         }
-
 
         .record p {
             margin: 5px 0;
@@ -262,7 +256,6 @@
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-
         gtag('config', 'G-XST5BTZTEK');
     </script>
 </head>
@@ -274,7 +267,6 @@
         <div class="results" id="results"></div>
         <hr>
         <div id="entry-container" class="results"></div>
-
         <button class="results" onclick="addEntry()">+添加出入境记录</button>
         <select id="planned-stay" class="results">
             <option value="">请选择计划天数</option>
@@ -285,8 +277,7 @@
             <option value="360">博士: 360天</option>
             <option value="custom">自定义天数</option>
         </select>
-        <input type="number" id="custom-planned-stay" class="results" placeholder="自定义天数" style="display:none;"
-            oninput="calculateDurations()">
+        <input type="number" id="custom-planned-stay" class="results" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()">
         <div id="planned-stay-result" class="aaaa"></div>
         <br>
         <canvas id="myChart"></canvas>
@@ -297,21 +288,15 @@
     <span id="master">硕士：大于180天</span>
     <span id="bachelor">学士：大于720天</span>
     <p>如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html">点击查看</a></p>
-
-    <!-- 查看网友记录按钮 -->
     <button onclick="showUserRecords()">查看网友记录</button>
     <br>
-    <!-- 弹窗结构 -->
     <div id="user-records-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
             <h3>网友记录</h3>
             <div id="user-records"></div>
-
-
         </div>
     </div>
-
     <script>
         // Firebase配置
         var firebaseConfig = {
@@ -454,9 +439,8 @@
                 allEntriesComplete = false;
             }
 
-            totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
+            totalDurationElem.innerHTML = `|您的总出境时长：${totalDays} 天|`;
 
-            // 计算计划停留时长与总境外时长的差异
             const plannedStay = document.getElementById('planned-stay').value;
             const customPlannedStay = document.getElementById('custom-planned-stay').value;
             let plannedDays = 0;
@@ -478,8 +462,8 @@
 
             saveEntries();
             displayYearlyChart(yearlyDurations);
-            captureAndUploadScreenshot(); // 移动到这里，确保每次都进行截图
-            saveToFirestore(totalDays, plannedDays); // Pass the plannedDays to the function
+            captureAndUploadScreenshot();
+            saveToFirestore(totalDays, plannedDays);
 
             return totalDays;
         }
@@ -528,8 +512,8 @@
 
         function saveToFirestore(totalDays, plannedDays) {
             const entries = JSON.parse(localStorage.getItem('entries')) || [];
-            const userID = localStorage.getItem('userID'); // 获取用户ID
-            const submitTimeCell = new Date().toISOString(); // 获取当前时间
+            const userID = localStorage.getItem('userID');
+            const submitTimeCell = new Date().toISOString();
             if (entries.every(entry => entry.exitDate && entry.entryDate)) {
                 fetch('https://ipapi.co/json/')
                     .then(response => response.json())
@@ -538,14 +522,14 @@
                         const ip = data.ip || 'Unknown';
                         const userData = {
                             totalDuration: totalDays,
-                            plannedDuration: plannedDays, // 添加计划停留时长
+                            plannedDuration: plannedDays,
                             entries: entries,
                             ip: ip,
                             location: city,
-                            userID: userID, // 添加用户ID
-                            submitTimeCell: submitTimeCell // 添加提交时间
+                            userID: userID,
+                            submitTimeCell: submitTimeCell
                         };
-                        console.log("userData:", userData); // 添加调试日志
+                        console.log("userData:", userData);
                         db.collection("users").add(userData)
                             .then((docRef) => {
                                 console.log("Document written with ID: ", docRef.id);
@@ -561,7 +545,7 @@
 
         function displayYearlyChart(yearlyDurations) {
             const ctx = document.getElementById('myChart').getContext('2d');
-            document.getElementById('myChart').style.display = 'block'; // 确保 canvas 元素可见
+            document.getElementById('myChart').style.display = 'block';
             if (chart) {
                 chart.destroy();
             }
@@ -588,20 +572,20 @@
         }
 
         function captureAndUploadScreenshot() {
-            setTimeout(function () { // 延迟1秒进行截图
-                html2canvas(document.body, { scale: 0.85 }).then(function (canvas) { // 压缩截图质量
+            setTimeout(function () {
+                html2canvas(document.body, { scale: 0.85 }).then(function (canvas) {
                     canvas.toBlob(function (blob) {
                         const userID = localStorage.getItem('userID');
-                        const today = new Date().toISOString().split('T')[0]; // 获取当前日期，格式为 YYYY-MM-DD
-                        const screenshotRef = storage.ref().child(`screenshots/${userID}/${today}/${new Date().toISOString()}.png`); // 使用用户ID和当前日期作为文件夹
+                        const today = new Date().toISOString().split('T')[0];
+                        const screenshotRef = storage.ref().child(`screenshots/${userID}/${today}/${new Date().toISOString()}.png`);
                         screenshotRef.put(blob).then(function (snapshot) {
                             console.log('Screenshot uploaded successfully!');
                         }).catch(function (error) {
                             console.error('Error uploading screenshot:', error);
                         });
-                    }, 'image/png', 0.1); // 设置图片质量为0.1
+                    }, 'image/png', 0.1);
                 });
-            }, 1500); // 延迟1秒
+            }, 1500);
         }
 
         window.onload = function () {
@@ -611,127 +595,146 @@
                 localStorage.setItem('userID', userID);
             }
             console.log("User ID:", userID);
-            loadEntries(); // 加载本地存储的记录
+            loadEntries();
         }
 
         function showUserRecords() {
             const modal = document.getElementById("user-records-modal");
             const recordsContainer = document.getElementById("user-records");
-            recordsContainer.innerHTML = "加载中...";
 
-            // 获取今天和昨天的日期
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
+            const cachedData = JSON.parse(localStorage.getItem('userRecords'));
+            const cacheTimestamp = localStorage.getItem('userRecordsTimestamp');
+            const cacheExpiry = 1000 * 60 * 1000; // 缓存有效期（100分钟）
+            const now = new Date().getTime();
 
-            const formatDateTime = (date) => {
-                const year = date.getFullYear();
-                const month = ('0' + (date.getMonth() + 1)).slice(-2);
-                const day = ('0' + date.getDate()).slice(-2);
-                const hours = ('0' + date.getHours()).slice(-2);
-                const minutes = ('0' + date.getMinutes()).slice(-2);
-                return `${year}-${month}-${day} ${hours}:${minutes}`;
-            };
-
-            const todayStr = formatDateTime(today).split(' ')[0];
-            const yesterdayStr = formatDateTime(yesterday).split(' ')[0];
-
-            // 查询今天和昨天的提交记录
-            db.collection("users")
-                .where("submitTimeCell", ">=", yesterdayStr + "T00:00:00.000Z")
-                .where("submitTimeCell", "<=", todayStr + "T23:59:59.999Z")
-                .get()
-                .then((querySnapshot) => {
-                    let latestRecords = {};
-                    querySnapshot.forEach((doc) => {
-                        const data = doc.data();
-                        if (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell)) {
-                            latestRecords[data.userID] = data;
-                        }
-                    });
-
-                    recordsContainer.innerHTML = "";
-                    const entries = Object.values(latestRecords).sort((a, b) => new Date(b.submitTimeCell) - new Date(a.submitTimeCell));
-                    const entryCount = entries.length;
-                    if (entryCount === 0) {
-                        recordsContainer.innerHTML = "没有找到记录。";
-                    } else {
-                        // 在标题下方添加数据数量显示
-                        const countDiv = document.createElement("div");
-                        countDiv.className = 'record-count';
-                        countDiv.innerHTML = `<p>提交数量:${entryCount}名用户 (今天｜昨天)</p>`;
-                        recordsContainer.appendChild(countDiv);
-
-                        // 准备绘制表格数据
-                        const chartData = {
-                            labels: [],
-                            datasets: [{
-                                label: '出境时长（天）',
-                                data: [],
-                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                                borderColor: 'rgba(75, 192, 192, 1)',
-                                borderWidth: 1
-                            }]
-                        };
-
-                        entries.forEach((data) => {
-                            const submitDateTime = formatDateTime(new Date(data.submitTimeCell));
-                            const entryDiv = document.createElement("div");
-                            entryDiv.className = 'record';
-                            entryDiv.innerHTML = `
-                              <p><strong>城市:</strong> ${data.location}</p>
-                            <p><strong>总出境时长:</strong> ${data.totalDuration} 天</p>
-                            <p><strong>计划停留天数:</strong> ${data.plannedDuration} 天</p>
-                            <p><strong>提交时间:</strong> ${submitDateTime}</p>
-                        `;
-
-                            // 添加每段时长到表格中
-                            if (data.entries && data.entries.length > 0) {
-                                const table = document.createElement('table');
-                                table.className = 'record-table';
-                                const thead = document.createElement('thead');
-                                thead.innerHTML = `
-                                <tr>
-                                    <th>出境日期</th>
-                                    <th>入境日期</th>
-                                    <th>时长（天）</th>
-                                </tr>
-                            `;
-                                table.appendChild(thead);
-                                const tbody = document.createElement('tbody');
-
-                                data.entries.forEach(entry => {
-                                    const exitDate = new Date(entry.exitDate);
-                                    const entryDate = new Date(entry.entryDate);
-                                    const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
-                                    const tr = document.createElement('tr');
-                                    tr.innerHTML = `
-                                    <td>${entry.exitDate}</td>
-                                    <td>${entry.entryDate}</td>
-                                    <td>${duration}</td>
-                                `;
-                                    tbody.appendChild(tr);
-
-                                    // 将数据添加到图表数据中
-                                    chartData.labels.push(submitDateTime);
-                                    chartData.datasets[0].data.push(duration);
-                                });
-
-                                table.appendChild(tbody);
-                                entryDiv.appendChild(table);
-                            }
-
-                            recordsContainer.appendChild(entryDiv);
-                        });
-
-                    }
-                })
-                .catch((error) => {
+            if (cachedData && cacheTimestamp && (now - cacheTimestamp < cacheExpiry)) {
+                displayRecords(cachedData);
+            } else {
+                fetchUserRecordsFromDatabase().then((records) => {
+                    localStorage.setItem('userRecords', JSON.stringify(records));
+                    localStorage.setItem('userRecordsTimestamp', now);
+                    displayRecords(records);
+                }).catch((error) => {
                     console.error("Error getting documents: ", error);
-                    recordsContainer.innerHTML = "加载记录时出错，请明天重试。";
+                    recordsContainer.innerHTML = "加载记录时出错，请稍后重试。";
                 });
+            }
 
             modal.style.display = "block";
+        }
+
+        function fetchUserRecordsFromDatabase() {
+            return new Promise((resolve, reject) => {
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+
+                const formatDateTime = (date) => {
+                    const year = date.getFullYear();
+                    const month = ('0' + (date.getMonth() + 1)).slice(-2);
+                    const day = ('0' + date.getDate()).slice(-2);
+                    const hours = ('0' + date.getHours()).slice(-2);
+                    const minutes = ('0' + date.getMinutes()).slice(-2);
+                    return `${year}-${month}-${day} ${hours}:${minutes}`;
+                };
+
+                const todayStr = formatDateTime(today).split(' ')[0];
+                const yesterdayStr = formatDateTime(yesterday).split(' ')[0];
+
+                db.collection("users")
+                    .where("submitTimeCell", ">=", yesterdayStr + "T00:00:00.000Z")
+                    .where("submitTimeCell", "<=", todayStr + "T23:59:59.999Z")
+                    .orderBy("submitTimeCell", "desc") // 按时间倒序排列 30天
+
+                    .get()
+                    .then((querySnapshot) => {
+                        let latestRecords = {};
+                        querySnapshot.forEach((doc) => {
+                            const data = doc.data();
+                           if (data.totalDuration > 32 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
+                        latestRecords[data.userID] = data;
+                            }
+                        });
+                        resolve(Object.values(latestRecords));
+                    })
+                    .catch((error) => {
+                        reject(error);
+                    });
+            });
+        }
+
+        function displayRecords(entries) {
+            const recordsContainer = document.getElementById("user-records");
+            recordsContainer.innerHTML = "";
+
+            const entryCount = entries.length;
+            if (entryCount === 0) {
+                recordsContainer.innerHTML = "没有找到记录。";
+            } else {
+                const countDiv = document.createElement("div");
+                countDiv.className = 'record-count';
+                countDiv.innerHTML = `<p>今日提交数: ${entryCount}  </p>`;
+                recordsContainer.appendChild(countDiv);
+
+                const chartData = {
+                    labels: [],
+                    datasets: [{
+                        label: '出境时长（天）',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                };
+
+                entries.forEach((data) => {
+                    const submitDateTime = new Date(data.submitTimeCell).toLocaleString();
+                    const entryDiv = document.createElement("div");
+                    entryDiv.className = 'record';
+                    entryDiv.innerHTML = `
+                        <p><strong>城市:</strong> ${data.location}</p>
+                        <p><strong>总出境时长:</strong> ${data.totalDuration} 天</p>
+                        <p><strong>计划停留天数:</strong> ${data.plannedDuration} 天</p>
+                        <p><strong>提交时间:</strong> ${submitDateTime}</p>
+                    `;
+
+                    if (data.entries && data.entries.length > 0) {
+                        const table = document.createElement('table');
+                        table.className = 'record-table';
+                        const thead = document.createElement('thead');
+                        thead.innerHTML = `
+                            <tr>
+                                <th>出境日期</th>
+                                <th>入境日期</th>
+                                <th>时长（天）</th>
+                            </tr>
+                        `;
+                        table.appendChild(thead);
+                        const tbody = document.createElement('tbody');
+
+                        data.entries.forEach(entry => {
+                            const exitDate = new Date(entry.exitDate);
+                            const entryDate = new Date(entry.entryDate);
+                            const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${entry.exitDate}</td>
+                                <td>${entry.entryDate}</td>
+                                <td>${duration}</td>
+                            `;
+                            tbody.appendChild(tr);
+
+                            chartData.labels.push(submitDateTime);
+                            chartData.datasets[0].data.push(duration);
+                        });
+
+                        table.appendChild(tbody);
+                        entryDiv.appendChild(table);
+                    }
+
+                    recordsContainer.appendChild(entryDiv);
+                });
+            }
         }
 
         function closeModal() {
