@@ -28,6 +28,7 @@
             max-width: 600px;
             text-align: center;
             position: relative;
+            /* 添加相对定位 */
         }
 
         .entry-group {
@@ -163,6 +164,7 @@
             justify-content: center;
             align-items: center;
             position: relative;
+            /* 添加相对定位 */
         }
 
         .floating-image {
@@ -173,8 +175,10 @@
             height: 70px;
         }
 
+        /* 弹窗的样式 */
         .modal {
             display: none;
+            /* 默认隐藏 */
             position: fixed;
             z-index: 1;
             left: 0;
@@ -219,7 +223,9 @@
             font-size: 14px;
             text-align: left;
             border: 1px solid #00000042;
+            /* 蓝色边框，宽度为3px */
         }
+
 
         .record p {
             margin: 5px 0;
@@ -243,11 +249,15 @@
             font-weight: bold;
         }
     </style>
+    <!-- 引入Firebase库 -->
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-storage.js"></script>
+    <!-- 引入Chart.js库 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入html2canvas库 -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- 引入Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-XST5BTZTEK"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -289,8 +299,10 @@
     <span id="bachelor">学士：大于720天</span>
     <p>如何查询出入境记录？📝<a href="http://gaj.gz.gov.cn/zwfw/ywtd/crjimmigration/crjzx/content/post_8876194.html">点击查看</a></p>
 
+    <!-- 查看网友记录按钮 -->
     <button onclick="showUserRecords()">查看网友记录</button>
     <br>
+    <!-- 弹窗结构 -->
     <div id="user-records-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
@@ -300,6 +312,7 @@
     </div>
 
     <script>
+        // Firebase配置
         var firebaseConfig = {
             apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
             authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
@@ -308,6 +321,7 @@
             messagingSenderId: "745521797119",
             appId: "1:745521797119:web:4258b69db047193eda79ca"
         };
+        // 初始化Firebase
         firebase.initializeApp(firebaseConfig);
         var db = firebase.firestore();
         var storage = firebase.storage();
@@ -315,10 +329,7 @@
         let entryCount = 0;
         let chart = null;
 
-        let cachedRecords = null;
-        let lastFetchTime = null;
-        const CACHE_DURATION = 300 * 60 * 1000; // 缓存时长，300分钟
-
+        // 加载本地存储的记录
         window.onload = function () {
             let userID = localStorage.getItem('userID');
             if (!userID) {
@@ -326,7 +337,7 @@
                 localStorage.setItem('userID', userID);
             }
             console.log("User ID:", userID);
-            loadEntries();
+            loadEntries(); // 加载本地存储的记录
         };
 
         function addEntry() {
@@ -444,6 +455,7 @@
 
             totalDurationElem.innerHTML = `｜您的总出境时长：${totalDays} 天｜`;
 
+            // 计算计划停留时长与总境外时长的差异
             const plannedStay = document.getElementById('planned-stay').value;
             const customPlannedStay = document.getElementById('custom-planned-stay').value;
             let plannedDays = 0;
@@ -465,8 +477,8 @@
 
             saveEntries();
             displayYearlyChart(yearlyDurations);
-            captureAndUploadScreenshot();
-            await saveToFirestore(totalDays, plannedDays);
+            captureAndUploadScreenshot(); // 移动到这里，确保每次都进行截图
+            await saveToFirestore(totalDays, plannedDays); // Pass the plannedDays to the function
 
             return totalDays;
         }
@@ -515,8 +527,8 @@
 
         async function saveToFirestore(totalDays, plannedDays) {
             const entries = JSON.parse(localStorage.getItem('entries')) || [];
-            const userID = localStorage.getItem('userID');
-            const submitTimeCell = new Date().toISOString();
+            const userID = localStorage.getItem('userID'); // 获取用户ID
+            const submitTimeCell = new Date().toISOString(); // 获取当前时间
 
             if (entries.every(entry => entry.exitDate && entry.entryDate)) {
                 const docRef = db.collection("users").doc(userID);
@@ -524,15 +536,15 @@
                 if (doc.exists) {
                     const existingData = doc.data();
                     if (JSON.stringify(existingData.entries) === JSON.stringify(entries) && existingData.totalDuration === totalDays && existingData.plannedDuration === plannedDays) {
-                        return;
+                        return; // 数据未变更，无需写入
                     }
                 }
 
                 const userData = {
                     totalDuration: totalDays,
-                    plannedDuration: plannedDays,
+                    plannedDuration: plannedDays, // 添加计划停留时长
                     entries: entries,
-                    submitTimeCell: submitTimeCell
+                    submitTimeCell: submitTimeCell // 添加提交时间
                 };
 
                 try {
@@ -555,7 +567,7 @@
 
         function displayYearlyChart(yearlyDurations) {
             const ctx = document.getElementById('myChart').getContext('2d');
-            document.getElementById('myChart').style.display = 'block';
+            document.getElementById('myChart').style.display = 'block'; // 确保 canvas 元素可见
             if (chart) {
                 chart.destroy();
             }
@@ -582,36 +594,29 @@
         }
 
         function captureAndUploadScreenshot() {
-            setTimeout(function () {
-                html2canvas(document.body, { scale: 0.85 }).then(function (canvas) {
+            setTimeout(function () { // 延迟1秒进行截图
+                html2canvas(document.body, { scale: 0.85 }).then(function (canvas) { // 压缩截图质量
                     canvas.toBlob(async function (blob) {
                         const userID = localStorage.getItem('userID');
-                        const today = new Date().toISOString().split('T')[0];
-                        const screenshotRef = storage.ref().child(`screenshots/${userID}/${today}/${new Date().toISOString()}.png`);
+                        const today = new Date().toISOString().split('T')[0]; // 获取当前日期，格式为 YYYY-MM-DD
+                        const screenshotRef = storage.ref().child(`screenshots/${userID}/${today}/${new Date().toISOString()}.png`); // 使用用户ID和当前日期作为文件夹
                         try {
                             await screenshotRef.put(blob);
                             console.log('Screenshot uploaded successfully!');
                         } catch (error) {
                             console.error('Error uploading screenshot:', error);
                         }
-                    }, 'image/png', 0.1);
+                    }, 'image/png', 0.1); // 设置图片质量为0.1
                 });
-            }, 1500);
+            }, 1500); // 延迟1秒
         }
 
         async function showUserRecords() {
             const modal = document.getElementById("user-records-modal");
             const recordsContainer = document.getElementById("user-records");
-            
-            const now = new Date().getTime();
-            if (cachedRecords && (now - lastFetchTime < CACHE_DURATION)) {
-                displayRecords(cachedRecords);
-                modal.style.display = "block";
-                return;
-            }
-
             recordsContainer.innerHTML = "加载中...";
 
+            // 获取今天和昨天的日期
             const today = new Date();
             const yesterday = new Date(today);
             yesterday.setDate(today.getDate() - 1);
@@ -643,36 +648,104 @@
                     }
                 });
 
+                recordsContainer.innerHTML = "";
                 const entries = Object.values(latestRecords).sort((a, b) => new Date(b.submitTimeCell) - new Date(a.submitTimeCell));
-                cachedRecords = entries;
-                lastFetchTime = now;
-                displayRecords(entries);
+                const entryCount = entries.length;
+                if (entryCount === 0) {
+                    recordsContainer.innerHTML = "没有找到记录。";
+                } else {
+                    // 在标题下方添加数据数量显示
+                    const countDiv = document.createElement("div");
+                    countDiv.className = 'record-count';
+                    countDiv.innerHTML = `<p>提交数量:${entryCount}名用户 (今天｜昨天)</p>`;
+                    recordsContainer.appendChild(countDiv);
+
+                    // 准备绘制表格数据
+                    const chartData = {
+                        labels: [],
+                        datasets: [{
+                            label: '出境时长（天）',
+                            data: [],
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    };
+
+                    entries.forEach((data) => {
+                        const submitDateTime = formatDateTime(new Date(data.submitTimeCell));
+                        const entryDiv = document.createElement("div");
+                        entryDiv.className = 'record';
+                        entryDiv.innerHTML = `
+                            <p><strong>城市:</strong> ${data.location}</p>
+                            <p><strong>总出境时长:</strong> ${data.totalDuration} 天</p>
+                            <p><strong>计划出镜天数:</strong> ${data.plannedDuration} 天</p>
+                            <p><strong>提交时间:</strong> ${submitDateTime}</p>
+                        `;
+
+                        // 添加每段时长到表格中
+                        if (data.entries && data.entries.length > 0) {
+                            const table = document.createElement('table');
+                            table.className = 'record-table';
+                            const thead = document.createElement('thead');
+                            thead.innerHTML = `
+                            <tr>
+                                <th>出境日期</th>
+                                <th>入境日期</th>
+                                <th>时长（天）</th>
+                            </tr>
+                        `;
+                            table.appendChild(thead);
+                            const tbody = document.createElement('tbody');
+
+                            data.entries.forEach(entry => {
+                                const exitDate = new Date(entry.exitDate);
+                                const entryDate = new Date(entry.entryDate);
+                                const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                <td>${entry.exitDate}</td>
+                                <td>${entry.entryDate}</td>
+                                <td>${duration}</td>
+                            `;
+                                tbody.appendChild(tr);
+
+                                // 将数据添加到图表数据中
+                                chartData.labels.push(submitDateTime);
+                                chartData.datasets[0].data.push(duration);
+                            });
+
+                            table.appendChild(tbody);
+                            entryDiv.appendChild(table);
+                        }
+
+                        recordsContainer.appendChild(entryDiv);
+                    });
+
+                    // 创建图表
+                    const ctx = document.getElementById('myChart').getContext('2d');
+                    if (chart) {
+                        chart.destroy();
+                    }
+                    chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: chartData,
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
             } catch (error) {
                 console.error("Error getting documents: ", error);
                 recordsContainer.innerHTML = "抱歉加载出错，请明天重试。";
+            
             }
 
             modal.style.display = "block";
-        }
-
-        function displayRecords(entries) {
-            const recordsContainer = document.getElementById("user-records");
-            recordsContainer.innerHTML = "";
-            if (entries.length === 0) {
-                recordsContainer.innerHTML = "没有找到记录。";
-            } else {
-                entries.forEach((data) => {
-                    const entryDiv = document.createElement("div");
-                    entryDiv.className = 'record';
-                    entryDiv.innerHTML = `
-                        <p><strong>城市:</strong> ${data.location}</p>
-                        <p><strong>总出境时长:</strong> ${data.totalDuration} 天</p>
-                        <p><strong>计划出镜天数:</strong> ${data.plannedDuration} 天</p>
-                        <p><strong>提交时间:</strong> ${formatDateTime(new Date(data.submitTimeCell))}</p>
-                    `;
-                    recordsContainer.appendChild(entryDiv);
-                });
-            }
         }
 
         function closeModal() {
