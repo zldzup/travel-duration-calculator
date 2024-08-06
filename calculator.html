@@ -665,8 +665,8 @@
                     .then((querySnapshot) => {
                         let latestRecords = {};
                         querySnapshot.forEach((doc) => {
-                            const data = doc.data(); // 32天
-                            if (data.userID !== currentUserID && data.totalDuration > 32 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
+                            const data = doc.data(); // 32/7天
+                            if (data.userID !== currentUserID && data.totalDuration > 7 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
                                 latestRecords[data.userID] = data;
                             }
                         });
