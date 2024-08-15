@@ -619,7 +619,7 @@
 
             const cachedData = JSON.parse(localStorage.getItem('userRecords'));
             const cacheTimestamp = localStorage.getItem('userRecordsTimestamp');
-            const cacheExpiry = 1000 * 60 * 10; // 缓存有效期（10分钟）
+            const cacheExpiry = 10000 * 60 * 10; // 缓存有效期（10分钟=1000）
             const now = new Date().getTime();
 
             if (cachedData && cacheTimestamp && (now - cacheTimestamp < cacheExpiry)) {
