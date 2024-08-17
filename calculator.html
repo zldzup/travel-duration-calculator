@@ -6,18 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>留学/工作出境时长计算器</title>
     <style>
- 
         .image-container {
-            position: fixed; /* 使元素悬浮在页面上 */
-            top: 15px; /* 距离页面顶部10像素 */
-            right: 15px; /* 距离页面右侧10像素 */
+            position: fixed;
+            top: 15px;
+            right: 15px;
             text-align: center;
             z-index: 1000;
         }
 
         .image-container img {
-            width: 88px; /* 设置图片宽度 */
-            height: auto; /* 自动调整高度以保持图片比例 */
+            width: 88px;
+            height: auto;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
@@ -79,7 +78,6 @@
             margin-top: 5px;
             font-size: 18px;
             font-weight: bold;
-          
         }
 
         @media (max-width: 600px) {
@@ -203,7 +201,7 @@
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: rgba(255,255,255,0.95);
             margin: 10% auto;
             padding: 20px;
             border: 1px solid #888;
@@ -214,7 +212,6 @@
 
         .close {
             color: #969595;
-            float: none;
             font-size: 35px;
             font-weight: bold;
         }
@@ -288,6 +285,14 @@
         <hr>
         <div id="entry-container" class="results"></div>
         <button class="results" onclick="addEntry()">+添加出入境记录</button>
+
+        <!-- 添加计算模式选择框 -->
+        <select id="calculation-mode" class="results" onchange="calculateDurations()">
+            <option value="mode1">出境/入境 二日都计算</option>
+            <option value="mode2">出境/入境 算一日</option>
+            <option value="mode3">出境/入境 二日都不计算</option>
+        </select>
+
         <select id="planned-stay" class="results">
             <option value="">请选择计划天数</option>
             <option value="90">入境: 90天</option>
@@ -417,14 +422,31 @@
             let dates = [];
             let allEntriesComplete = true;
 
+            // 获取选择的计算模式
+            const calculationMode = document.getElementById('calculation-mode').value;
+
             for (let i = 0; i < entryCount; i++) {
                 const exitDateElem = document.getElementById(`exit-date-${i}`);
                 const entryDateElem = document.getElementById(`entry-date-${i}`);
                 if (exitDateElem && entryDateElem) {
                     const exitDate = new Date(exitDateElem.value);
                     const entryDate = new Date(entryDateElem.value);
-                    if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate > exitDate) {
-                        const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                    if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate >= exitDate) {
+                        let duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                        
+                        // 根据选择的计算模式调整时长
+                        switch (calculationMode) {
+                            case 'mode1':
+                                duration += 1; // 出境入境二天都计算
+                                break;
+                            case 'mode2':
+                                duration += 0; // 出境入境算一日
+                                break;
+                            case 'mode3':
+                            duration += -1; // 出境入境算一日
+                                break;
+                        }
+
                         const exitYear = exitDate.getFullYear();
                         const entryYear = entryDate.getFullYear();
 
@@ -449,7 +471,7 @@
                         resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
                         totalDays += duration;
                         dates.push({ start: exitDate, end: entryDate });
-                    } else if (entryDate <= exitDate) {
+                    } else if (entryDate < exitDate) {
                         resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
                         showToast("入境日期须晚于出境日期");
                         allEntriesComplete = false;
