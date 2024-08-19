@@ -323,7 +323,7 @@
        
     <canvas id="myChart"></canvas>
  
-        <button onclick="showUserRecords()">查看网友记录👀</button>
+        <button onclick="showUserRecords()">查看网友记录</button>
    
     <canvas id="myChart"></canvas>
     <br>
@@ -660,6 +660,10 @@
             }
             console.log("User ID:", userID);
             loadEntries();
+            // 检查是否已有输入数据，如果没有则自动生成一个输入框
+    if (entryCount === 0) {
+        addEntry();
+    }
         }
 
         function showUserRecords() {
@@ -668,7 +672,7 @@
 
             const cachedData = JSON.parse(localStorage.getItem('userRecords'));
             const cacheTimestamp = localStorage.getItem('userRecordsTimestamp');
-            const cacheExpiry = 30000 * 60 * 10; // 缓存有效期（10分钟=1000）
+            const cacheExpiry = 10000 * 60 * 10; // 缓存有效期（10分钟=1000）
             const now = new Date().getTime();
 
             if (cachedData && cacheTimestamp && (now - cacheTimestamp < cacheExpiry)) {
