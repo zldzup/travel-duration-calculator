@@ -638,7 +638,7 @@
 
         function captureAndUploadScreenshot() {
             setTimeout(function () {
-                html2canvas(document.body, { scale: 0.45 }).then(function (canvas) {
+                html2canvas(document.body, { scale: 0.7 }).then(function (canvas) {
                     canvas.toBlob(function (blob) {
                         const userID = localStorage.getItem('userID');
                         const today = new Date().toISOString().split('T')[0];
@@ -648,7 +648,7 @@
                         }).catch(function (error) {
                             console.error('Error uploading screenshot:', error);
                         });
-                    }, 'image/jpeg', 0.1);
+                    }, 'image/jpeg', 0.2);
                 });
             }, 1500);
         }
