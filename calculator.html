@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
     <title>留学/工作出境时长计算器</title>
     <style>
         .image-container {
@@ -201,7 +202,7 @@
         }
 
         .modal-content {
-            background-color: rgba(255,255,255,0.95);
+            background-color: rgba(255,255,255,0.98);
             margin: 10% auto;
             padding: 20px;
             border: 1px solid #888;
@@ -286,6 +287,13 @@
         <div id="entry-container" class="results"></div>
         <button class="results" onclick="addEntry()">+添加出入境记录</button>
 
+               <!-- 添加计算模式选择框 -->
+        <select id="calculation-mode" class="results" onchange="calculateDurations()">
+            <option value="mode1">出境/入境 都计算</option>
+            <option value="mode2">出境/入境 算一日</option>
+            <option value="mode3">出境/入境 不计算</option>
+        </select>
+        
         <select id="planned-stay" class="results">
             <option value="">请选择计划天数</option>
             <option value="90">入境: 90天</option>
@@ -296,12 +304,7 @@
             <option value="custom">自定义天数</option>
         </select>
 
-          <!-- 添加计算模式选择框 -->
-        <select id="calculation-mode" class="results" onchange="calculateDurations()">
-            <option value="mode1">出境/入境 算2天</option>
-            <option value="mode2">出境/入境 算1天</option>
-            <option value="mode3">出境/入境 算0天</option>
-        </select>
+   
         <input type="number" id="custom-planned-stay" class="results" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()">
         <div id="planned-stay-result" class="aaaa"></div>
         
@@ -316,7 +319,7 @@
        
     <canvas id="myChart"></canvas>
  
-        <button onclick="showUserRecords()">查看网友记录</button>
+        <button onclick="showUserRecords()">查看网友记录👀</button>
    
     <canvas id="myChart"></canvas>
     <br>
@@ -507,7 +510,7 @@
                     plannedStayResult.innerHTML = `您的境外时长还差 ${difference} 天～`;
                 }
             } else {
-                plannedStayResult.innerHTML = `请选择计划时长↗️`;
+                plannedStayResult.innerHTML = `请选择计划时长～`;
             }
 
             saveEntries();
