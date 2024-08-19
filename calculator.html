@@ -306,8 +306,9 @@
             <option value="custom">自定义天数</option>
         </select>
 
-   
-        <input type="number" id="custom-planned-stay" class="results" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()">
+
+        <input type="number" id="custom-planned-stay" class="results" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()" inputmode="numeric" min="0">
+
         <div id="planned-stay-result" class="aaaa"></div>
         
         <br>
