@@ -694,44 +694,43 @@
         }
 
         function fetchUserRecordsFromDatabase() {
-            return new Promise((resolve, reject) => {
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(today.getMonth() - 1);
+    return new Promise((resolve, reject) => {
+        const today = new Date();
+        const lastMonth = new Date();
+        lastMonth.setMonth(today.getMonth() - 1); // 获取一个月前的日期
 
-                const formatDateTime = (date) => {
-                    const year = date.getFullYear();
-                    const month = ('0' + (date.getMonth() + 1)).slice(-2);
-                    const day = ('0' + date.getDate()).slice(-2);
-                    const hours = ('0' + date.getHours()).slice(-2);
-                    const minutes = ('0' + date.getMinutes()).slice(-2);
-                    return `${year}-${month}-${day} ${hours}:${minutes}`;
-                };
+        const formatDateTime = (date) => {
+            const year = date.getFullYear();
+            const month = ('0' + (date.getMonth() + 1)).slice(-2);
+            const day = ('0' + date.getDate()).slice(-2);
+            return `${year}-${month}-${day}`;
+        };
 
-                const todayStr = formatDateTime(today).split(' ')[0];
-                const yesterdayStr = formatDateTime(yesterday).split(' ')[0];
-                const currentUserID = localStorage.getItem('userID');
+        const todayStr = formatDateTime(today);
+        const lastMonthStr = formatDateTime(lastMonth);
+        const currentUserID = localStorage.getItem('userID');
 
-                db.collection("users")
-                    .where("submitTimeCell", ">=", lastMonthStr + "T00:00:00.000Z")
-                    .where("submitTimeCell", "<=", todayStr + "T23:59:59.999Z")
-                    .orderBy("submitTimeCell", "desc") // 按时间倒序排列
-                    .get()
-                    .then((querySnapshot) => {
-                        let latestRecords = {};
-                        querySnapshot.forEach((doc) => {
-                            const data = doc.data(); // 32/7天
-                            if (data.userID !== currentUserID && data.totalDuration > 7 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
-                                latestRecords[data.userID] = data;
-                            }
-                        });
-                        resolve(Object.values(latestRecords));
-                    })
-                    .catch((error) => {
-                        reject(error);
-                    });
+        db.collection("users")
+            .where("submitTimeCell", ">=", lastMonthStr + "T00:00:00.000Z")
+            .where("submitTimeCell", "<=", todayStr + "T23:59:59.999Z")
+            .orderBy("submitTimeCell", "desc") // 按时间倒序排列
+            .get()
+            .then((querySnapshot) => {
+                let latestRecords = {};
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.userID !== currentUserID && data.totalDuration > 7 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
+                        latestRecords[data.userID] = data;
+                    }
+                });
+                resolve(Object.values(latestRecords));
+            })
+            .catch((error) => {
+                reject(error);
             });
-        }
+    });
+}
+
 
         function displayRecords(entries) {
             const recordsContainer = document.getElementById("user-records");
