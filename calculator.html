@@ -667,7 +667,20 @@
         addEntry();
     }
         }
+        let debounceTimer;
+function debounce(func, delay) {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(func, delay);
+}
 
+function handleExitDateChange(id) {
+    const exitDateElem = document.getElementById(`exit-date-${id}`);
+    const entryDateElem = document.getElementById(`entry-date-${id}`);
+    entryDateElem.min = exitDateElem.value;
+    entryDateElem.disabled = false;
+    debounce(calculateDurations, 900); // 延迟 900ms 后再调用计算函数
+    debounce(saveEntries, 900); // 延迟 900ms 后再保存数据
+}
         function showUserRecords() {
             const modal = document.getElementById("user-records-modal");
             const recordsContainer = document.getElementById("user-records");
