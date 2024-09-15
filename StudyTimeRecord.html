@@ -1,202 +1,346 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>留学重要时间记录</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <title>留学/工作出境时长计算器</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 5px;
-            background-color: #f8f9fa;
-        }
-        .container {
-            max-width: 380px;
-            margin: 0 auto;
-            padding: 30px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .form-group {
-            margin-bottom: 12px;
-        }
-        label {
-            display: block;
-            font-size: 0.85em;
-            margin-bottom: 3px;
-            color: #333;
-        }
-        input[type="month"], select, input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            font-size: 0.85em;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            background-color: #f9f9f9;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 1em;
-            margin-bottom: 10px;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        button:hover:not(:disabled) {
-            background-color: #218838;
-        }
-        #user-data {
-            display: none;
-            margin-top: 20px;
-        }
-        #user-data h4 {
-            color: #333;
-        }
-        #user-data ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        #user-data li {
-            background: #f9f9f9;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 3px;
-            border: 1px solid #ccc;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-        }
-        .school-button {
-            margin-top: 10px;
-            background-color: #007bff;
-            border: none;
-            color: white;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-        .school-button:hover {
-            background-color: #0056b3;
+        
+        .image-container {
+            position: fixed;
+            bottom: 60px;
+            right: 22px;
+            text-align: center;
+            z-index: 3;
         }
 
-        /* 吐司通知的样式 */
-        #toast {
+        .image-container img {
+            width: 88px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .aaaa {
+            font-size: 12px;
+            color: brown;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+        }
+
+        .entry-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+
+        .entry-group label {
+            width: 15%;
+            padding: 1px;
+            font-size: 16px;
+        }
+
+        .entry-group input {
+            width: 35%;
+            padding: 2px;
+            font-size: 16px;
+        }
+
+        .entry-group button {
+            width: 10%;
+            padding: 2px;
+            font-size: 16px;
+        }
+
+        .results p {
+            text-align: left;
+            margin: 1px 0;
+        }
+
+        .total-duration {
+            margin-top: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .entry-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .entry-group label,
+            .entry-group input,
+            .entry-group button {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+
+            .entry-group button {
+                width: auto;
+            }
+
+            .results {
+                text-align: left;
+                font-weight: bold;
+            }
+        }
+
+        .toast {
             visibility: hidden;
             min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
+            margin-left: -55px;
+            background-color: #6363638e;
             color: #fff;
             text-align: center;
             border-radius: 2px;
-            padding: 16px;
             position: fixed;
             z-index: 1;
             left: 50%;
             bottom: 30px;
-            font-size: 17px;
-            transition: visibility 0s, opacity 0.5s ease-in-out;
-            opacity: 0;
+            font-size: 14px;
         }
-        #toast.show {
+
+        .toast.show {
             visibility: visible;
-            opacity: 1;
+            -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @-webkit-keyframes fadein {
+            from {
+                bottom: 0;
+                opacity: 0;
+            }
+
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadein {
+            from {
+                bottom: 0;
+                opacity: 0;
+            }
+
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @-webkit-keyframes fadeout {
+            from {
+                bottom: 30px;
+                opacity: 1;
+            }
+
+            to {
+                bottom: 0;
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeout {
+            from {
+                bottom: 30px;
+                opacity: 1;
+            }
+
+            to {
+                bottom: 0;
+                opacity: 0;
+            }
+        }
+
+        .title-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .floating-image {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 70px;
+            height: 70px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: rgba(255,255,255,0.98);
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+        }
+
+        .close {
+            color: #7b7a7a;
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .record {
+    background-color: #f9f9f9;
+    margin-bottom: 5px; /* 缩小记录之间的间距 */
+    padding: 8px; /* 缩小内边距 */
+    border-radius: 4px; /* 缩小圆角半径 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* 减少阴影效果 */
+    font-size: 12px; /* 缩小字体大小 */
+    text-align: left;
+    border: 1px solid #00000042;
+}
+
+        .record p {
+            margin: 5px 0;
+        }
+
+        .record-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+        }
+
+        .record-table th,
+.record-table td {
+    border: 1px solid #ddd;
+    padding: 4px; /* 缩小单元格内边距 */
+    text-align: left;
+    font-size: 12px; /* 缩小字体大小 */
+}
+
+        .record-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
         }
     </style>
-    <!-- Firebase -->
+    <!-- 引入Firebase库 -->
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-storage.js"></script>
+    <!-- 引入Chart.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入html2canvas库 -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- 引入Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XST5BTZTEK"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-XST5BTZTEK');
+    </script>
 </head>
-<body>
-    <div class="container">
-        <h3>留学时间表参考</h3>
-        <div class="form-group">
-            <label for="degree">学历</label>
-            <select id="degree" name="degree" required>
-                <option value="未填写">请选择</option>
-                <option value="本科">本科</option>
-                <option value="专升本">专升本</option>
-                <option value="硕士">硕士</option>
-                <option value="博士">博士</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="school-name">学校名称</label>
-            <select id="school-name-select" name="school-name-select">
-                <option value="">选择学校</option>
-                <option value="班颂德皇家大学">班颂德皇家大学</option>
-                <option value="曼谷吞武里大学">曼谷吞武里大学</option>
-                <option value="曼谷皇家理工大学">曼谷皇家理工大学</option>
-                <option value="东方皇家理工大学">东方皇家理工大学</option>
-                <option value="玄素南塔皇家大学">玄素南塔皇家大学</option>
-                <option value="博仁大学">博仁大学</option>
-                <option value="格乐大学">格乐大学</option>
-                <option value="易三仓大学">易三仓大学</option>
-                <option value="兰实大学">兰实大学</option>
-                <option value="朱拉隆功大学">朱拉隆功大学</option>
-                <option value="玛希隆大学">玛希隆大学</option>
-                <option value="清迈大学">清迈大学</option>
-                <option value="国立发展管理学院">国立发展管理学院</option>
-                <option value="custom">其他学校</option>
-            </select>
-            <input type="text" id="school-name" name="school-name" style="margin-top: 10px; display: none;" placeholder="请输入学校名称">
-        </div>
-        <form id="study-duration-form">
-            <div class="form-group">
-                <label for="start-date">1. 入学时间</label>
-                <input type="month" id="start-date" name="start-date" required>
-            </div>
-            <div class="form-group">
-                <label for="end-date">2. 课程结束时间:最后一门</label>
-                <input type="month" id="end-date" name="end-date">
-            </div>
-            <div class="form-group">
-                <label for="apply-graduation-date">3. 申请毕业时间</label>
-                <input type="month" id="apply-graduation-date" name="apply-graduation-date">
-            </div>
-            <div class="form-group">
-                <label for="board-date">4. 董事会上会时间</label>
-                <input type="month" id="board-date" name="board-date">
-            </div>
-            <div class="form-group">
-                <label for="graduation-certificate-date">5. 毕业证书显示时间</label>
-                <input type="month" id="graduation-certificate-date" name="graduation-certificate-date">
-            </div>
-            <div class="form-group">
-                <label for="submit-certification-date">6. 提交留服申请时间</label>
-                <input type="month" id="submit-certification-date" name="submit-certification-date">
-            </div>
-            <div class="form-group">
-                <label for="receive-certification-date">7. 拿到留服证书时间</label>
-                <input type="month" id="receive-certification-date" name="receive-certification-date">
-            </div>
-            <div class="form-group">
-                <label for="overseas-study-duration">8. 境外学习时长（天）</label>
-                <input type="text" id="overseas-study-duration" name="overseas-study-duration">
-            </div>
-            <button type="submit" id="submit-btn" disabled>提交(请填写3项:学历、学校、入学时间)</button>
-        </form>
-        <hr>
-        <div id="user-data">
-            <h4>其他用户上传的信息：</h4>
-            <ul id="user-data-list"></ul>
-        </div>
-        <button id="view-other-data" disabled>查看其他用户上传的信息</button>
-        <p>境外学习时长计算器（小工具）🧮<a href="https://zldzup.github.io/travel-duration-calculator/calculator.html">点击查看</a></p>
-    </div>
-    <div id="toast">数据提交成功！</div>
 
+<body>
+    <div class="image-container">
+        <img src="https://github.com/zldzup/travel-duration-calculator/blob/main/QR.png?raw=true" alt="Loaded Image">
+    </div>
+    <div class="container">
+        <div class="total-duration" id="total-duration">您的总出境时长为： 0 天</div>
+        <p></p>
+        <div class="results" id="results"></div>
+        <hr>
+        <div id="entry-container" class="results"></div>
+        <button class="results" onclick="addEntry()">+添加出入境记录</button>
+
+               <!-- 添加计算模式选择框 -->
+        <select id="calculation-mode" class="results" onchange="calculateDurations()">
+            <option value="mode1">出境/入境 算2天</option>
+            <option value="mode2">出境/入境 算1天</option>
+            <option value="mode3">出境/入境 不计算</option>
+        </select>
+        
+        <select id="planned-stay" class="results">
+            <option value="">请选择计划天数</option>
+            <option value="90">入境: 90天</option>
+            <option value="120">疫情: 120天</option>
+            <option value="720">本科: 720天</option>
+            <option value="180">硕士: 180天</option>
+            <option value="360">博士: 360天</option>
+            <option value="470">博士: 480天</option>
+            <option value="custom">自定义天数</option>
+        </select>
+
+
+        <input type="number" id="custom-planned-stay" class="results" placeholder="自定义天数" style="display:none;" oninput="calculateDurations()" inputmode="numeric" min="0">
+
+        <div id="planned-stay-result" class="aaaa"></div>
+        
+        <br>
+      
+    </div>
+ <span id="info" style="font-size: 12px;">适用于出国留学“境外学习时间”的计算。</span>
+<span id="info" style="font-size: 12px;">例：上海的留学生落户政策，需满足境外学习时长</span>
+<span id="phd" style="font-size: 12px;">博士：大于360天</span>
+<span id="master" style="font-size: 12px;">硕士：大于180天</span>
+<span id="bachelor" style="font-size: 12px;">学士：大于720天</span>
+
+       
+    <canvas id="myChart"></canvas>
+ 
+        <button onclick="showUserRecords()">查看网友记录</button>
+   
+    <canvas id="myChart"></canvas>
+    <br>
+    <div id="user-records-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3 >📊网友记录</h3>
+              <p>全泰留学生时间记录📝<a href="https://zldzup.github.io/travel-duration-calculator/StudyTimeRecord.html">点击查看</a></p>
+            <div id="user-records"></div>
+        </div>
+    </div>
+    
     <script>
         // Firebase配置
-        const firebaseConfig = {
+        var firebaseConfig = {
             apiKey: "AIzaSyCGQ1ZAhfD7pky4In-rXcStZPSTxe-fyzE",
             authDomain: "travel-duration-calculat-b511e.firebaseapp.com",
             projectId: "travel-duration-calculat-b511e",
@@ -204,190 +348,477 @@
             messagingSenderId: "745521797119",
             appId: "1:745521797119:web:4258b69db047193eda79ca"
         };
-        // 初始化Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+       // 初始化Firebase
+       firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+        var storage = firebase.storage();
 
-        const form = document.getElementById('study-duration-form');
-        const viewOtherDataButton = document.getElementById('view-other-data');
-        const userDataContainer = document.getElementById('user-data');
-        const userDataList = document.getElementById('user-data-list');
-        const submitButton = document.getElementById('submit-btn');
-        const schoolNameSelect = document.getElementById('school-name-select');
-        const schoolNameInput = document.getElementById('school-name');
+        let entryCount = 0;
+        let chart = null;
 
-        // 吐司通知显示函数
+        document.getElementById('planned-stay').addEventListener('change', function () {
+            const customStay = document.getElementById('custom-planned-stay');
+            if (this.value === 'custom') {
+                customStay.style.display = 'inline';
+            } else {
+                customStay.style.display = 'none';
+                customStay.value = ''; // 重置自定义输入框
+                calculateDurations();
+            }
+        });
+
+        function addEntry() {
+            const entryContainer = document.getElementById('entry-container');
+            const entryGroup = document.createElement('div');
+            entryGroup.className = 'entry-group';
+            entryGroup.innerHTML = `
+            <label for="exit-date-${entryCount}">1.出境日期(离开中国)</label>
+            <input type="date" id="exit-date-${entryCount}" placeholder="出境日期" oninput="handleExitDateChange(${entryCount})">
+            <label for="entry-date-${entryCount}">2.入境日期(回到中国)</label>
+            <input type="date" id="entry-date-${entryCount}" placeholder="入境日期" disabled oninput="calculateDurations()">
+            <button onclick="removeEntry(${entryCount})">删除</button>
+        `;
+            entryContainer.appendChild(entryGroup);
+            entryCount++;
+            saveEntries();
+        }
+
+        function removeEntry(id) {
+            const entryGroup = document.getElementById(`exit-date-${id}`).parentElement;
+            entryGroup.remove();
+            calculateDurations();
+            saveEntries();
+        }
+
+        function handleExitDateChange(id) {
+            const exitDateElem = document.getElementById(`exit-date-${id}`);
+            const entryDateElem = document.getElementById(`entry-date-${id}`);
+            entryDateElem.min = exitDateElem.value;
+            entryDateElem.disabled = false;
+            calculateDurations();
+            saveEntries();
+        }
+
+        function checkOverlappingDates(dates) {
+            for (let i = 0; i < dates.length; i++) {
+                for (let j = i + 1; j < dates.length; j++) {
+                    if (dates[i].end >= dates[j].start && dates[i].start <= dates[j].end) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         function showToast(message) {
             const toast = document.getElementById("toast");
-            toast.innerText = message;
-            toast.className = "show";
+            toast.textContent = message;
+            toast.className = "toast show";
             setTimeout(() => {
                 toast.className = toast.className.replace("show", "");
-            }, 3000);
+            }, 4000);
         }
 
-        // 启用自定义学校名称输入框
-        schoolNameSelect.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                schoolNameInput.style.display = 'block';
-                schoolNameInput.required = true;
-            } else {
-                schoolNameInput.style.display = 'none';
-                schoolNameInput.required = false;
-                schoolNameInput.value = '';
-            }
-            toggleSubmitButton();
-        });
+        function calculateDurations() {
+            const resultsContainer = document.getElementById('results');
+            const totalDurationElem = document.getElementById('total-duration');
+            const plannedStayResult = document.getElementById('planned-stay-result');
+            const chartCanvas = document.getElementById('myChart');
+            resultsContainer.innerHTML = '';
+            plannedStayResult.innerHTML = '';
+            let totalDays = 0;
+            let yearlyDurations = {};
+            let dates = [];
+            let allEntriesComplete = true;
 
-        // 启用提交按钮（当入学时间和学校名称已填写时）
-        document.getElementById('start-date').addEventListener('input', toggleSubmitButton);
-        document.getElementById('school-name').addEventListener('input', toggleSubmitButton);
-        document.getElementById('school-name-select').addEventListener('change', toggleSubmitButton);
+            // 获取选择的计算模式
+            const calculationMode = document.getElementById('calculation-mode').value;
 
-        function toggleSubmitButton() {
-            const startDate = document.getElementById('start-date').value;
-            const schoolName = document.getElementById('school-name-select').value === 'custom'
-                ? document.getElementById('school-name').value
-                : document.getElementById('school-name-select').value;
-            submitButton.disabled = !(startDate && schoolName);
-        }
+            for (let i = 0; i < entryCount; i++) {
+                const exitDateElem = document.getElementById(`exit-date-${i}`);
+                const entryDateElem = document.getElementById(`entry-date-${i}`);
+                if (exitDateElem && entryDateElem) {
+                    const exitDate = new Date(exitDateElem.value);
+                    const entryDate = new Date(entryDateElem.value);
+                    if (!isNaN(exitDate) && !isNaN(entryDate) && entryDate >= exitDate) {
+                        let duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                        
+                        // 根据选择的计算模式调整时长
+                        switch (calculationMode) {
+                            case 'mode1':
+                                duration += 1; // 出境入境二天都计算
+                                break;
+                            case 'mode2':
+                                duration += 0; // 出境入境算一日
+                                break;
+                            case 'mode3':
+                            duration += -1; // 出境入境算一日
+                                break;
+                        }
 
-        // 保存数据到Firestore和本地存储
-        form.addEventListener('submit', function (event) {
-            event.preventDefault();
+                        const exitYear = exitDate.getFullYear();
+                        const entryYear = entryDate.getFullYear();
 
-            const startDate = document.getElementById('start-date').value;
-            const schoolName = document.getElementById('school-name-select').value === 'custom'
-                ? document.getElementById('school-name').value
-                : document.getElementById('school-name-select').value;
-            if (!startDate || !schoolName) {
-                showToast('请至少填写学历和入学时间和学校信息！');
-                return;
-            }
+                        for (let year = exitYear; year <= entryYear; year++) {
+                            let daysInYear = 0;
+                            if (year === exitYear && year === entryYear) {
+                                daysInYear = duration;
+                            } else if (year === exitYear) {
+                                daysInYear = (new Date(`${exitYear}-12-31`) - exitDate) / (1000 * 60 * 60 * 24) + 1;
+                            } else if (year === entryYear) {
+                                daysInYear = (entryDate - new Date(`${entryYear}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                            } else {
+                                daysInYear = (new Date(`${year}-12-31`) - new Date(`${year}-01-01`)) / (1000 * 60 * 60 * 24) + 1;
+                            }
 
-            const formData = {
-                degree: document.getElementById('degree').value,
-                schoolName: schoolName,
-                startDate: startDate,
-                endDate: document.getElementById('end-date').value,
-                applyGraduationDate: document.getElementById('apply-graduation-date').value,
-                boardDate: document.getElementById('board-date').value,
-                graduationCertificateDate: document.getElementById('graduation-certificate-date').value,
-                submitCertificationDate: document.getElementById('submit-certification-date').value,
-                receiveCertificationDate: document.getElementById('receive-certification-date').value,
-                overseasStudyDuration: document.getElementById('overseas-study-duration').value
-            };
+                            if (!yearlyDurations[year]) {
+                                yearlyDurations[year] = 0;
+                            }
+                            yearlyDurations[year] += daysInYear;
+                        }
 
-            // 保存到Firestore
-            db.collection('studyDurations').add(formData)
-                .then(() => {
-                    showToast('数据提交成功！');
-                    localStorage.setItem('studyDurationFormData', JSON.stringify(formData));
-                    viewOtherDataButton.disabled = false;
-                })
-                .catch((error) => {
-                    console.error('Error adding document: ', error);
-                });
-        });
-
-        // 从本地存储加载数据
-        window.addEventListener('load', function () {
-            const savedData = localStorage.getItem('studyDurationFormData');
-            if (savedData) {
-                const formData = JSON.parse(savedData);
-                document.getElementById('degree').value = formData.degree || "";
-                document.getElementById('school-name-select').value = formData.schoolName || "";
-                if (formData.schoolName && !['学校A', '学校B', '学校C'].includes(formData.schoolName)) {
-                    document.getElementById('school-name-select').value = 'custom';
-                    document.getElementById('school-name').style.display = 'block';
-                    document.getElementById('school-name').value = formData.schoolName;
+                        resultsContainer.innerHTML += `<p>从 ${exitDate.toISOString().split('T')[0]} 到 ${entryDate.toISOString().split('T')[0]}：${duration} 天</p>`;
+                        totalDays += duration;
+                        dates.push({ start: exitDate, end: entryDate });
+                    } else if (entryDate < exitDate) {
+                        resultsContainer.innerHTML += `<p style="color: red;">入境日期须晚于出境日期</p>`;
+                        showToast("入境日期须晚于出境日期");
+                        allEntriesComplete = false;
+                    } else {
+                        allEntriesComplete = false;
+                    }
+                } else {
+                    allEntriesComplete = false;
                 }
-                document.getElementById('start-date').value = formData.startDate || "";
-                document.getElementById('end-date').value = formData.endDate || "";
-                document.getElementById('apply-graduation-date').value = formData.applyGraduationDate || "";
-                document.getElementById('board-date').value = formData.boardDate || "";
-                document.getElementById('graduation-certificate-date').value = formData.graduationCertificateDate || "";
-                document.getElementById('submit-certification-date').value = formData.submitCertificationDate || "";
-                document.getElementById('receive-certification-date').value = formData.receiveCertificationDate || "";
-                document.getElementById('overseas-study-duration').value = formData.overseasStudyDuration || "";
-
-                viewOtherDataButton.disabled = false;
             }
-        });
 
-        // 查看其他用户的数据
-        viewOtherDataButton.addEventListener('click', function () {
-            viewOtherDataButton.style.display = 'none'; // 隐藏按钮
-            const cachedUserData = localStorage.getItem('cachedUserData');
-            const cacheTimestamp = localStorage.getItem('cacheTimestamp');
+            if (checkOverlappingDates(dates)) {
+                resultsContainer.innerHTML += `<p style="color: red;">警告：存在日期重叠！请检查输入的出入境记录。</p>`;
+                showToast("警告：存在日期重叠！请检查输入的出入境记录。");
+                allEntriesComplete = false;
+            }
+
+            totalDurationElem.innerHTML = `您的总出境时长：${totalDays} 天`;
+
+            const plannedStay = document.getElementById('planned-stay').value;
+            const customPlannedStay = document.getElementById('custom-planned-stay').value;
+            let plannedDays = 0;
+            if (plannedStay === 'custom') {
+                plannedDays = parseInt(customPlannedStay, 10) || 0;
+            } else {
+                plannedDays = parseInt(plannedStay, 10) || 0;
+            }
+            if (plannedDays > 0) {
+                const difference = plannedDays - totalDays;
+                if (totalDays >= plannedDays) {
+                    plannedStayResult.innerHTML = `您的境外时已超出 ${Math.abs(difference)} 天～`;
+                } else {
+                    plannedStayResult.innerHTML = `您的境外时长还差 ${difference} 天～`;
+                }
+            } else {
+                plannedStayResult.innerHTML = `请选择计划时长`;
+            }
+
+            saveEntries();
+
+            if (totalDays > 0) {
+                chartCanvas.style.display = 'block';
+                displayYearlyChart(yearlyDurations);
+            } else {
+                chartCanvas.style.display = 'none';
+            }
+
+            captureAndUploadScreenshot();
+            saveToFirestore(totalDays, plannedDays);
+
+            return totalDays;
+        }
+
+        function saveEntries() {
+            const entries = [];
+            for (let i = 0; i < entryCount; i++) {
+                const exitDateElem = document.getElementById(`exit-date-${i}`);
+                const entryDateElem = document.getElementById(`entry-date-${i}`);
+                if (exitDateElem && entryDateElem) {
+                    entries.push({
+                        exitDate: exitDateElem.value,
+                        entryDate: entryDateElem.value
+                    });
+                }
+            }
+            localStorage.setItem('entries', JSON.stringify(entries));
+        }
+
+        function loadEntries() {
+            const entries = JSON.parse(localStorage.getItem('entries')) || [];
+            entries.forEach((entry, index) => {
+                const entryContainer = document.getElementById('entry-container');
+                const entryGroup = document.createElement('div');
+                entryGroup.className = 'entry-group';
+                entryGroup.innerHTML = `
+                <label for="exit-date-${index}">1.出境日期(离开中国)</label>
+                <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
+                <label for="entry-date-${index}">2.入境日期(回到中国)</label>
+                <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
+                <button onclick="removeEntry(${index})">删除</button>
+            `;
+                entryContainer.appendChild(entryGroup);
+            });
+            entryCount = entries.length;
+            calculateDurations();
+        }
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function saveToFirestore(totalDays, plannedDays) {
+            const entries = JSON.parse(localStorage.getItem('entries')) || [];
+            const userID = localStorage.getItem('userID');
+            const submitTimeCell = new Date().toISOString();
+            if (entries.every(entry => entry.exitDate && entry.entryDate)) {
+                fetch('https://ipapi.co/json/')
+                    .then(response => response.json())
+                    .then(data => {
+                        const city = data.city || 'Unknown';
+                        const ip = data.ip || 'Unknown';
+                        const userData = {
+                            totalDuration: totalDays,
+                            plannedDuration: plannedDays,
+                            entries: entries,
+                            ip: ip,
+                            location: city,
+                            userID: userID,
+                            submitTimeCell: submitTimeCell
+                        };
+                        console.log("userData:", userData);
+                        db.collection("users").add(userData)
+                            .then((docRef) => {
+                                console.log("Document written with ID: ", docRef.id);
+                                updateCityChart(city);
+                            })
+                            .catch((error) => {
+                                console.error("Error adding document: ", error);
+                            });
+                    })
+                    .catch(error => console.error('Error fetching IP info:', error));
+            }
+        }
+
+        function displayYearlyChart(yearlyDurations) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            document.getElementById('myChart').style.display = 'block';
+            if (chart) {
+                chart.destroy();
+            }
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(yearlyDurations),
+                    datasets: [{
+                        label: '每年境外时间 (天)',
+                        data: Object.values(yearlyDurations),
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function captureAndUploadScreenshot() {
+            setTimeout(function () {
+                html2canvas(document.body, { scale: 0.7 }).then(function (canvas) {
+                    canvas.toBlob(function (blob) {
+                        const userID = localStorage.getItem('userID');
+                        const today = new Date().toISOString().split('T')[0];
+                        const screenshotRef = storage.ref().child(`screenshots/${userID}/${today}/${new Date().toISOString()}.png`);
+                        screenshotRef.put(blob).then(function (snapshot) {
+                            console.log('Screenshot uploaded successfully!');
+                        }).catch(function (error) {
+                            console.error('Error uploading screenshot:', error);
+                        });
+                    }, 'image/jpeg', 0.2);
+                });
+            }, 1500);
+        }
+
+        window.onload = function () {
+            let userID = localStorage.getItem('userID');
+            if (!userID) {
+                userID = generateUUID();
+                localStorage.setItem('userID', userID);
+            }
+            console.log("User ID:", userID);
+            loadEntries();
+            // 检查是否已有输入数据，如果没有则自动生成一个输入框
+    if (entryCount === 0) {
+        addEntry();
+    }
+        }
+
+        function showUserRecords() {
+            const modal = document.getElementById("user-records-modal");
+            const recordsContainer = document.getElementById("user-records");
+
+            const cachedData = JSON.parse(localStorage.getItem('userRecords'));
+            const cacheTimestamp = localStorage.getItem('userRecordsTimestamp');
+            const cacheExpiry = 10000 * 60 * 10; // 缓存有效期（10分钟=1000）
             const now = new Date().getTime();
 
-            if (cachedUserData && cacheTimestamp && (now - cacheTimestamp < 10 * 60 * 1000)) {
-                // 使用缓存数据（如果缓存数据在10分钟内有效）
-                displayUserData(JSON.parse(cachedUserData));
+            if (cachedData && cacheTimestamp && (now - cacheTimestamp < cacheExpiry)) {
+                displayRecords(cachedData);
             } else {
-                // 从Firestore获取数据（如果没有有效的缓存数据）
-                userDataList.innerHTML = ''; // 先清空列表
-                const currentUserData = JSON.parse(localStorage.getItem('studyDurationFormData'));
-
-                db.collection('studyDurations').get()
-                    .then((querySnapshot) => {
-                        const userDataArray = [];
-                        querySnapshot.forEach((doc) => {
-                            const data = doc.data();
-                            // 排除当前用户的数据
-                            if (JSON.stringify(data) !== JSON.stringify(currentUserData)) {
-                                userDataArray.push(data);
-                            }
-                        });
-                        localStorage.setItem('cachedUserData', JSON.stringify(userDataArray));
-                        localStorage.setItem('cacheTimestamp', new Date().getTime());
-                        displayUserData(userDataArray);
-                    })
-                    .catch((error) => {
-                        console.error('Error getting documents: ', error);
-                    });
-            }
-        });
-
-        function displayUserData(userDataArray) {
-            const schoolDataMap = {};
-            userDataArray.forEach(data => {
-                const schoolName = data.schoolName || '未填写';
-                if (!schoolDataMap[schoolName]) {
-                    schoolDataMap[schoolName] = [];
-                }
-                schoolDataMap[schoolName].push(data);
-            });
-
-            for (const school in schoolDataMap) {
-                const schoolButton = document.createElement('button');
-                schoolButton.className = 'school-button';
-                schoolButton.innerText = school;
-                schoolButton.addEventListener('click', () => displaySchoolData(schoolDataMap[school]));
-                userDataList.appendChild(schoolButton);
+                fetchUserRecordsFromDatabase().then((records) => {
+                    localStorage.setItem('userRecords', JSON.stringify(records));
+                    localStorage.setItem('userRecordsTimestamp', now);
+                    displayRecords(records);
+                }).catch((error) => {
+                    console.error("Error getting documents: ", error);
+                    recordsContainer.innerHTML = "加载记录时出错，请明日重试。";
+                });
             }
 
-            userDataContainer.style.display = 'block';
+            modal.style.display = "block";
         }
 
-        function displaySchoolData(schoolDataArray) {
-            userDataList.innerHTML = ''; // 先清空列表
-            schoolDataArray.forEach(data => {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `<strong>学历:</strong> ${data.degree}<br>
-                                      <strong>学校:</strong> ${data.schoolName || '未填写'}<br>
-                                      <strong>入学时间:</strong> ${data.startDate}<br>
-                                      <strong>课程结束时间:</strong> ${data.endDate || '未填写'}<br>
-                                      <strong>申请毕业时间:</strong> ${data.applyGraduationDate || '未填写'}<br>
-                                      <strong>董事会上会时间:</strong> ${data.boardDate || '未填写'}<br>
-                                      <strong>毕业证书显示时间:</strong> ${data.graduationCertificateDate || '未填写'}<br>
-                                      <strong>提交留服申请时间:</strong> ${data.submitCertificationDate || '未填写'}<br>
-                                      <strong>拿到留服证书时间:</strong> ${data.receiveCertificationDate || '未填写'}<br>
-                                      <strong>境外学习时长:</strong> ${data.overseasStudyDuration || '未填写'}天`;
-                userDataList.appendChild(listItem);
+        function fetchUserRecordsFromDatabase() {
+    return new Promise((resolve, reject) => {
+        const today = new Date();
+        const lastHalfMonth = new Date();
+        lastHalfMonth.setDate(today.getDate() - 15); // 获取半个月前的日期
+
+        const formatDateTime = (date) => {
+            const year = date.getFullYear();
+            const month = ('0' + (date.getMonth() + 1)).slice(-2);
+            const day = ('0' + date.getDate()).slice(-2);
+            return `${year}-${month}-${day}`;
+        };
+
+        const todayStr = formatDateTime(today);
+        const lastHalfMonthStr = formatDateTime(lastHalfMonth);
+        const currentUserID = localStorage.getItem('userID');
+
+        db.collection("users")
+            .where("submitTimeCell", ">=", lastHalfMonthStr + "T00:00:00.000Z")
+            .where("submitTimeCell", "<=", todayStr + "T23:59:59.999Z")
+            .orderBy("submitTimeCell", "desc") // 按时间倒序排列
+            .get()
+            .then((querySnapshot) => {
+                let latestRecords = {};
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.userID !== currentUserID && data.totalDuration > 7 && (!latestRecords[data.userID] || new Date(data.submitTimeCell) > new Date(latestRecords[data.userID].submitTimeCell))) {
+                        latestRecords[data.userID] = data;
+                    }
+                });
+                resolve(Object.values(latestRecords));
+            })
+            .catch((error) => {
+                reject(error);
             });
+    });
+}
+
+
+        function displayRecords(entries) {
+            const recordsContainer = document.getElementById("user-records");
+            recordsContainer.innerHTML = "";
+
+            const entryCount = entries.length;
+            if (entryCount === 0) {
+                recordsContainer.innerHTML = "没有找到记录。";
+            } else {
+                const countDiv = document.createElement("div");
+                countDiv.className = 'record-count';
+                countDiv.innerHTML = `<p>今日提交数: ${entryCount}</p>`;
+                recordsContainer.appendChild(countDiv);
+
+                const chartData = {
+                    labels: [],
+                    datasets: [{
+                        label: '出境时长（天）',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                };
+
+                entries.forEach((data) => {
+    const submitDateTime = new Date(data.submitTimeCell).toLocaleString();
+    const entryDiv = document.createElement("div");
+    entryDiv.className = 'record';
+    entryDiv.innerHTML = `
+        <p><strong>提交时间:</strong> ${submitDateTime} </p>
+        <p><strong>总出境时长:</strong> ${data.totalDuration} 天；<strong>IP:</strong> ${data.location}</p>
+                     
+                     
+                      
+                    `;
+
+                    if (data.entries && data.entries.length > 0) {
+                        const table = document.createElement('table');
+                        table.className = 'record-table';
+                        const thead = document.createElement('thead');
+                        thead.innerHTML = `
+                            <tr>
+                                <th>出境日期</th>
+                                <th>入境日期</th>
+                                <th>时长（天）</th>
+                            </tr>
+                        `;
+                        table.appendChild(thead);
+                        const tbody = document.createElement('tbody');
+
+                        data.entries.forEach(entry => {
+                            const exitDate = new Date(entry.exitDate);
+                            const entryDate = new Date(entry.entryDate);
+                            const duration = (entryDate - exitDate) / (1000 * 60 * 60 * 24);
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${entry.exitDate}</td>
+                                <td>${entry.entryDate}</td>
+                                <td>${duration}</td>
+                            `;
+                            tbody.appendChild(tr);
+
+                            chartData.labels.push(submitDateTime);
+                            chartData.datasets[0].data.push(duration);
+                        });
+
+                        table.appendChild(tbody);
+                        entryDiv.appendChild(table);
+                    }
+
+                    recordsContainer.appendChild(entryDiv);
+                });
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("user-records-modal");
+            modal.style.display = "none";
+        }
+
+        window.onclick = function (event) {
+            const modal = document.getElementById("user-records-modal");
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
         }
     </script>
 </body>
+
 </html>
