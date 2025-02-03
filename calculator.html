@@ -4,13 +4,7 @@
 <head>
     <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-  <script>
-    (adsbygoogle = window.adsbygoogle || []).push({
-      google_ad_client: "ca-pub-8130724551740214",
-      enable_page_level_ads: true
-    });
-  </script>
+
     <title>留学/工作出境时长计算器</title>
     <style>
         
@@ -288,6 +282,12 @@
         <img src="https://github.com/zldzup/travel-duration-calculator/blob/main/QR.png?raw=true" alt="Loaded Image">
     </div>
     <div class="container">
+        <!-- 添加用户选择器 -->
+        <select id="user-selector" class="results" style="margin-bottom: 10px;">
+            <option value="">选择用户</option>
+            <option value="new">+ 新建用户</option>
+        </select>
+        
         <div class="total-duration" id="total-duration">您的总出境时长为： 0 天</div>
         <p></p>
         <div class="results" id="results"></div>
@@ -321,7 +321,7 @@
         <br>
       
     </div>
- <span id="info" style="font-size: 12px;">适用于出国留学“境外学习时间”的计算。</span>
+ <span id="info" style="font-size: 12px;">适用于出国留学"境外学习时间"的计算。</span>
 <span id="info" style="font-size: 12px;">例：上海的留学生落户政策，需满足境外学习时长</span>
 <span id="phd" style="font-size: 12px;">博士：大于360天</span>
 <span id="master" style="font-size: 12px;">硕士：大于180天</span>
@@ -332,16 +332,6 @@
  
         <button onclick="showUserRecords()">查看网友记录</button>
    
-        <ins class="adsbygoogle"
-        style="display:block"
-        data-ad-client="ca-pub-8130724551740214"
-        data-ad-slot="8130724551740214"
-        data-ad-format="auto"
-        data-full-width-responsive="true"></ins>
-   <script>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-   </script>
-
     <canvas id="myChart"></canvas>
     <br>
     <div id="user-records-modal" class="modal">
@@ -550,6 +540,9 @@
         }
 
         function saveEntries() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) return;
+            
             const entries = [];
             for (let i = 0; i < entryCount; i++) {
                 const exitDateElem = document.getElementById(`exit-date-${i}`);
@@ -561,25 +554,45 @@
                     });
                 }
             }
-            localStorage.setItem('entries', JSON.stringify(entries));
+            
+            // 保存到用户特定的存储键
+            localStorage.setItem(`entries_${currentUser}`, JSON.stringify(entries));
+            
+            // 同时更新用户数据
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const userIndex = users.findIndex(u => u.id === currentUser);
+            if (userIndex !== -1) {
+                users[userIndex].entries = entries;
+                localStorage.setItem('users', JSON.stringify(users));
+            }
         }
 
         function loadEntries() {
-            const entries = JSON.parse(localStorage.getItem('entries')) || [];
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) return;
+            
+            // 从用户特定的存储键加载数据
+            const entries = JSON.parse(localStorage.getItem(`entries_${currentUser}`)) || [];
+            const entryContainer = document.getElementById('entry-container');
+            entryContainer.innerHTML = ''; // 清空现有条目
+            
             entries.forEach((entry, index) => {
-                const entryContainer = document.getElementById('entry-container');
                 const entryGroup = document.createElement('div');
                 entryGroup.className = 'entry-group';
                 entryGroup.innerHTML = `
-                <label for="exit-date-${index}">1.出境日期(离开中国)</label>
-                <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
-                <label for="entry-date-${index}">2.入境日期(回到中国)</label>
-                <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
-                <button onclick="removeEntry(${index})">删除</button>
-            `;
+                    <label for="exit-date-${index}">1.出境日期(离开中国)</label>
+                    <input type="date" id="exit-date-${index}" value="${entry.exitDate}" placeholder="出境日期" oninput="handleExitDateChange(${index})">
+                    <label for="entry-date-${index}">2.入境日期(回到中国)</label>
+                    <input type="date" id="entry-date-${index}" value="${entry.entryDate}" placeholder="入境日期" oninput="calculateDurations()">
+                    <button onclick="removeEntry(${index})">删除</button>
+                `;
                 entryContainer.appendChild(entryGroup);
             });
+            
             entryCount = entries.length;
+            if (entryCount === 0) {
+                addEntry(); // 如果没有条目，添加一个空的
+            }
             calculateDurations();
         }
 
@@ -592,9 +605,13 @@
         }
 
         function saveToFirestore(totalDays, plannedDays) {
-            const entries = JSON.parse(localStorage.getItem('entries')) || [];
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) return;
+            
+            const entries = JSON.parse(localStorage.getItem(`entries_${currentUser}`)) || [];
             const userID = localStorage.getItem('userID');
             const submitTimeCell = new Date().toISOString();
+            
             if (entries.every(entry => entry.exitDate && entry.entryDate)) {
                 fetch('https://ipapi.co/json/')
                     .then(response => response.json())
@@ -608,13 +625,15 @@
                             ip: ip,
                             location: city,
                             userID: userID,
+                            localUserId: currentUser, // 添加本地用户ID
+                            userName: JSON.parse(localStorage.getItem('users') || '[]')
+                                .find(u => u.id === currentUser)?.name || 'Unknown',
                             submitTimeCell: submitTimeCell
                         };
-                        console.log("userData:", userData);
+                        
                         db.collection("users").add(userData)
                             .then((docRef) => {
                                 console.log("Document written with ID: ", docRef.id);
-                                updateCityChart(city);
                             })
                             .catch((error) => {
                                 console.error("Error adding document: ", error);
@@ -669,18 +688,33 @@
             }, 1500);
         }
 
-        window.onload = function () {
+        window.onload = function() {
             let userID = localStorage.getItem('userID');
             if (!userID) {
                 userID = generateUUID();
                 localStorage.setItem('userID', userID);
             }
-            console.log("User ID:", userID);
-            loadEntries();
-            // 检查是否已有输入数据，如果没有则自动生成一个输入框
-    if (entryCount === 0) {
-        addEntry();
-    }
+            
+            initUserSystem();
+            
+            // 添加用户选择器事件监听
+            document.getElementById('user-selector').addEventListener('change', function(e) {
+                if (e.target.value === 'new') {
+                    createNewUser();
+                    e.target.value = localStorage.getItem('currentUser') || '';
+                } else if (e.target.value) {
+                    localStorage.setItem('currentUser', e.target.value);
+                    loadEntries(); // 加载选中用户的数据
+                }
+            });
+            
+            // 加载当前用户数据
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                loadEntries();
+            } else {
+                addEntry();
+            }
         }
         let debounceTimer;
 function debounce(func, delay) {
@@ -844,6 +878,247 @@ function handleExitDateChange(id) {
             const modal = document.getElementById("user-records-modal");
             if (event.target == modal) {
                 modal.style.display = "none";
+            }
+        }
+
+        // 初始化用户系统
+        function initUserSystem() {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            if (users.length === 0) {
+                const defaultUser = {
+                    id: 'default',
+                    name: '默认用户',
+                    entries: []
+                };
+                users.push(defaultUser);
+                localStorage.setItem('users', JSON.stringify(users));
+                localStorage.setItem('currentUser', 'default');
+            }
+            
+            // 添加用户管理按钮的样式
+            const style = document.createElement('style');
+            style.textContent = `
+                #user-management-buttons button {
+                    padding: 5px 10px;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 14px;
+                    width: 32px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: #f0f0f0;
+                    color: #333;
+                    transition: all 0.3s ease;
+                }
+                #user-management-buttons button:first-child:hover {
+                    background-color: #4CAF50;
+                    color: white;
+                }
+                #user-management-buttons button:last-child:hover {
+                    background-color: #ff4444;
+                    color: white;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            updateUserSelector();
+        }
+
+        // 更新用户选择器
+        function updateUserSelector() {
+            const selector = document.getElementById('user-selector');
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const currentUser = localStorage.getItem('currentUser');
+            
+            // 创建一个包装容器
+            if (!document.getElementById('user-control-container')) {
+                const container = document.createElement('div');
+                container.id = 'user-control-container';
+                container.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 10px;
+                `;
+                
+                // 将选择器包装在容器中
+                selector.parentElement.insertBefore(container, selector);
+                container.appendChild(selector);
+                
+                // 添加用户管理按钮
+                const buttonContainer = document.createElement('div');
+                buttonContainer.id = 'user-management-buttons';
+                buttonContainer.style.cssText = `
+                    display: flex;
+                    gap: 5px;
+                `;
+                buttonContainer.innerHTML = `
+                    <button onclick="editUserName()" title="修改用户名">✎</button>
+                    <button onclick="deleteUser()" title="删除用户">✕</button>
+                `;
+                container.appendChild(buttonContainer);
+            }
+            
+            // 更新选择器样式
+            selector.style.cssText = `
+                flex: 1;
+                padding: 5px;
+                border-radius: 4px;
+                border: 1px solid #ddd;
+            `;
+            
+            // 清空现有选项
+            while (selector.options.length > 2) {
+                selector.remove(2);
+            }
+            
+            // 添加用户选项
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.name;
+                selector.appendChild(option);
+            });
+            
+            selector.value = currentUser || '';
+        }
+
+        // 创建新用户
+        function createNewUser() {
+            const name = prompt('请输入用户名：');
+            if (!name) return;
+            
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            
+            if (users.some(u => u.name === name)) {
+                alert('用户名已存在！');
+                return;
+            }
+            
+            const newUser = {
+                id: 'user_' + Date.now(),
+                name: name,
+                entries: []
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            localStorage.setItem('currentUser', newUser.id);
+            
+            updateUserSelector();
+            loadEntries();
+        }
+
+        // 加载用户数据
+        function loadUserData(userId) {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            
+            const entryContainer = document.getElementById('entry-container');
+            entryContainer.innerHTML = '';
+            entryCount = 0;
+            
+            if (user.entries && user.entries.length > 0) {
+                user.entries.forEach(entry => {
+                    addEntry(entry.exitDate, entry.entryDate);
+                });
+            } else {
+                addEntry();
+            }
+            
+            calculateDurations();
+        }
+
+        // 保存用户数据
+        function saveUserData() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) return;
+            
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const userIndex = users.findIndex(u => u.id === currentUser);
+            if (userIndex === -1) return;
+            
+            const entries = [];
+            for (let i = 0; i < entryCount; i++) {
+                const exitDate = document.getElementById(`exit-date-${i}`)?.value;
+                const entryDate = document.getElementById(`entry-date-${i}`)?.value;
+                if (exitDate && entryDate) {
+                    entries.push({ exitDate, entryDate });
+                }
+            }
+            
+            users[userIndex].entries = entries;
+            localStorage.setItem('users', JSON.stringify(users));
+        }
+
+        // 修改原有的 calculateDurations 函数末尾，添加保存用户数据
+        const originalCalculateDurations = calculateDurations;
+        calculateDurations = function() {
+            const result = originalCalculateDurations();
+            saveUserData();
+            return result;
+        };
+
+        // 添加用户管理功能
+        function editUserName() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) {
+                alert('请先选择用户');
+                return;
+            }
+            
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.id === currentUser);
+            if (!user) return;
+            
+            const newName = prompt('请输入新的用户名：', user.name);
+            if (!newName) return;
+            
+            // 检查新用户名是否已存在
+            if (users.some(u => u.id !== currentUser && u.name === newName)) {
+                alert('用户名已存在！');
+                return;
+            }
+            
+            // 更新用户名
+            user.name = newName;
+            localStorage.setItem('users', JSON.stringify(users));
+            updateUserSelector();
+        }
+
+        function deleteUser() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) {
+                alert('请先选择用户');
+                return;
+            }
+            
+            if (!confirm('确定要删除此用户及其所有数据吗？此操作不可恢复。')) {
+                return;
+            }
+            
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const userIndex = users.findIndex(u => u.id === currentUser);
+            
+            if (userIndex !== -1) {
+                // 删除用户数据
+                localStorage.removeItem(`entries_${currentUser}`);
+                users.splice(userIndex, 1);
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                // 如果还有其他用户，切换到第一个用户
+                if (users.length > 0) {
+                    localStorage.setItem('currentUser', users[0].id);
+                } else {
+                    localStorage.removeItem('currentUser');
+                }
+                
+                updateUserSelector();
+                loadEntries();
             }
         }
     </script>
