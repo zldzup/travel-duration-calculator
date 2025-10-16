@@ -2,157 +2,144 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>图片 ⇄ Base64 互转（带文件/像素信息）</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>图↔Base64</title>
 <style>
-body{margin:0;font:14px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:#f5f7fa;color:#333}
-h2{margin:0 0 10px;font-size:18px}
-.card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:20px;margin:20px auto;max-width:700px}
-textarea{width:100%;height:140px;font:12px/1.4 consolas,monospace;resize:vertical;border:1px solid #dcdfe6;border-radius:4px;padding:8px;box-sizing:border-box}
-.preview{max-width:100%;max-height:300px;margin-top:10px;border:1px dashed #ccc;border-radius:4px;display:block}
-.row{display:flex;gap:10px;margin:10px 0}
-.row button{flex:1;padding:8px 0;border:none;border-radius:4px;background:#409eff;color:#fff;font-size:14px;cursor:pointer}
-.row button:hover{background:#66b1ff}
-.row button.danger{background:#f56c6c}
-.row button.danger:hover{background:#f78989}
-#dropArea{border:2px dashed #409eff;border-radius:6px;padding:30px;text-align:center;color:#409eff;cursor:pointer}
-#dropArea.dragover{background:#ecf5ff}
-.info{background:#f0f9ff;border:1px solid #d1ecff;border-radius:4px;padding:10px;margin-top:10px;font-size:13px;line-height:1.8}
-.info span{color:#e6a23c;font-weight:700}
+body{font:13px/1.4 ui-monospace,monospace;margin:0;padding:15px;background:#fff;color:#222}
+h3{margin:0 0 6px;font-size:14px;font-weight:600}
+textarea{width:100%;height:60px;font:inherit;border:1px solid #bbb;border-radius:3px;resize:vertical;padding:4px;box-sizing:border-box}
+img{max-width:100%;max-height:120px;border:1px dashed #999;border-radius:3px;margin-top:4px;display:block}
+button{padding:4px 8px;font:inherit;border:1px solid #bbb;border-radius:3px;background:#f6f6f6;cursor:pointer}
+button:hover{background:#e6e6e6}
+.copy{background:#d1e7fd;border-color:#9dc7fb}
+.copy:hover{background:#c0dbf9}
+.info{color:#555;font-size:12px;margin-top:3px}
+.card{margin-bottom:12px}
+#hist{max-height:180px;overflow:auto;border:1px solid #ddd;border-radius:3px;padding:4px;background:#fafafa}
+.h-item{display:flex;align-items:center;padding:3px 2px;border-radius:2px;cursor:pointer}
+.h-item:hover{background:#e0e0e0}
+.h-item img{width:40px;height:40px;object-fit:cover;border-radius:2px;margin-right:6px;flex-shrink:0}
+.h-item div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
 
-<!-- 图片 → Base64 -->
 <div class="card">
-  <h2>① 图片 → Base64</h2>
-  <input type="file" id="imgFile" accept="image/*">
-  <div id="dropArea">或把图片拖到这里 / Ctrl+V 粘贴</div>
-  <img id="prev1" class="preview" style="display:none">
-  <div id="info1" class="info" style="display:none"></div>
+  <h3>图→Base64</h3>
+  <input type="file" id="f" accept="image/*">
+  <div id="info1" class="info"></div>
+  <img id="pic1">
 </div>
 
-<!-- Base64 → 图片 -->
 <div class="card">
-  <h2>② Base64 → 图片</h2>
-  <textarea id="b64Input" placeholder="把 Base64 粘到这里（可含 data:image/xxx;base64, 前缀）"></textarea>
-  <div class="row">
-    <button id="btnConvert">解析成图片</button>
-    <button class="danger" id="btnClear">清空</button>
-  </div>
-  <img id="prev2" class="preview" style="display:none">
-  <div id="info2" class="info" style="display:none"></div>
+  <h3>Base64→图</h3>
+  <textarea id="b64" placeholder="粘贴Base64（可含前缀）"></textarea>
+  <button id="go">解析</button>
+  <div id="info2" class="info"></div>
+  <img id="pic2">
 </div>
 
-<!-- 结果输出 -->
 <div class="card">
-  <h2>③ 结果 / 复制</h2>
-  <textarea id="output" readonly placeholder="结果会出现在这里…"></textarea>
-  <div class="row">
-    <button id="btnCopy">复制结果</button>
-    <button class="danger" id="btnReset">重置全部</button>
-  </div>
+  <h3>结果</h3>
+  <textarea id="out" readonly></textarea>
+  <button id="cpy" class="copy">复制</button>
+</div>
+
+<div class="card">
+  <h3>历史 <button id="clrHist" style="float:right;font-size:11px">清空</button></h3>
+  <div id="hist"></div>
 </div>
 
 <script>
-/* ====== 工具函数 ====== */
-const $  = id => document.getElementById(id);
+const $=q=>document.getElementById(q);
+const fmt=b=>b<1024?b+'B':b<1048576?(b/1024).toFixed(1)+'KB':(b/1048576).toFixed(1)+'MB';
 
-/* 格式化体积 */
-function fmtSize(bytes){
-  if(bytes<1024) return bytes+' B';
-  if(bytes<1048576) return (bytes/1024).toFixed(2)+' KB';
-  return (bytes/1048576).toFixed(2)+' MB';
-}
+const H_KEY='imgb64hist';
+let hist=JSON.parse(localStorage.getItem(H_KEY)||'[]');
 
-/* 统一显示信息  img=HTMLImageElement, fileSize=Number(bytes), b64Str=String */
-function showInfo(boxSel, img, fileSize, b64Str){
-  const pw = img.naturalWidth, ph = img.naturalHeight;
-  const b64Bytes = new Blob([b64Str]).size;
-  const html = `
-    文件体积：<span>${fmtSize(fileSize)}</span>　
-    图片像素：<span>${pw} × ${ph}</span>　
-    Base64 长度：<span>${b64Str.length.toLocaleString()} 字符</span>　
-    估算流量：<span>${fmtSize(b64Bytes)}</span>
-  `;
-  const box = $(boxSel);
-  box.innerHTML = html; box.style.display='block';
-}
+function saveHist(){localStorage.setItem(H_KEY,JSON.stringify(hist)); renderHist();}
 
-/* 文件 → Base64 */
-function handleFile(file){
-  if(!file || !file.type.startsWith('image/')) return alert('请上传图片格式文件');
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-  img.onload = async ()=>{
-    const b64 = await fileToBase64(file);
-    $('prev1').src = b64; $('prev1').style.display='block';
-    $('output').value = b64;
-    showInfo('info1', img, file.size, b64);
-    URL.revokeObjectURL(url);
-  };
-  img.src = url;
-}
-$('imgFile').addEventListener('change', e=>handleFile(e.target.files[0]));
-
-/* 拖放 + 粘贴 */
-const drop = $('dropArea');
-drop.addEventListener('click',()=>$('imgFile').click());
-['dragover','dragleave','drop'].forEach(evt=>{
-  drop.addEventListener(evt, e=>{
-    e.preventDefault();
-    drop.classList.toggle('dragover', evt==='dragover');
-    if(evt==='drop'){
-      const f = [...e.dataTransfer.files].find(x=>x.type.startsWith('image/'));
-      if(f) handleFile(f);
-    }
+function renderHist(){
+  const box=$('hist');
+  box.innerHTML='';
+  hist.forEach((it,idx)=>{
+    const div=document.createElement('div');
+    div.className='h-item';
+    div.innerHTML=`
+      <img src="${it.thumb}">
+      <div>${it.time} ${it.w}×${it.h} ${it.size}</div>`;
+    div.onclick=()=>{
+      $('out').value=it.b64;
+      $('b64').value=it.b64;
+      const img=new Image();
+      img.onload=()=>{
+        $('pic2').src=img.src;
+        $('info2').textContent=`${img.naturalWidth}×${img.naturalHeight}`;
+      };
+      img.src=it.b64;
+    };
+    box.appendChild(div);
   });
-});
-document.addEventListener('paste',e=>{
-  const items = e.clipboardData.items;
-  for(let i=0;i<items.length;i++){
-    if(items[i].type.startsWith('image/')){
-      handleFile(items[i].getAsFile()); break;
-    }
-  }
-});
+}
 
-/* Base64 → 图片 */
-$('btnConvert').onclick = ()=>{
-  const v = $('b64Input').value.trim();
-  if(!v) return alert('请先粘贴 Base64 字符串');
-  const src = /^data:image\/[a-zA-Z+]+;base64,/.test(v) ? v : 'data:image/png;base64,'+v;
-  const img = new Image();
-  img.onload = ()=>{
-    $('prev2').src = src; $('prev2').style.display='block';
-    $('output').value = src;
-    const bytes = new Blob([src]).size;   // 估算
-    showInfo('info2', img, bytes, src);   // 这里 fileSize 用字节数估算
-  };
-  img.onerror = ()=>alert('解析失败，请检查 Base64 是否正确');
-  img.src = src;
-};
+function addHist(b64,w,h,size){
+  const thumb=makeThumb(b64,80);   // 80px 宽的小图即可
+  hist.unshift({b64,thumb,w,h,size,time:new Date().toLocaleString('zh-CN')});
+  if(hist.length>30) hist.pop();
+  saveHist();
+}
 
-/* 复制 / 清空 / 重置 */
-$('btnCopy').onclick = ()=>{
-  $('output').select(); document.execCommand('copy');
-  $('btnCopy').textContent='已复制'; setTimeout(()=>$('btnCopy').textContent='复制结果',1200);
-};
-$('btnClear').onclick = ()=>{ $('b64Input').value=''; $('prev2').style.display='none'; $('info2').style.display='none'; };
-$('btnReset').onclick = ()=>{
-  ['imgFile','b64Input','output'].forEach(id=>$(id).value='');
-  ['prev1','prev2','info1','info2'].forEach(id=>{ $(id).style.display='none'; });
-};
+/* 生成缩略图（同步返回 dataURL） */
+function makeThumb(src,newW){
+  const img=new Image();
+  img.src=src;
+  if(!img.complete||img.naturalWidth===0) return src; // 降级用原图
+  const scale=newW/img.naturalWidth;
+  const canvas=document.createElement('canvas');
+  canvas.width=newW;
+  canvas.height=img.naturalHeight*scale;
+  canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL('image/jpeg',0.7); // 缩略图用 70% 质量
+}
 
-/* 通用 FileReader Promise 封装 */
-function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const r = new FileReader();
-    r.onload = e => resolve(e.target.result);
-    r.onerror = err => reject(err);
+$('f').onchange=e=>{
+  const file=e.target.files[0];
+  if(!file||!file.type.startsWith('image/'))return;
+  const img=new Image(),url=URL.createObjectURL(file);
+  img.onload=()=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const b64=r.result;
+      $('pic1').src=b64;
+      $('out').value=b64;
+      $('info1').textContent=`${img.naturalWidth}×${img.naturalHeight} ${fmt(file.size)}`;
+      addHist(b64,img.naturalWidth,img.naturalHeight,fmt(file.size));
+      URL.revokeObjectURL(url);
+    };
     r.readAsDataURL(file);
-  });
-}
+  };
+  img.src=url;
+};
+
+$('go').onclick=()=>{
+  const v=$('b64').value.trim();
+  if(!v)return;
+  const src=/^data:image/.test(v)?v:'data:image/png;base64,'+v;
+  const img=new Image();
+  img.onload=()=>{
+    $('pic2').src=src;
+    $('out').value=src;
+    const bytes=new Blob([src]).size;
+    $('info2').textContent=`${img.naturalWidth}×${img.naturalHeight} 约${fmt(bytes)}`;
+    addHist(src,img.naturalWidth,img.naturalHeight,`约${fmt(bytes)}`);
+  };
+  img.onerror=()=>alert('Base64错误');
+  img.src=src;
+};
+
+$('cpy').onclick=()=>{ $('out').select();document.execCommand('copy'); };
+$('clrHist').onclick=()=>{ if(confirm('确定清空历史？')){hist=[];saveHist();} };
+
+renderHist();
 </script>
 </body>
 </html>
