@@ -2,12 +2,13 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>图↔Base64</title>
+<title>图↔Base64 小工具</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 body{font:13px/1.4 ui-monospace,monospace;margin:0;padding:15px;background:#fff;color:#222}
 h3{margin:0 0 6px;font-size:14px;font-weight:600}
 textarea{width:100%;height:60px;font:inherit;border:1px solid #bbb;border-radius:3px;resize:vertical;padding:4px;box-sizing:border-box}
-img{max-width:100%;max-height:120px;border:1px dashed #999;border-radius:3px;margin-top:4px;display:block}
+img{max-width:100%;max-height:120px;border:1px dashed #999;border-radius:3px;margin-top:4px;display:block;cursor:zoom-in}
 button{padding:4px 8px;font:inherit;border:1px solid #bbb;border-radius:3px;background:#f6f6f6;cursor:pointer}
 button:hover{background:#e6e6e6}
 .copy{background:#d1e7fd;border-color:#9dc7fb}
@@ -19,6 +20,11 @@ button:hover{background:#e6e6e6}
 .h-item:hover{background:#e0e0e0}
 .h-item img{width:40px;height:40px;object-fit:cover;border-radius:2px;margin-right:6px;flex-shrink:0}
 .h-item div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 原图弹层 */
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;cursor:zoom-out;z-index:999;overflow:auto}
+#overlay img{max-width:none;max-height:none;border:none;box-shadow:0 0 20px #000;cursor:default;margin:auto}
+#overlay .close{position:absolute;top:10px;right:10px;font-size:24px;color:#fff;background:rgba(0,0,0,.5);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;line-height:1}
 </style>
 </head>
 <body>
@@ -27,7 +33,7 @@ button:hover{background:#e6e6e6}
   <h3>图→Base64</h3>
   <input type="file" id="f" accept="image/*">
   <div id="info1" class="info"></div>
-  <img id="pic1">
+  <img id="pic1" style="display:none">
 </div>
 
 <div class="card">
@@ -35,7 +41,7 @@ button:hover{background:#e6e6e6}
   <textarea id="b64" placeholder="粘贴Base64（可含前缀）"></textarea>
   <button id="go">解析</button>
   <div id="info2" class="info"></div>
-  <img id="pic2">
+  <img id="pic2" style="display:none">
 </div>
 
 <div class="card">
@@ -49,56 +55,50 @@ button:hover{background:#e6e6e6}
   <div id="hist"></div>
 </div>
 
+<!-- 原图弹层 -->
+<div id="overlay" style="display:none">
+  <span class="close" id="closeOverlay">×</span>
+  <img id="fullImg" src="">
+</div>
+
 <script>
 const $=q=>document.getElementById(q);
 const fmt=b=>b<1024?b+'B':b<1048576?(b/1024).toFixed(1)+'KB':(b/1048576).toFixed(1)+'MB';
-
 const H_KEY='imgb64hist';
 let hist=JSON.parse(localStorage.getItem(H_KEY)||'[]');
 
 function saveHist(){localStorage.setItem(H_KEY,JSON.stringify(hist)); renderHist();}
-
 function renderHist(){
   const box=$('hist');
   box.innerHTML='';
-  hist.forEach((it,idx)=>{
+  hist.forEach(it=>{
     const div=document.createElement('div');
     div.className='h-item';
-    div.innerHTML=`
-      <img src="${it.thumb}">
-      <div>${it.time} ${it.w}×${it.h} ${it.size}</div>`;
-    div.onclick=()=>{
-      $('out').value=it.b64;
-      $('b64').value=it.b64;
-      const img=new Image();
-      img.onload=()=>{
-        $('pic2').src=img.src;
-        $('info2').textContent=`${img.naturalWidth}×${img.naturalHeight}`;
-      };
-      img.src=it.b64;
-    };
+    div.innerHTML=`<img src="${it.thumb}"><div>${it.time} ${it.w}×${it.h} ${it.size}</div>`;
+    div.onclick=()=>fillResult(it.b64,it.w,it.h);
     box.appendChild(div);
   });
 }
-
+function fillResult(b64,w,h){
+  $('out').value=b64;
+  $('b64').value=b64;
+  const img=new Image();
+  img.onload=()=>{$('pic2').src=img.src; $('pic2').style.display='block'; $('info2').textContent=`${w}×${h}`;};
+  img.src=b64;
+}
 function addHist(b64,w,h,size){
-  const thumb=makeThumb(b64,80);   // 80px 宽的小图即可
+  const thumb=makeThumb(b64,80);
   hist.unshift({b64,thumb,w,h,size,time:new Date().toLocaleString('zh-CN')});
-  if(hist.length>30) hist.pop();
+  if(hist.length>30)hist.pop();
   saveHist();
 }
-
-/* 生成缩略图（同步返回 dataURL） */
 function makeThumb(src,newW){
-  const img=new Image();
-  img.src=src;
-  if(!img.complete||img.naturalWidth===0) return src; // 降级用原图
-  const scale=newW/img.naturalWidth;
+  const img=new Image(); img.src=src;
+  if(!img.complete||img.naturalWidth===0)return src;
   const canvas=document.createElement('canvas');
-  canvas.width=newW;
-  canvas.height=img.naturalHeight*scale;
+  canvas.width=newW; canvas.height=img.naturalHeight*(newW/img.naturalWidth);
   canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-  return canvas.toDataURL('image/jpeg',0.7); // 缩略图用 70% 质量
+  return canvas.toDataURL('image/jpeg',0.7);
 }
 
 $('f').onchange=e=>{
@@ -109,7 +109,7 @@ $('f').onchange=e=>{
     const r=new FileReader();
     r.onload=()=>{
       const b64=r.result;
-      $('pic1').src=b64;
+      $('pic1').src=b64; $('pic1').style.display='block';
       $('out').value=b64;
       $('info1').textContent=`${img.naturalWidth}×${img.naturalHeight} ${fmt(file.size)}`;
       addHist(b64,img.naturalWidth,img.naturalHeight,fmt(file.size));
@@ -126,7 +126,7 @@ $('go').onclick=()=>{
   const src=/^data:image/.test(v)?v:'data:image/png;base64,'+v;
   const img=new Image();
   img.onload=()=>{
-    $('pic2').src=src;
+    $('pic2').src=src; $('pic2').style.display='block';
     $('out').value=src;
     const bytes=new Blob([src]).size;
     $('info2').textContent=`${img.naturalWidth}×${img.naturalHeight} 约${fmt(bytes)}`;
@@ -136,8 +136,22 @@ $('go').onclick=()=>{
   img.src=src;
 };
 
-$('cpy').onclick=()=>{ $('out').select();document.execCommand('copy'); };
-$('clrHist').onclick=()=>{ if(confirm('确定清空历史？')){hist=[];saveHist();} };
+$('cpy').onclick=()=>{$('out').select();document.execCommand('copy');};
+$('clrHist').onclick=()=>{if(confirm('确定清空历史？')){hist=[];saveHist();}};
+
+/* 原图弹层 */
+function viewOriginal(src){
+  $('fullImg').src=src;
+  $('overlay').style.display='flex';
+}
+function closeOverlay(){
+  $('overlay').style.display='none';
+  $('fullImg').src='';
+}
+$('overlay').onclick=e=>{if(e.target===$('overlay'))closeOverlay();};
+$('closeOverlay').onclick=closeOverlay;
+$('pic1').onclick=()=>viewOriginal($('pic1').src);
+$('pic2').onclick=()=>viewOriginal($('pic2').src);
 
 renderHist();
 </script>
