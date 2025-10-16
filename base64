@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>图片 ⇄ Base64 互转（带文件/像素信息）</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;font:14px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,Helvetica,sans-serif;background:#f5f7fa;color:#333}
+h2{margin:0 0 10px;font-size:18px}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:20px;margin:20px auto;max-width:700px}
+textarea{width:100%;height:140px;font:12px/1.4 consolas,monospace;resize:vertical;border:1px solid #dcdfe6;border-radius:4px;padding:8px;box-sizing:border-box}
+.preview{max-width:100%;max-height:300px;margin-top:10px;border:1px dashed #ccc;border-radius:4px;display:block}
+.row{display:flex;gap:10px;margin:10px 0}
+.row button{flex:1;padding:8px 0;border:none;border-radius:4px;background:#409eff;color:#fff;font-size:14px;cursor:pointer}
+.row button:hover{background:#66b1ff}
+.row button.danger{background:#f56c6c}
+.row button.danger:hover{background:#f78989}
+#dropArea{border:2px dashed #409eff;border-radius:6px;padding:30px;text-align:center;color:#409eff;cursor:pointer}
+#dropArea.dragover{background:#ecf5ff}
+.info{background:#f0f9ff;border:1px solid #d1ecff;border-radius:4px;padding:10px;margin-top:10px;font-size:13px;line-height:1.8}
+.info span{color:#e6a23c;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- 图片 → Base64 -->
+<div class="card">
+  <h2>① 图片 → Base64</h2>
+  <input type="file" id="imgFile" accept="image/*">
+  <div id="dropArea">或把图片拖到这里 / Ctrl+V 粘贴</div>
+  <img id="prev1" class="preview" style="display:none">
+  <div id="info1" class="info" style="display:none"></div>
+</div>
+
+<!-- Base64 → 图片 -->
+<div class="card">
+  <h2>② Base64 → 图片</h2>
+  <textarea id="b64Input" placeholder="把 Base64 粘到这里（可含 data:image/xxx;base64, 前缀）"></textarea>
+  <div class="row">
+    <button id="btnConvert">解析成图片</button>
+    <button class="danger" id="btnClear">清空</button>
+  </div>
+  <img id="prev2" class="preview" style="display:none">
+  <div id="info2" class="info" style="display:none"></div>
+</div>
+
+<!-- 结果输出 -->
+<div class="card">
+  <h2>③ 结果 / 复制</h2>
+  <textarea id="output" readonly placeholder="结果会出现在这里…"></textarea>
+  <div class="row">
+    <button id="btnCopy">复制结果</button>
+    <button class="danger" id="btnReset">重置全部</button>
+  </div>
+</div>
+
+<script>
+/* ====== 工具函数 ====== */
+const $  = id => document.getElementById(id);
+
+/* 格式化体积 */
+function fmtSize(bytes){
+  if(bytes<1024) return bytes+' B';
+  if(bytes<1048576) return (bytes/1024).toFixed(2)+' KB';
+  return (bytes/1048576).toFixed(2)+' MB';
+}
+
+/* 统一显示信息  img=HTMLImageElement, fileSize=Number(bytes), b64Str=String */
+function showInfo(boxSel, img, fileSize, b64Str){
+  const pw = img.naturalWidth, ph = img.naturalHeight;
+  const b64Bytes = new Blob([b64Str]).size;
+  const html = `
+    文件体积：<span>${fmtSize(fileSize)}</span>　
+    图片像素：<span>${pw} × ${ph}</span>　
+    Base64 长度：<span>${b64Str.length.toLocaleString()} 字符</span>　
+    估算流量：<span>${fmtSize(b64Bytes)}</span>
+  `;
+  const box = $(boxSel);
+  box.innerHTML = html; box.style.display='block';
+}
+
+/* 文件 → Base64 */
+function handleFile(file){
+  if(!file || !file.type.startsWith('image/')) return alert('请上传图片格式文件');
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = async ()=>{
+    const b64 = await fileToBase64(file);
+    $('prev1').src = b64; $('prev1').style.display='block';
+    $('output').value = b64;
+    showInfo('info1', img, file.size, b64);
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+$('imgFile').addEventListener('change', e=>handleFile(e.target.files[0]));
+
+/* 拖放 + 粘贴 */
+const drop = $('dropArea');
+drop.addEventListener('click',()=>$('imgFile').click());
+['dragover','dragleave','drop'].forEach(evt=>{
+  drop.addEventListener(evt, e=>{
+    e.preventDefault();
+    drop.classList.toggle('dragover', evt==='dragover');
+    if(evt==='drop'){
+      const f = [...e.dataTransfer.files].find(x=>x.type.startsWith('image/'));
+      if(f) handleFile(f);
+    }
+  });
+});
+document.addEventListener('paste',e=>{
+  const items = e.clipboardData.items;
+  for(let i=0;i<items.length;i++){
+    if(items[i].type.startsWith('image/')){
+      handleFile(items[i].getAsFile()); break;
+    }
+  }
+});
+
+/* Base64 → 图片 */
+$('btnConvert').onclick = ()=>{
+  const v = $('b64Input').value.trim();
+  if(!v) return alert('请先粘贴 Base64 字符串');
+  const src = /^data:image\/[a-zA-Z+]+;base64,/.test(v) ? v : 'data:image/png;base64,'+v;
+  const img = new Image();
+  img.onload = ()=>{
+    $('prev2').src = src; $('prev2').style.display='block';
+    $('output').value = src;
+    const bytes = new Blob([src]).size;   // 估算
+    showInfo('info2', img, bytes, src);   // 这里 fileSize 用字节数估算
+  };
+  img.onerror = ()=>alert('解析失败，请检查 Base64 是否正确');
+  img.src = src;
+};
+
+/* 复制 / 清空 / 重置 */
+$('btnCopy').onclick = ()=>{
+  $('output').select(); document.execCommand('copy');
+  $('btnCopy').textContent='已复制'; setTimeout(()=>$('btnCopy').textContent='复制结果',1200);
+};
+$('btnClear').onclick = ()=>{ $('b64Input').value=''; $('prev2').style.display='none'; $('info2').style.display='none'; };
+$('btnReset').onclick = ()=>{
+  ['imgFile','b64Input','output'].forEach(id=>$(id).value='');
+  ['prev1','prev2','info1','info2'].forEach(id=>{ $(id).style.display='none'; });
+};
+
+/* 通用 FileReader Promise 封装 */
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = err => reject(err);
+    r.readAsDataURL(file);
+  });
+}
+</script>
+</body>
+</html>
