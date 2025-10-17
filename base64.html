@@ -4,12 +4,23 @@
 <meta charset="UTF-8">
 <title>图↔Base64 小工具</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff">
+<!-- 离线用 PWA -->
+<link rel="manifest" href="data:application/json,{
+  "name":"图Base64工具",
+  "short_name":"图Base64",
+  "display":"standalone",
+  "background_color":"#fff",
+  "theme_color":"#fff",
+  "scope":".",
+  "start_url":"."
+}">
 <style>
 body{font:13px/1.4 ui-monospace,monospace;margin:0;padding:15px;background:#fff;color:#222}
 h3{margin:0 0 6px;font-size:14px;font-weight:600}
 textarea{width:100%;height:60px;font:inherit;border:1px solid #bbb;border-radius:3px;resize:vertical;padding:4px;box-sizing:border-box}
 img{max-width:100%;max-height:120px;border:1px dashed #999;border-radius:3px;margin-top:4px;display:block;cursor:zoom-in}
-button{padding:4px 8px;font:inherit;border:1px solid #bbb;border-radius:3px;background:#f6f6f6;cursor:pointer}
+button{padding:4px 8px;font:inherit;border:1px solid #bbb;border-radius:3px;background:#f6f6f6;cursor:pointer;margin-right:6px}
 button:hover{background:#e6e6e6}
 .copy{background:#d1e7fd;border-color:#9dc7fb}
 .copy:hover{background:#c0dbf9}
@@ -47,7 +58,11 @@ button:hover{background:#e6e6e6}
 <div class="card">
   <h3>结果</h3>
   <textarea id="out" readonly></textarea>
-  <button id="cpy" class="copy">复制</button>
+  <div style="margin-top:6px">
+    <button id="cpy" class="copy">复制</button>
+    <button id="md">复制 Markdown</button>
+    <button id="exportTxt">导出txt</button>
+  </div>
 </div>
 
 <div class="card">
@@ -62,6 +77,7 @@ button:hover{background:#e6e6e6}
 </div>
 
 <script>
+// 基础工具
 const $=q=>document.getElementById(q);
 const fmt=b=>b<1024?b+'B':b<1048576?(b/1024).toFixed(1)+'KB':(b/1048576).toFixed(1)+'MB';
 const H_KEY='imgb64hist';
@@ -101,6 +117,7 @@ function makeThumb(src,newW){
   return canvas.toDataURL('image/jpeg',0.7);
 }
 
+// 文件上传
 $('f').onchange=e=>{
   const file=e.target.files[0];
   if(!file||!file.type.startsWith('image/'))return;
@@ -120,6 +137,7 @@ $('f').onchange=e=>{
   img.src=url;
 };
 
+// Base64 解析
 $('go').onclick=()=>{
   const v=$('b64').value.trim();
   if(!v)return;
@@ -136,10 +154,31 @@ $('go').onclick=()=>{
   img.src=src;
 };
 
+// 复制 & 导出
 $('cpy').onclick=()=>{$('out').select();document.execCommand('copy');};
 $('clrHist').onclick=()=>{if(confirm('确定清空历史？')){hist=[];saveHist();}};
+$('exportTxt').onclick=()=>{
+  const txt=$('out').value;
+  if(!txt){alert('结果为空');return;}
+  const blob=new Blob([txt],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='base64.txt'; a.click();
+  URL.revokeObjectURL(url);
+};
 
-/* 原图弹层 */
+// C. Markdown 复制
+$('md').onclick=()=>{
+  const src=$('out').value;
+  if(!src){alert('结果为空');return;}
+  const md=`![img](${src})`;
+  navigator.clipboard.writeText(md).then(()=>{
+    $('md').textContent='已复制Markdown';
+    setTimeout(()=>$('md').textContent='复制 Markdown',1200);
+  });
+};
+
+// 原图弹层
 function viewOriginal(src){
   $('fullImg').src=src;
   $('overlay').style.display='flex';
@@ -152,6 +191,44 @@ $('overlay').onclick=e=>{if(e.target===$('overlay'))closeOverlay();};
 $('closeOverlay').onclick=closeOverlay;
 $('pic1').onclick=()=>viewOriginal($('pic1').src);
 $('pic2').onclick=()=>viewOriginal($('pic2').src);
+
+// A. 拖放上传
+['dragenter','dragover','drop'].forEach(evt=>
+  window.addEventListener(evt,e=>e.preventDefault(),false));
+window.addEventListener('drop',e=>{
+  const f=[...e.dataTransfer.files].find(x=>x.type.startsWith('image/'));
+  if(f){
+    const dt=new DataTransfer(); dt.items.add(f);
+    $('f').files=dt.files;
+    $('f').dispatchEvent(new Event('change'));
+  }
+});
+
+// B. 剪贴板粘贴图片
+window.addEventListener('paste',e=>{
+  const items=[...(e.clipboardData||e.originalEvent.clipboardData).items];
+  const imgItem=items.find(x=>x.type.startsWith('image/'));
+  if(!imgItem)return;
+  const file=imgItem.getAsFile();
+  const dt=new DataTransfer(); dt.items.add(file);
+  $('f').files=dt.files;
+  $('f').dispatchEvent(new Event('change'));
+});
+
+// 离线 PWA：注册极简 ServiceWorker（缓存自身）
+if('serviceWorker' in navigator){
+  const sw=`
+    self.addEventListener('install',e=>{
+      e.waitUntil(caches.open('v1').then(c=>c.addAll(['./'])));
+    });
+    self.addEventListener('fetch',e=>{
+      e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
+    });
+  `.trim();
+  const blob = new Blob([sw],{type:'application/javascript'});
+  const url = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url).then(()=>URL.revokeObjectURL(url));
+}
 
 renderHist();
 </script>
