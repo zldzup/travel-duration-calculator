@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>VCC 交易记录可视化 - 全字段</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+  h2 { margin-bottom: 10px; }
+
+  /* 输入区 */
+  #inputContainer { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  textarea { width: 100%; height: 160px; font-size: 13px; padding: 6px; }
+  button, select { font-size: 13px; padding: 6px 12px; margin-top: 4px; cursor: pointer; }
+  button:hover, select:hover { background-color: #e0e0e0; }
+
+  /* 历史记录 */
+  #historyContainer { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+
+  /* 表格容器 */
+  #tableWrapper { overflow-x: auto; max-width: 100%; border: 1px solid #ccc; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; min-width: 1200px; }
+  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; white-space: nowrap; }
+  th { background: #f0f0f0; position: sticky; top: 0; z-index: 2; cursor: pointer; }
+  th.sorted-asc::after { content: " ▲"; }
+  th.sorted-desc::after { content: " ▼"; }
+  tr.success td { background-color: #d4edda; color: #155724; }
+  tr.fail td { background-color: #f8d7da; color: #721c24; }
+
+  /* 图例 */
+  #legend { margin-top: 8px; font-size: 12px; }
+  .legend-item { display: inline-block; margin-right: 12px; }
+  .legend-color { display: inline-block; width: 12px; height: 12px; margin-right: 4px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<h2>VCC 交易记录可视化工具 / VCC Transaction Viewer</h2>
+
+<div id="inputContainer">
+  <label for="jsonInput">输入或粘贴 JSON 数据 / Paste JSON:</label>
+  <textarea id="jsonInput" placeholder="在此粘贴 JSON / Paste JSON here"></textarea>
+  <button onclick="generateTable()">生成表格 / Generate Table</button>
+</div>
+
+<div id="historyContainer">
+  <label for="historySelect">历史记录 / History:</label>
+  <select id="historySelect" onchange="loadHistory()">
+    <option value="">选择历史记录 / Select History</option>
+  </select>
+  <button onclick="clearHistory()">清空历史 / Clear History</button>
+</div>
+
+<div id="legend">
+  <span class="legend-item"><span class="legend-color" style="background:#d4edda;"></span>成功 / Approved</span>
+  <span class="legend-item"><span class="legend-color" style="background:#f8d7da;"></span>失败 / Failed</span>
+</div>
+
+<div id="tableWrapper">
+  <table id="resultTable">
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<script>
+let currentSortField = null;
+let currentSortOrder = 'asc';
+let allFields = [];
+
+// 已知字段的中文标签
+const fieldLabels = {
+  index: "序号 / No",
+  txn_date_time: "时间 / Time",
+  virtual_card_number: "虚拟卡号 / Virtual Card",
+  merchant_name: "商户名称 / Merchant Name",
+  merchant_amount: "商户币金额 / Amount",
+  merchant_currency_code: "商户币种 / Currency",
+  txn_type: "类型 / Type",
+  issuer_response: "成功/失败 / Status",
+  in_control_response: "失败原因 / Failure Reason",
+  approval_code: "批准码 / Approval Code",
+  purchase_request_id: "交易 ID / Transaction ID",
+  real_card_alias: "真实卡别名 / Real Card Alias",
+  billing_amount: "账单金额 / Billing Amount",
+  billing_currency_code: "账单币种 / Billing Currency",
+  billing_currency_code_description: "账单币种描述 / Billing Currency Desc",
+  txn_sub_type: "交易子类型 / Sub Type",
+  txn_environment: "交易环境 / Environment",
+  mcc: "商户分类码 / MCC",
+  mcc_description: "商户分类描述 / MCC Desc",
+  merchant_country: "商户国家 / Merchant Country",
+  merchant_id: "商户 ID / Merchant ID",
+  merchant_terminal_id: "终端 ID / Terminal ID",
+  settled: "结算状态 / Settled",
+  company_name: "公司名称 / Company Name",
+  company_number: "公司编号 / Company No",
+  acquirer_reference_data: "收单方参考 / Acquirer Ref",
+  traceId: "Trace ID / Trace ID",
+  clearing_type: "清算类型 / Clearing Type",
+  settlement_amount: "结算金额 / Settlement Amount",
+  settlement_currency_code: "结算币种 / Settlement Currency",
+  settlement_currency_description: "结算币种描述 / Settlement Currency Desc"
+};
+
+// 生成表格
+function generateTable() {
+  let input = document.getElementById('jsonInput').value;
+  if(!input) { alert("请先输入 JSON 数据 / Please input JSON"); return; }
+  try {
+    let json = JSON.parse(input);
+    if(!json.data || !json.data.list) { alert("JSON 格式不正确 / Invalid JSON"); return; }
+    saveHistory(json.data.list);
+    extractFields(json.data.list);
+    renderTable(json.data.list);
+  } catch(e) {
+    alert("JSON 解析失败 / JSON Parse Error: " + e.message);
+  }
+}
+
+// 提取字段，生成双语表头
+function extractFields(list) {
+  const mainFields = ["index","txn_date_time","virtual_card_number","merchant_name","merchant_amount","merchant_currency_code","txn_type","issuer_response","in_control_response","approval_code"];
+  let fieldSet = new Set();
+  list.forEach(item => Object.keys(item).forEach(k => fieldSet.add(k)));
+  allFields = mainFields.filter(f => f === "index" || fieldSet.has(f)); // 保留存在的主字段
+  fieldSet.forEach(f => { if(!allFields.includes(f)) allFields.push(f); }); // 其他字段
+
+  // 转成对象，添加中文标签
+  allFields = allFields.map(f => ({ key: f, label: fieldLabels[f] || f }));
+}
+
+// 渲染表格
+function renderTable(list) {
+  list = list.slice().reverse(); // 倒序显示
+  if(currentSortField) {
+    list.sort((a,b) => {
+      let valA = a[currentSortField] || '';
+      let valB = b[currentSortField] || '';
+      if(typeof valA === 'string') valA = valA.toLowerCase();
+      if(typeof valB === 'string') valB = valB.toLowerCase();
+      if(valA < valB) return currentSortOrder === 'asc' ? -1 : 1;
+      if(valA > valB) return currentSortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // 表头
+  const thead = document.getElementById('tableHead');
+  thead.innerHTML = "";
+  const trHead = document.createElement('tr');
+  allFields.forEach(f => {
+    const th = document.createElement('th');
+    th.textContent = f.label;
+    th.onclick = () => { sortTable(f.key); };
+    trHead.appendChild(th);
+  });
+  thead.appendChild(trHead);
+
+  // 表体
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = "";
+  list.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    allFields.forEach(f => {
+      const td = document.createElement('td');
+      if(f.key === 'index') td.textContent = index + 1;
+      else td.textContent = item[f.key] !== undefined ? item[f.key] : "";
+      tr.appendChild(td);
+    });
+    if(item["issuer_response"] && item["issuer_response"].toLowerCase().includes("approved")) tr.className = "success";
+    else if(item["issuer_response"]) tr.className = "fail";
+    tbody.appendChild(tr);
+  });
+}
+
+// 排序
+function sortTable(field) {
+  if(currentSortField === field) currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+  else { currentSortField = field; currentSortOrder = 'asc'; }
+  renderTable(JSON.parse(document.getElementById('jsonInput').value).data.list);
+}
+
+// 历史记录
+function saveHistory(list) {
+  let history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
+  const timestamp = new Date().toLocaleString();
+  const vcc = list[0]?.virtual_card_number || "未知 / Unknown";
+  history.push({ timestamp, vcc, data: list });
+  localStorage.setItem('vccHistory', JSON.stringify(history));
+  updateHistorySelect();
+}
+
+function updateHistorySelect() {
+  const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
+  const select = document.getElementById('historySelect');
+  select.innerHTML = '<option value="">选择历史记录 / Select History</option>';
+  history.forEach((item, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.text = `${item.timestamp} - ${item.vcc}`;
+    select.appendChild(option);
+  });
+}
+
+function loadHistory() {
+  const select = document.getElementById('historySelect');
+  const index = select.value;
+  if(index === "") return;
+  const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
+  if(history[index]) {
+    currentSortField = null;
+    currentSortOrder = 'asc';
+    extractFields(history[index].data);
+    renderTable(history[index].data);
+  }
+}
+
+function clearHistory() {
+  if(confirm('确认清空历史记录吗？ / Clear all history?')) {
+    localStorage.removeItem('vccHistory');
+    updateHistorySelect();
+    document.getElementById('tableBody').innerHTML = "";
+    document.getElementById('tableHead').innerHTML = "";
+  }
+}
+
+// 初始化历史记录
+updateHistorySelect();
+</script>
+
+</body>
+</html>
