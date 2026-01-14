@@ -69,9 +69,10 @@ body {
   padding: 4px 8px;
   border: 1px solid #dee2e6;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10px;
   background: white;
-  min-width: 300px;
+  min-width: 500px;
+  max-width: 700px;
   font-family: 'Consolas', 'Monaco', monospace;
 }
 
@@ -591,7 +592,35 @@ td:nth-child(9) {
 ::-webkit-scrollbar-thumb:hover {
   background: #adb5bd;
 }
+
 </style>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyBSoB3xjhlxyS3d9GL_b1PTxGg07BkXmT8",
+    authDomain: "vcc-response.firebaseapp.com",
+    projectId: "vcc-response",
+    storageBucket: "vcc-response.firebasestorage.app",
+    messagingSenderId: "909113770294",
+    appId: "1:909113770294:web:6eb4398d176ef60c797397",
+    measurementId: "G-CJR4961Z1F"
+  };
+  
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  
+  window.firebaseDB = db;
+  window.firestoreCollection = collection;
+  window.firestoreAddDoc = addDoc;
+  window.firestoreGetDocs = getDocs;
+  window.firestoreQuery = query;
+  window.firestoreOrderBy = orderBy;
+  window.firestoreLimit = limit;
+</script>
 </head>
 <body>
 
@@ -686,18 +715,18 @@ let rawList = [];
 /* ================= 字段映射 ================= */
 const fieldLabels = {
   index: "index / 序号",
-  txn_date_time: "txn_date_time / 交易时间",
+  txn_date_time: "txn_date_time / 交易时间🕰",
   virtual_card_number: "virtual_card_number / 虚拟卡号",
   real_card_alias: "real_card_alias / 真实卡别名",
-  merchant_name: "merchant_name / 商户名称",
-  merchant_amount: "merchant_amount / 商户金额",
-  merchant_currency_code: "merchant_currency_code / 商户币种",
+  merchant_name: "merchant_name / 商户名称🏨",
+  merchant_amount: "merchant_amount / 商户金额💰",
+  merchant_currency_code: "merchant_currency_code / 商户币种💰",
   txn_type: "txn_type / 交易类型",
   issuer_response: "issuer_response / 「发卡行响应」",
   in_control_response: "in_control_response / 「In Control 响应」",
-  approval_code: "approval_code / 授权码",
-  billing_amount: "billing_amount / 账单金额",
-  billing_currency_code: "billing_currency_code / 账单币种",
+  approval_code: "approval_code / 授权码💳",
+  billing_amount: "billing_amount / 账单金额💰",
+  billing_currency_code: "billing_currency_code / 账单币种💰",
   purchase_request_id: "purchase_request_id / 交易ID",
   mcc: "mcc / 商户分类码",
   merchant_country: "merchant_country / 商户国家",
@@ -713,8 +742,8 @@ const fieldLabels = {
   acquirer_reference_data: "acquirer_reference_data / 收单方参考信息",
   traceId: "traceId / 追踪ID",
   clearing_type: "clearing_type / 清算类型",
-  settlement_amount: "settlement_amount / 结算金额",
-  settlement_currency_code: "settlement_currency_code / 结算币种",
+  settlement_amount: "settlement_amount / 结算金额💰",
+  settlement_currency_code: "settlement_currency_code / 结算币种💰",
   settlement_currency_description: "settlement_currency_description / 结算币种描述",
   merchant_street_address: "merchant_street_address / 商户街道地址",
   merchant_city: "merchant_city / 商户城市",
@@ -804,6 +833,9 @@ function generateTable() {
     rawList = list;
     saveHistory(rawList, input);
     
+    // 保存到云端
+    saveToCloud(rawList).catch(err => console.error('保存到云端失败:', err));
+    
     extractFields(rawList);
     currentSortField = null;
     currentSortOrder = 'asc';
@@ -858,6 +890,9 @@ function renderStats(list) {
 
   document.getElementById('failReasons').innerHTML = failHtml;
   document.getElementById('statsPanel').classList.add('show');
+  
+  // 发送通知（Bark 和 飞书）
+  sendNotifications(list, total, successList.length, failList.length, failArr);
 }
 
 /* ================= 字段提取 ================= */
@@ -1039,12 +1074,21 @@ function saveHistory(list, originalJson) {
   updateHistorySelect();
 }
 
-function loadHistory() {
+async function loadHistory() {
   const select = document.getElementById('historySelect');
-  const index = select.value;
-  if(index === "") return;
+  const value = select.value;
+  if(value === "") return;
   
+  // 检查是否是云端记录
+  if(value.startsWith('cloud_')) {
+    const docId = value.replace('cloud_', '');
+    await loadCloudRecord(docId);
+    return;
+  }
+  
+  // 加载本地记录
   const history = JSON.parse(localStorage.getItem('vccHistory') || '[]');
+  const index = parseInt(value);
   
   if(history[index]) {
     document.getElementById('jsonInput').value = history[index].originalJson || '';
@@ -1260,8 +1304,347 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeTooltip();
 });
 
+/* ================= 云端数据库功能 ================= */
+async function saveToCloud(list) {
+  if (!window.firebaseDB) {
+    console.log('Firebase 未初始化');
+    return;
+  }
+  
+  try {
+    // 获取用户地理位置和 IP
+    let userInfo = {
+      country: '未知',
+      city: '未知',
+      ip: '未知'
+    };
+    
+    try {
+      const geoResponse = await fetch('https://ipapi.co/json/');
+      if (geoResponse.ok) {
+        const geoData = await geoResponse.json();
+        userInfo = {
+          country: geoData.country_name || '未知',
+          city: geoData.city || '未知',
+          ip: geoData.ip || '未知'
+        };
+      }
+    } catch (geoError) {
+      console.error('获取地理位置失败:', geoError);
+    }
+    
+    // 提取统计信息
+    const total = list.length;
+    const isApproved = (r) => r.issuer_response && r.issuer_response.toLowerCase().includes("approved");
+    const successCount = list.filter(isApproved).length;
+    const failCount = total - successCount;
+    
+    // 提取主要卡号
+    const cardMap = {};
+    list.forEach(r => {
+      const card = r.virtual_card_number || r.real_card_alias || '未知';
+      cardMap[card] = (cardMap[card] || 0) + 1;
+    });
+    const mainCard = Object.keys(cardMap).sort((a, b) => cardMap[b] - cardMap[a])[0] || '未知';
+    
+    // 脱敏卡号
+    const maskCard = (card) => {
+      if (!card || card === '未知' || card.length < 8) return card;
+      return card.substring(0, 4) + '****' + card.substring(card.length - 4);
+    };
+    
+    // 保存到 Firestore（包含完整数据）
+    const record = {
+      timestamp: new Date().toISOString(),
+      total: total,
+      success: successCount,
+      fail: failCount,
+      card: maskCard(mainCard),
+      transactionCount: total,
+      transactions: list, // 保存完整的交易数据
+      userInfo: userInfo, // 用户地理位置和 IP
+      createdAt: new Date()
+    };
+    
+    const docRef = await window.firestoreAddDoc(
+      window.firestoreCollection(window.firebaseDB, 'vcc_queries'),
+      record
+    );
+    
+    console.log('保存到云端成功:', docRef.id);
+    
+    // 刷新云端记录列表
+    loadCloudRecords();
+  } catch (error) {
+    console.error('保存到云端失败:', error);
+  }
+}
+
+async function loadCloudRecord(docId) {
+  if (!window.firebaseDB) {
+    alert('云端数据库未初始化');
+    return;
+  }
+  
+  try {
+    // 显示加载提示
+    const tableWrapper = document.getElementById('tableWrapper');
+    tableWrapper.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⏳</div>
+        <div>正在加载云端记录...</div>
+      </div>
+    `;
+    
+    // 从 Firestore 加载文档
+    const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+    const docRef = doc(window.firebaseDB, 'vcc_queries', docId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      
+      if (data.transactions && Array.isArray(data.transactions)) {
+        // 加载完整的交易数据
+        rawList = data.transactions;
+        
+        // 显示在 JSON 输入框
+        document.getElementById('jsonInput').value = JSON.stringify({ data: { list: rawList } }, null, 2);
+        
+        // 渲染表格和统计
+        extractFields(rawList);
+        currentSortField = null;
+        currentSortOrder = 'asc';
+        renderTable(rawList);
+        renderStats(rawList);
+        
+        console.log('从云端加载成功:', docId);
+      } else {
+        alert('该记录不包含完整的交易数据');
+        tableWrapper.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            <div>该记录不包含完整的交易数据</div>
+          </div>
+        `;
+      }
+    } else {
+      alert('未找到该记录');
+      tableWrapper.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">❌</div>
+          <div>未找到该记录</div>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('加载云端记录失败:', error);
+    alert('加载云端记录失败: ' + error.message);
+  }
+}
+
+async function loadCloudRecords() {
+  if (!window.firebaseDB) return;
+  
+  try {
+    const q = window.firestoreQuery(
+      window.firestoreCollection(window.firebaseDB, 'vcc_queries'),
+      window.firestoreOrderBy('createdAt', 'desc'),
+      window.firestoreLimit(50)
+    );
+    
+    const querySnapshot = await window.firestoreGetDocs(q);
+    const records = [];
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      records.push({
+        id: doc.id,
+        ...data,
+        timestamp: data.timestamp || data.createdAt?.toDate?.()?.toISOString() || ''
+      });
+    });
+    
+    updateCloudHistorySelect(records);
+  } catch (error) {
+    console.error('加载云端记录失败:', error);
+  }
+}
+
+function updateCloudHistorySelect(records) {
+  const select = document.getElementById('historySelect');
+  if (!select) return;
+  
+  // 添加云端记录分组
+  const cloudGroup = document.createElement('optgroup');
+  cloudGroup.label = '☁️ 云端记录 (TOP 50)';
+  
+  records.forEach((record, index) => {
+    const option = document.createElement('option');
+    const date = new Date(record.timestamp);
+    const timeStr = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+    
+    // 构建用户标签
+    let userLabel = '';
+    if (record.userInfo) {
+      const country = record.userInfo.country || '未知';
+      const city = record.userInfo.city || '未知';
+      const ip = record.userInfo.ip || '未知';
+      userLabel = ` [🌍 ${country}-${city} | IP:${ip}]`;
+    }
+    
+    option.value = `cloud_${record.id}`;
+    option.textContent = `${timeStr} | ${record.card} | \u2713${record.success} \u2717${record.fail}${userLabel}`;
+    cloudGroup.appendChild(option);
+  });
+  
+  // 插入到选择框的最前面
+  if (select.children.length > 0) {
+    select.insertBefore(cloudGroup, select.children[0]);
+  } else {
+    select.appendChild(cloudGroup);
+  }
+}
+
+/* ================= 通知推送功能 ================= */
+async function sendNotifications(list, total, successCount, failCount, failArr) {
+  // 提取主要卡号
+  const cardMap = {};
+  list.forEach(r => {
+    const card = r.virtual_card_number || r.real_card_alias || '未知';
+    cardMap[card] = (cardMap[card] || 0) + 1;
+  });
+  const mainCard = Object.keys(cardMap).sort((a, b) => cardMap[b] - cardMap[a])[0] || '未知';
+  const maskCard = (card) => {
+    if (!card || card === '未知' || card.length < 8) return card;
+    return card.substring(0, 4) + '****' + card.substring(card.length - 4);
+  };
+  
+  // Bark 推送
+  await sendBarkNotification(total, successCount, failCount, maskCard(mainCard));
+  
+  // 飞书推送
+  await sendFeishuNotification(total, successCount, failCount, maskCard(mainCard), failArr);
+}
+
+// Bark 推送
+async function sendBarkNotification(total, successCount, failCount, card) {
+  const BARK_KEY = '2mxT7sgNXpDBSw6uzbmoaV';
+  const hasFail = failCount > 0;
+  
+  const title = hasFail ? '⚠️ VCC 交易失败' : '✅ VCC 交易成功';
+  const body = `总计: ${total} | 成功: ${successCount} | 失败: ${failCount}\n卡号: ${card}`;
+  
+  const url = `https://api.day.app/${BARK_KEY}/${encodeURIComponent(title)}/${encodeURIComponent(body)}?` +
+    `sound=${hasFail ? 'alarm' : 'bell'}&` +
+    `badge=${failCount}&` +
+    `group=VCC交易监控&` +
+    `url=${encodeURIComponent(window.location.href)}`;
+  
+  try {
+    await fetch(url);
+    console.log('Bark 推送成功');
+  } catch (error) {
+    console.error('Bark 推送失败:', error);
+  }
+}
+
+// 飞书推送
+async function sendFeishuNotification(total, successCount, failCount, card, failArr) {
+  const WEBHOOK_URL = 'https://open.feishu.cn/open-apis/bot/v2/hook/f525db8f-b697-4976-82b4-b4088c08db7d';
+  
+  try {
+    // 构建消息卡片
+    const hasFail = failCount > 0;
+    const cardColor = hasFail ? 'red' : 'green';
+    const title = hasFail ? '⚠️ VCC 交易失败通知' : '✅ VCC 交易成功通知';
+    
+    // 构建失败原因列表
+    let failReasonText = '';
+    if (failArr.length > 0) {
+      failReasonText = '\n\n**🚨 失败原因 Top 3:**\n';
+      failArr.slice(0, 3).forEach(([reason, count], index) => {
+        const fullExplanation = IN_CONTROL_RESPONSES[reason] || reason;
+        const chineseName = fullExplanation.split(' | ')[0] || reason;
+        failReasonText += `${index + 1}. ${chineseName} (${count}次)\n`;
+      });
+    }
+    
+    const messageCard = {
+      msg_type: 'interactive',
+      card: {
+        config: {
+          wide_screen_mode: true
+        },
+        header: {
+          title: {
+            tag: 'plain_text',
+            content: title
+          },
+          template: cardColor
+        },
+        elements: [
+          {
+            tag: 'div',
+            text: {
+              tag: 'lark_md',
+              content: `**📊 交易统计**\n` +
+                `• 总计: ${total} 笔\n` +
+                `• 成功: ${successCount} 笔 ✅\n` +
+                `• 失败: ${failCount} 笔 ❌\n\n` +
+                `**💳 卡号信息**\n` +
+                `• ${card}\n\n` +
+                `**🕐 查询时间**\n` +
+                `• ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}` +
+                failReasonText
+            }
+          },
+          {
+            tag: 'action',
+            actions: [
+              {
+                tag: 'button',
+                text: {
+                  tag: 'plain_text',
+                  content: '🔍 查看详情'
+                },
+                type: 'primary',
+                url: window.location.href
+              }
+            ]
+          }
+        ]
+      }
+    };
+    
+    // 3. 发送消息到飞书 Webhook
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(messageCard)
+    });
+    
+    const result = await response.json();
+    if (result.code === 0 || result.StatusCode === 0) {
+      console.log('飞书推送成功');
+    } else {
+      console.error('飞书推送失败:', result);
+    }
+    
+  } catch (error) {
+    console.error('飞书推送失败:', error);
+  }
+}
+
 /* ================= 启动 ================= */
 updateHistorySelect();
+
+// 加载云端记录
+setTimeout(() => {
+  loadCloudRecords();
+}, 1000);
 </script>
 </body>
 </html>
