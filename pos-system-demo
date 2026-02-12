@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酒店POS培训系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        
+        body {
+            background: #1a1d21;
+            font-family: 'Microsoft YaHei', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        /* 左侧面板 */
+        .reference-panel {
+            width: 340px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .ref-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        .ref-title {
+            color: #f0c040;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 筛选和重置区域 */
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            gap: 8px;
+        }
+
+        .filter-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .filter-btn {
+            padding: 4px 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: #aaa;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover {
+            border-color: #f0c040;
+            color: #f0c040;
+        }
+
+        .filter-btn.active {
+            background: rgba(240,192,64,0.2);
+            border-color: #f0c040;
+            color: #f0c040;
+        }
+
+        .reset-btn {
+            padding: 4px 10px;
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .reset-btn:hover {
+            background: rgba(231, 76, 60, 0.25);
+            border-color: rgba(231, 76, 60, 0.6);
+            color: #ff6b6b;
+        }
+
+        /* 银行卡样式 */
+        .demo-card {
+            height: 160px;
+            border-radius: 12px;
+            padding: 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+            position: relative;
+            border: 3px solid transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .demo-card:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+        .demo-card.active { border-color: #f0c040; box-shadow: 0 0 20px rgba(240,192,64,0.4); }
+
+        .demo-card.visa { 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .demo-card.union { 
+            background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%); 
+            color: #333;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-type {
+            font-size: 18px;
+            font-style: italic;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .card-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .card-chip {
+            width: 35px;
+            height: 28px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #d4af37 100%);
+            border-radius: 6px;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin: 3px 0;
+        }
+        
+        .card-chip::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 16px;
+            border: 1px solid rgba(0,0,0,0.3);
+            border-radius: 3px;
+        }
+
+        .card-num {
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            letter-spacing: 2px;
+            margin: 8px 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-holder-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .card-name {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .card-expiry {
+            font-size: 10px;
+            opacity: 0.9;
+        }
+
+        .card-cvv-box {
+            text-align: right;
+        }
+
+        .cvv-label {
+            font-size: 9px;
+            opacity: 0.8;
+            margin-bottom: 1px;
+            text-transform: uppercase;
+        }
+
+        .cvv-value {
+            font-size: 14px;
+            color: #ff6b6b;
+            font-weight: bold;
+            letter-spacing: 2px;
+            font-family: 'Courier New', monospace;
+            background: rgba(255,255,255,0.15);
+            padding: 1px 6px;
+            border-radius: 3px;
+        }
+
+        .card-hint {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            background: rgba(0,0,0,0.4);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        /* 单据列表 */
+        .receipt-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 3px;
+        }
+
+        .receipt-list::-webkit-scrollbar { width: 4px; }
+        .receipt-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        .receipt-item {
+            background: #fff;
+            color: #000;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: relative;
+            border-left: 3px solid #999;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .receipt-item:hover { transform: translateX(3px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .receipt-item.selectable { border-left-color: #27ae60; box-shadow: 0 0 6px rgba(39, 174, 96, 0.2); }
+        .receipt-item.selectable:hover { box-shadow: 0 0 12px rgba(39, 174, 96, 0.4); }
+        .receipt-item.active { border-left-color: #f0c040; background: #fffef0; box-shadow: 0 0 15px rgba(240, 192, 64, 0.4); }
+        .receipt-item.voided, .receipt-item.refunded { opacity: 0.6; border-left-color: #ccc; background: #f9f9f9; }
+        
+        .receipt-item.voided::after {
+            content: '已取消'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 20px; color: #e74c3c; border: 2px solid #e74c3c;
+            padding: 4px 10px; font-weight: bold; opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .receipt-item.refunded::after {
+            content: '已退款'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 20px; color: #ff9800; border: 2px solid #ff9800;
+            padding: 4px 10px; font-weight: bold; opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .receipt-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #ddd;
+        }
+
+        .receipt-type { font-weight: bold; font-size: 13px; color: #d32f2f; }
+        .receipt-date { font-size: 10px; color: #666; }
+        .receipt-row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 11px; }
+        .receipt-label { color: #666; }
+        .receipt-value { font-weight: bold; }
+
+        .auth-code-box, .rrn-box {
+            background: #fffde7; border: 1px solid #f44336;
+            padding: 4px; margin: 6px 0; text-align: center;
+            font-size: 13px; font-weight: bold; color: #d32f2f;
+            border-radius: 4px;
+        }
+        .rrn-box { font-size: 11px; letter-spacing: 1px; }
+
+        /* POS设备 */
+        .pos-device {
+            width: 380px;
+            background: linear-gradient(180deg, #3a3f45 0%, #2a2d32 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            flex-shrink: 0;
+        }
+
+        .pos-screen {
+            background: #c4cfc4; width: 100%; height: 260px;
+            border-radius: 8px; padding: 20px;
+            font-family: 'Courier New', monospace; color: #1a1f1a;
+            font-size: 16px;
+            line-height: 1.4; margin-bottom: 15px;
+            position: relative; overflow: hidden;
+        }
+
+        .screen-header {
+            display: flex; justify-content: space-between;
+            border-bottom: 2px solid rgba(0,0,0,0.2);
+            padding-bottom: 8px; margin-bottom: 12px;
+            font-weight: bold; font-size: 14px;
+        }
+
+        .screen-body {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: calc(100% - 40px); text-align: center;
+        }
+
+        .amount-display { font-size: 36px; font-weight: bold; margin: 15px 0; color: #2e7d32; }
+
+        .input-display {
+            background: rgba(0,0,0,0.1); border: 3px solid #555;
+            border-radius: 8px; padding: 15px 30px; font-size: 28px;
+            letter-spacing: 8px; min-width: 180px; margin: 10px 0;
+        }
+        
+        .input-display.active { border-color: #1a1f1a; animation: blink 1s infinite; }
+        .input-display.error { border-color: #e74c3c; animation: shake 0.5s; }
+
+        @keyframes blink { 50% { border-color: #999; } }
+        @keyframes shake { 
+            25% { transform: translateX(-10px); } 
+            75% { transform: translateX(10px); } 
+        }
+
+        .pin-dots { display: flex; gap: 15px; justify-content: center; margin: 20px 0; }
+        .pin-dot { width: 20px; height: 20px; border: 3px solid #555; border-radius: 50%; background: transparent; }
+        .pin-dot.filled { background: #1a1f1a; border-color: #1a1f1a; }
+
+        .card-slots { display: flex; justify-content: center; gap: 30px; margin-bottom: 15px; }
+        .slot { text-align: center; cursor: pointer; padding: 10px; border-radius: 6px; transition: all 0.3s; }
+        .slot:hover { background: rgba(255,255,255,0.1); }
+        .slot.highlight { background: rgba(240,192,64,0.2); box-shadow: 0 0 20px rgba(240,192,64,0.4); }
+
+        .slot-bar {
+            width: 60px; height: 6px; background: linear-gradient(180deg, #111, #333);
+            border-radius: 3px; margin: 0 auto 6px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .slot-label { font-size: 11px; color: #888; }
+
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+        .key {
+            height: 52px; background: linear-gradient(180deg, #4a5059 0%, #3a4049 100%);
+            border: none; border-radius: 10px; color: #fff; font-size: 20px;
+            font-weight: bold; cursor: pointer; box-shadow: 0 3px 0 #2a2d32;
+            transition: all 0.1s;
+        }
+        .key:active { transform: translateY(3px); box-shadow: 0 0 0 #2a2d32; }
+        .key.func { background: linear-gradient(180deg, #f0c040 0%, #d4a017 100%); color: #000; font-size: 12px; }
+        .key.red { background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); }
+        .key.green { background: linear-gradient(180deg, #27ae60 0%, #1e8449 100%); }
+
+        .func-keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
+        .fkey {
+            height: 42px; background: #2a2d32; border: 1px solid #3a3f45;
+            color: #888; border-radius: 8px; font-size: 11px;
+            cursor: pointer; transition: all 0.2s; font-weight: bold;
+        }
+        .fkey:hover { background: #3a3f45; color: #fff; }
+        .fkey.active { background: #f0c040; color: #000; }
+
+        .printer { background: #25282d; border-radius: 8px; padding: 10px; text-align: center; }
+        .paper-slot { height: 4px; background: #000; border-radius: 3px; margin-bottom: 6px; }
+
+        .receipt-out {
+            position: absolute; bottom: -250px; left: 50%; transform: translateX(-50%);
+            width: 340px; background: #fff; color: #000; padding: 25px;
+            font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.5;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4); border-radius: 0 0 6px 6px;
+            opacity: 0; transition: all 0.5s; z-index: 100;
+        }
+        .receipt-out.show { bottom: 30px; opacity: 1; }
+
+        /* 右侧面板 */
+        .control-panel {
+            width: 300px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .control-card {
+            background: rgba(255,255,255,0.05); border-radius: 12px;
+            padding: 15px; border: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        .control-title { color: #888; font-size: 12px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+
+        .scene-btn {
+            width: 100%; padding: 12px; margin-bottom: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05); color: #fff;
+            border-radius: 10px; cursor: pointer; font-size: 13px;
+            text-align: left; transition: all 0.3s;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .scene-btn:hover { border-color: #f0c040; background: rgba(240,192,64,0.1); }
+        .scene-btn.active { background: rgba(240,192,64,0.2); border-color: #f0c040; color: #f0c040; }
+
+        .status-tag { display: inline-block; padding: 3px 8px; background: rgba(255,255,255,0.1); border-radius: 6px; font-size: 10px; }
+
+        .diff-box { background: rgba(240,192,64,0.1); border: 1px solid rgba(240,192,64,0.3); border-radius: 8px; padding: 12px; margin-top: 8px; font-size: 12px; line-height: 1.8; }
+        .diff-box h4 { color: #f0c040; margin-bottom: 6px; font-size: 13px; }
+        .diff-item { display: flex; align-items: flex-start; gap: 8px; margin: 6px 0; color: #ccc; font-size: 11px; }
+        .diff-icon { color: #f0c040; font-weight: bold; }
+
+        .flow-hint {
+            background: rgba(39, 174, 96, 0.1); border: 1px solid rgba(39, 174, 96, 0.3);
+            border-radius: 8px; padding: 10px; margin-top: 8px;
+            font-size: 11px; color: #27ae60; line-height: 1.6;
+        }
+
+        /* 音效指示器 */
+        .sound-indicator {
+            position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.8);
+            padding: 10px 20px; border-radius: 20px; color: #f0c040;
+            font-size: 14px; display: flex; align-items: center; gap: 10px;
+            opacity: 0; transition: opacity 0.3s; z-index: 1000;
+        }
+        .sound-indicator.show { opacity: 1; }
+
+        .sound-wave { display: flex; gap: 3px; align-items: center; height: 20px; }
+        .sound-bar { width: 3px; background: #f0c040; animation: soundWave 0.5s ease-in-out infinite; }
+        .sound-bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+        .sound-bar:nth-child(2) { height: 15px; animation-delay: 0.1s; }
+        .sound-bar:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+        .sound-bar:nth-child(4) { height: 18px; animation-delay: 0.3s; }
+
+        @keyframes soundWave { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+    </style>
+</head>
+<body>
+
+<div class="sound-indicator" id="soundIndicator">
+    <span>🔊</span>
+    <div class="sound-wave">
+        <div class="sound-bar"></div><div class="sound-bar"></div>
+        <div class="sound-bar"></div><div class="sound-bar"></div>
+    </div>
+    <span id="soundText">播放音效...</span>
+</div>
+
+<div class="reference-panel">
+    <div class="ref-card">
+        <div class="ref-title">💳 模拟银行卡（点击操作）</div>
+        
+        <div class="demo-card visa" id="visaCard" onclick="swipeCard()">
+            <div class="card-header">
+                <div class="card-type">VISA</div>
+                <div class="card-tag">磁条卡</div>
+            </div>
+            <div class="card-num">4111 2222 3333 4444</div>
+            <div class="card-info-row">
+                <div class="card-holder-info">
+                    <div class="card-name">ZHANG SAN</div>
+                    <div class="card-expiry">12/28</div>
+                </div>
+                <div class="card-cvv-box">
+                    <div class="cvv-label">CVV2</div>
+                    <div class="cvv-value">123</div>
+                </div>
+            </div>
+            <div class="card-hint">点击刷卡 →</div>
+        </div>
+
+        <div class="demo-card union" id="unionCard" onclick="insertCard()">
+            <div class="card-header">
+                <div class="card-type">银联</div>
+                <div class="card-tag">芯片卡</div>
+            </div>
+            <div class="card-chip"></div>
+            <div class="card-num">6222 8888 8888 8888</div>
+            <div class="card-info-row">
+                <div class="card-holder-info">
+                    <div class="card-name">LI SI</div>
+                    <div class="card-expiry">05/27</div>
+                </div>
+                <div class="card-cvv-box">
+                    <div class="cvv-label">CVN2</div>
+                    <div class="cvv-value">456</div>
+                </div>
+            </div>
+            <div class="card-hint">点击插卡 ↑</div>
+        </div>
+        
+        <div style="font-size: 11px; color: #888; text-align: center; padding: 6px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+            💡 验证密码即卡面CVV2/CVN2（3位）
+        </div>
+    </div>
+
+    <div class="ref-card" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="ref-title" id="receiptTitle">📋 历史交易记录</div>
+        
+        <div class="filter-header">
+            <div class="filter-tabs">
+                <button class="filter-btn active" onclick="filterReceipts('all')">全部</button>
+                <button class="filter-btn" onclick="filterReceipts('auth')">预授权</button>
+                <button class="filter-btn" onclick="filterReceipts('sale')">消费</button>
+                <button class="filter-btn" onclick="filterReceipts('complete')">已完成</button>
+                <button class="filter-btn" onclick="filterReceipts('voided')">已取消</button>
+                <button class="filter-btn" onclick="filterReceipts('refunded')">已退款</button>
+            </div>
+            <button class="reset-btn" onclick="resetAllHistory()" title="清空所有交易记录">
+                🗑️ 清空
+            </button>
+        </div>
+        
+        <div class="receipt-list" id="receiptList" style="flex: 1;"></div>
+        <div class="flow-hint" id="flowHint" style="display: none; margin-top: 8px;"></div>
+    </div>
+</div>
+
+<div class="pos-device">
+    <div class="pos-screen" id="screen">
+        <div class="screen-header">
+            <span>🏨 酒店收银系统 Pro</span>
+            <span id="statusText">Ready</span>
+        </div>
+        <div class="screen-body" id="screenBody">
+            <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">欢迎使用</div>
+            <div style="color: #555; font-size: 14px;">请选择交易类型开始培训</div>
+        </div>
+        <div class="receipt-out" id="receiptOut"></div>
+    </div>
+
+    <div class="card-slots">
+        <div class="slot" id="icSlot" onclick="insertCard()">
+            <div class="slot-bar" style="width: 50px; height: 6px;"></div>
+            <div class="slot-label">IC插槽</div>
+        </div>
+        <div class="slot" id="magSlot" onclick="swipeCard()">
+            <div class="slot-bar"></div>
+            <div class="slot-label">磁条卡槽</div>
+        </div>
+    </div>
+
+    <div class="func-keys">
+        <button class="fkey" onclick="selectFunc('auth')">预授权</button>
+        <button class="fkey" onclick="selectFunc('complete')">完成</button>
+        <button class="fkey" onclick="selectFunc('void')">预授权取消</button>
+        <button class="fkey" onclick="selectFunc('refund')">退款</button>
+        <button class="fkey" onclick="selectFunc('sale')">消费</button>
+    </div>
+
+    <div class="keypad">
+        <button class="key" onclick="pressKey('1')">1</button>
+        <button class="key" onclick="pressKey('2')">2</button>
+        <button class="key" onclick="pressKey('3')">3</button>
+        <button class="key" onclick="pressKey('4')">4</button>
+        <button class="key" onclick="pressKey('5')">5</button>
+        <button class="key" onclick="pressKey('6')">6</button>
+        <button class="key" onclick="pressKey('7')">7</button>
+        <button class="key" onclick="pressKey('8')">8</button>
+        <button class="key" onclick="pressKey('9')">9</button>
+        <button class="key func" onclick="pressKey('CLEAR')">清除</button>
+        <button class="key" onclick="pressKey('0')">0</button>
+        <button class="key func" onclick="pressKey('BACK')">退格</button>
+        <button class="key red" onclick="pressKey('CANCEL')">取消</button>
+        <button class="key" onclick="pressKey('00')">00</button>
+        <button class="key green" onclick="pressKey('ENTER')">确认</button>
+    </div>
+
+    <div class="printer">
+        <div class="paper-slot"></div>
+        <div style="font-size: 10px; color: #555;">🖨️ 热敏打印机就绪</div>
+    </div>
+</div>
+
+<div class="control-panel">
+    <div class="control-card">
+        <div class="control-title">🎯 交易场景</div>
+        <button class="scene-btn active" onclick="setScene('auth')">
+            <span>🏨 入住预授权</span><span class="status-tag">冻结押金</span>
+        </button>
+        <button class="scene-btn" onclick="setScene('complete')">
+            <span>💳 退房结算</span><span class="status-tag">需授权码</span>
+        </button>
+        <button class="scene-btn" onclick="setScene('void')">
+            <span>❌ 预授权取消</span><span class="status-tag">需原卡+原码</span>
+        </button>
+        <button class="scene-btn" onclick="setScene('refund')">
+            <span>↩️ 退款</span><span class="status-tag">需原交易</span>
+        </button>
+        <button class="scene-btn" onclick="setScene('sale')">
+            <span>🛒 餐饮消费</span><span class="status-tag">直接扣款</span>
+        </button>
+    </div>
+
+    <div class="control-card">
+        <div class="control-title">📚 核心区别</div>
+        <div class="diff-box">
+            <h4>🚫 预授权取消（Void）</h4>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>针对：</b>未结算的预授权</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>验证：</b>原授权码 + 原卡</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>资金：</b>实时释放</span></div>
+        </div>
+        <div class="diff-box" style="margin-top: 12px;">
+            <h4>↩️ 退款（Refund）</h4>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>针对：</b>已扣款交易</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>验证：</b>原参考号(RRN)</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>资金：</b>3-5工作日</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 音响系统
+const AudioSys = {
+    ctx: null,
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    },
+    playTone(freq, duration, type = 'sine') {
+        this.init();
+        try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.frequency.value = freq;
+            osc.type = type;
+            gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+            osc.start(this.ctx.currentTime);
+            osc.stop(this.ctx.currentTime + duration);
+        } catch(e) { console.log('Audio play failed', e); }
+    },
+    success() {
+        this.playTone(880, 0.1);
+        setTimeout(() => this.playTone(1100, 0.2), 100);
+        this.showIndicator('✅ 交易成功', '#27ae60');
+    },
+    error() {
+        this.playTone(200, 0.3, 'sawtooth');
+        setTimeout(() => this.playTone(150, 0.3, 'sawtooth'), 150);
+        this.showIndicator('❌ 操作失败', '#e74c3c');
+    },
+    keypress() { this.playTone(800, 0.05); },
+    alert() {
+        this.playTone(600, 0.1);
+        setTimeout(() => this.playTone(600, 0.1), 150);
+        this.showIndicator('🔔 请注意', '#f0c040');
+    },
+    showIndicator(text, color) {
+        const ind = document.getElementById('soundIndicator');
+        const txt = document.getElementById('soundText');
+        txt.textContent = text; txt.style.color = color;
+        ind.classList.add('show');
+        setTimeout(() => ind.classList.remove('show'), 1500);
+    }
+};
+
+// 历史交易数据
+let historyData = [
+    { id: 1, type: 'auth', typeName: '预授权', card: '4111 22** **** 4444', amount: 2000, auth: '123456', rrn: '202401150001', date: '01-15 14:30', status: 'normal', voided: false, refunded: false },
+    { id: 2, type: 'auth', typeName: '预授权', card: '6222 88** **** 8888', amount: 1500, auth: '654321', rrn: '202401150002', date: '01-15 16:45', status: 'normal', voided: false, refunded: false },
+    { id: 3, type: 'sale', typeName: '餐饮消费', card: '4111 22** **** 4444', amount: 580, auth: '789012', rrn: '202401150003', date: '01-15 18:20', status: 'normal', voided: false, refunded: false },
+    { id: 4, type: 'complete', typeName: '预授权完成', card: '6222 88** **** 8888', amount: 1200, auth: '345678', rrn: '202401160001', date: '01-16 09:15', status: 'normal', voided: false, refunded: false },
+    { id: 5, type: 'auth', typeName: '预授权', card: '4111 22** **** 4444', amount: 3000, auth: '111222', rrn: '202401140001', date: '01-14 09:00', status: 'normal', voided: true, refunded: false }
+];
+
+let currentFilter = 'all';
+
+const state = {
+    step: 'idle',
+    mode: 'auth',
+    input: '',
+    amount: 0,
+    preauthAmount: 0,
+    authCode: '',
+    rrn: '',
+    selectedReceipt: null,
+    errorSim: null,
+    currentCard: null,
+    currentCardCvv: null
+};
+
+function log(msg, type = 'normal') {
+    console.log(`[${type.toUpperCase()}] ${msg}`);
+}
+
+// 重置所有历史记录
+function resetAllHistory() {
+    if (!confirm('确定要清空所有交易记录吗？\n此操作不可恢复，将删除所有预授权、消费、退款等历史数据。')) {
+        return;
+    }
+    
+    if (!confirm('再次确认：是否清空全部历史交易记录？')) {
+        return;
+    }
+    
+    historyData = [];
+    
+    state.selectedReceipt = null;
+    state.step = 'idle';
+    state.input = '';
+    state.amount = 0;
+    state.preauthAmount = 0;
+    state.authCode = '';
+    state.rrn = '';
+    state.currentCard = null;
+    state.currentCardCvv = null;
+    
+    document.querySelectorAll('.receipt-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('visaCard').classList.remove('active');
+    document.getElementById('unionCard').classList.remove('active');
+    document.getElementById('icSlot').classList.remove('highlight');
+    document.getElementById('magSlot').classList.remove('highlight');
+    
+    initReceiptList();
+    
+    AudioSys.alert();
+    updateScreen(`
+        <div style="color: #e74c3c; font-weight: bold; margin-bottom: 15px; font-size: 20px;">🗑️ 记录已清空</div>
+        <div style="font-size: 14px; color: #555;">所有历史交易记录已清除<br>系统已重置为初始状态</div>
+    `);
+    
+    log('所有交易记录已清空', 'warning');
+}
+
+function filterReceipts(filterType) {
+    currentFilter = filterType;
+    
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    initReceiptList();
+    AudioSys.keypress();
+}
+
+function initReceiptList() {
+    const list = document.getElementById('receiptList');
+    const title = document.getElementById('receiptTitle');
+    
+    let filteredData = historyData;
+    switch(currentFilter) {
+        case 'auth':
+            filteredData = historyData.filter(r => r.type === 'auth' && !r.voided && !r.refunded);
+            break;
+        case 'sale':
+            filteredData = historyData.filter(r => r.type === 'sale' && !r.refunded);
+            break;
+        case 'complete':
+            filteredData = historyData.filter(r => r.type === 'complete' && !r.refunded);
+            break;
+        case 'voided':
+            filteredData = historyData.filter(r => r.voided);
+            break;
+        case 'refunded':
+            filteredData = historyData.filter(r => r.refunded);
+            break;
+        case 'all':
+        default:
+            filteredData = historyData;
+    }
+    
+    const count = filteredData.length;
+    const filterNames = {
+        'all': '全部',
+        'auth': '预授权',
+        'sale': '消费',
+        'complete': '已完成',
+        'voided': '已取消',
+        'refunded': '已退款'
+    };
+    title.innerHTML = `📋 ${filterNames[currentFilter]} (${count}笔)`;
+    
+    if (count === 0) {
+        list.innerHTML = `
+            <div style="color: #888; text-align: center; padding: 30px 20px; font-size: 12px;">
+                <div style="font-size: 32px; margin-bottom: 10px;">📭</div>
+                暂无${filterNames[currentFilter]}记录<br>
+                <span style="font-size: 11px; color: #666; margin-top: 8px; display: block;">可开始进行新交易或切换筛选条件</span>
+            </div>
+        `;
+        return;
+    }
+    
+    list.innerHTML = filteredData.map(item => {
+        let isSelectable = false;
+        let selectHint = '';
+        let statusClass = '';
+        
+        if (item.voided) {
+            statusClass = 'voided';
+            selectHint = '已取消';
+        } else if (item.refunded) {
+            statusClass = 'refunded';
+            selectHint = '已退款';
+        } else {
+            switch(state.mode) {
+                case 'void':
+                    isSelectable = item.type === 'auth';
+                    selectHint = isSelectable ? '✓ 可取消' : '不可取消';
+                    break;
+                case 'complete':
+                    isSelectable = item.type === 'auth';
+                    selectHint = isSelectable ? '✓ 可结算' : '不可结算';
+                    break;
+                case 'refund':
+                    isSelectable = (item.type === 'sale' || item.type === 'complete');
+                    selectHint = isSelectable ? '✓ 可退款' : '不可退款';
+                    break;
+                default:
+                    selectHint = '查看';
+            }
+            if (isSelectable) statusClass = 'selectable';
+        }
+        
+        if (state.selectedReceipt && state.selectedReceipt.id === item.id) {
+            statusClass += ' active';
+        }
+        
+        const isAuth = item.type === 'auth';
+        const codeBox = isAuth ? 
+            `<div class="auth-code-box">授权:${item.auth}</div>` :
+            `<div class="rrn-box">RRN:${item.rrn}</div>`;
+        
+        return `
+        <div class="receipt-item ${statusClass}" 
+             onclick="selectReceipt(${item.id})" id="receipt-${item.id}">
+            <div class="receipt-header">
+                <span class="receipt-type">${item.typeName}</span>
+                <span class="receipt-date">${item.date}</span>
+            </div>
+            <div class="receipt-row"><span class="receipt-label">卡:</span><span class="receipt-value">${item.card}</span></div>
+            <div class="receipt-row"><span class="receipt-label">金额:</span><span class="receipt-value">¥${item.amount.toFixed(2)}</span></div>
+            ${codeBox}
+            <div style="color: ${isSelectable ? '#27ae60' : '#999'}; text-align: center; margin-top: 2px; font-size: 10px;">
+                ${selectHint}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function selectReceipt(id) {
+    AudioSys.keypress();
+    const receipt = historyData.find(r => r.id === id);
+    if (!receipt) return;
+    
+    let canSelect = false;
+    
+    switch(state.mode) {
+        case 'void':
+            canSelect = receipt.type === 'auth' && !receipt.voided;
+            break;
+        case 'complete':
+            canSelect = receipt.type === 'auth' && !receipt.voided;
+            break;
+        case 'refund':
+            canSelect = (receipt.type === 'sale' || receipt.type === 'complete') && !receipt.refunded;
+            break;
+        default:
+            document.querySelectorAll('.receipt-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`receipt-${id}`).classList.add('active');
+            return;
+    }
+    
+    if (state.step === 'select_receipt' && !canSelect) {
+        AudioSys.error();
+        const el = document.getElementById(`receipt-${id}`);
+        el.style.animation = 'shake 0.5s';
+        setTimeout(() => el.style.animation = '', 500);
+        return;
+    }
+    
+    if (state.step !== 'select_receipt') {
+        document.querySelectorAll('.receipt-item').forEach(el => el.classList.remove('active'));
+        document.getElementById(`receipt-${id}`).classList.add('active');
+        return;
+    }
+    
+    state.selectedReceipt = receipt;
+    state.authCode = receipt.auth || '';
+    state.rrn = receipt.rrn || '';
+    state.preauthAmount = receipt.amount;
+    
+    document.querySelectorAll('.receipt-item').forEach(el => el.classList.remove('active'));
+    document.getElementById(`receipt-${id}`).classList.add('active');
+    
+    setTimeout(() => {
+        if (state.mode === 'void') {
+            state.amount = receipt.amount;
+            showCardWait();
+        } else if (state.mode === 'complete' || state.mode === 'refund') {
+            showAmountInput();
+        }
+    }, 300);
+}
+
+function setScene(mode) {
+    AudioSys.init();
+    AudioSys.keypress();
+    
+    document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    state.mode = mode;
+    state.step = 'idle';
+    state.input = '';
+    state.amount = 0;
+    state.preauthAmount = 0;
+    state.authCode = '';
+    state.rrn = '';
+    state.selectedReceipt = null;
+    state.errorSim = null;
+    state.currentCard = null;
+    state.currentCardCvv = null;
+    
+    document.getElementById('visaCard').classList.remove('active');
+    document.getElementById('unionCard').classList.remove('active');
+    document.getElementById('icSlot').classList.remove('highlight');
+    document.getElementById('magSlot').classList.remove('highlight');
+    document.querySelectorAll('.fkey').forEach(k => k.classList.remove('active'));
+    
+    initReceiptList();
+    
+    const hint = document.getElementById('flowHint');
+    
+    switch(mode) {
+        case 'auth':
+        case 'sale':
+            hint.style.display = 'none';
+            showAmountInput();
+            break;
+        case 'void':
+            hint.innerHTML = '<b>预授权取消：</b><br>1. 选<span style="color:#27ae60">绿色</span>单据<br>2. 刷原卡<br>3. 输入授权码';
+            hint.style.display = 'block';
+            updateScreen(`
+                <div style="color: #f0c040; font-weight: bold; margin-bottom: 12px; font-size: 18px;">📋 选择要取消的预授权</div>
+                <div style="font-size: 13px; color: #555;">列表中标记"✓ 可取消"的单据</div>
+            `);
+            state.step = 'select_receipt';
+            AudioSys.alert();
+            break;
+        case 'complete':
+            hint.innerHTML = '<b>预授权完成：</b><br>1. 选<span style="color:#27ae60">绿色</span>单据<br>2. 输入金额<br>3. 刷原卡+授权码';
+            hint.style.display = 'block';
+            updateScreen(`
+                <div style="color: #f0c040; font-weight: bold; margin-bottom: 12px; font-size: 18px;">📋 选择要结算的预授权</div>
+            `);
+            state.step = 'select_receipt';
+            AudioSys.alert();
+            break;
+        case 'refund':
+            hint.innerHTML = '<b>退款：</b><br>1. 选<span style="color:#27ae60">绿色</span>单据<br>2. 输入金额<br>3. 输入参考号';
+            hint.style.display = 'block';
+            updateScreen(`
+                <div style="color: #f0c040; font-weight: bold; margin-bottom: 12px; font-size: 18px;">📋 选择要退款的交易</div>
+            `);
+            state.step = 'select_receipt';
+            AudioSys.alert();
+            break;
+    }
+}
+
+function showAmountInput() {
+    state.step = 'amount';
+    state.input = '';
+    
+    let title, hint;
+    switch(state.mode) {
+        case 'auth': title = '预授权金额'; hint = '冻结押金'; break;
+        case 'sale': title = '消费金额'; hint = '直接扣款'; break;
+        case 'complete': title = '结算金额'; hint = `最大¥${state.preauthAmount.toFixed(2)}`; break;
+        case 'refund': title = '退款金额'; hint = `最大¥${state.selectedReceipt ? state.selectedReceipt.amount.toFixed(2) : '0.00'}`; break;
+        default: title = '金额'; hint = '';
+    }
+    
+    updateScreen(`
+        <div style="margin-bottom: 12px; font-size: 18px; font-weight: bold;">${title}</div>
+        <div class="input-display active" id="inputDisplay">¥0.00</div>
+        <div style="font-size: 12px; color: #555; margin-top: 12px; font-weight: bold;">${hint}</div>
+        <div class="error-text" id="errorText"></div>
+    `);
+}
+
+function showCardWait() {
+    state.step = 'card';
+    document.getElementById('visaCard').classList.add('active');
+    document.getElementById('unionCard').classList.add('active');
+    document.getElementById('icSlot').classList.add('highlight');
+    document.getElementById('magSlot').classList.add('highlight');
+    
+    let msg = '';
+    if (state.mode === 'void') {
+        msg = `¥${state.selectedReceipt.amount.toFixed(2)}<br><span style="font-size: 12px; color: #e74c3c;">尾号${state.selectedReceipt.card.slice(-4)}</span>`;
+    } else if (state.amount > 0) {
+        msg = `¥${state.amount.toFixed(2)}`;
+    }
+    
+    updateScreen(`
+        <div style="font-size: 20px; font-weight: bold; margin-bottom: 15px;">请刷卡/插卡</div>
+        <div style="font-size: 24px; color: #2e7d32; margin-bottom: 12px; font-weight: bold; line-height: 1.4;">${msg}</div>
+        <div style="font-size: 12px; color: #666;">点击左侧银行卡</div>
+    `);
+}
+
+function swipeCard() { handleCardAction('磁条卡', '4111 2222 3333 4444', '123'); }
+function insertCard() { handleCardAction('芯片卡', '6222 8888 8888 8888', '456'); }
+
+function handleCardAction(cardType, cardNum, cvv) {
+    if (state.step !== 'card') {
+        AudioSys.error();
+        return;
+    }
+    
+    AudioSys.keypress();
+    
+    state.currentCard = cardNum;
+    state.currentCardCvv = cvv;
+    
+    document.getElementById('visaCard').classList.remove('active');
+    document.getElementById('unionCard').classList.remove('active');
+    document.getElementById('icSlot').classList.remove('highlight');
+    document.getElementById('magSlot').classList.remove('highlight');
+    
+    if ((state.mode === 'void' || state.mode === 'complete') && state.selectedReceipt) {
+        const originalLastFour = state.selectedReceipt.card.slice(-4);
+        const currentLastFour = cardNum.slice(-4);
+        
+        if (currentLastFour !== originalLastFour) {
+            AudioSys.error();
+            updateScreen(`
+                <div style="color: #e74c3c; font-weight: bold; margin-bottom: 12px; font-size: 20px;">🚫 卡片不匹配</div>
+                <div style="font-size: 13px; color: #555;">
+                    当前:${currentLastFour} 需要:${originalLastFour}<br>
+                    <span style="color: #e74c3c;">必须使用原卡！</span>
+                </div>
+            `);
+            state.step = 'error';
+            return;
+        }
+    }
+    
+    if (state.mode === 'void' || state.mode === 'complete') {
+        showAuthInput();
+    } else if (state.mode === 'refund') {
+        showAuthInput();
+    } else {
+        showPinInput();
+    }
+}
+
+function showAuthInput() {
+    state.step = 'auth';
+    state.input = '';
+    
+    const isRefund = state.mode === 'refund';
+    
+    updateScreen(`
+        <div style="margin-bottom: 12px; font-size: 18px; font-weight: bold;">
+            ${isRefund ? '输入12位参考号(RRN)' : '输入6位授权码'}
+        </div>
+        <div class="input-display active" id="inputDisplay" style="letter-spacing: ${isRefund ? '5px' : '10px'}; font-size: 22px;">
+            ${isRefund ? '_ _ _ _ _ _ _ _ _ _ _ _' : '_ _ _ _ _ _'}
+        </div>
+        <div style="font-size: 11px; color: #555; margin-top: 12px;">
+            ${isRefund ? '查看左侧单据RRN' : '查看左侧单据授权码'}
+        </div>
+        <div class="error-text" id="errorText"></div>
+    `);
+}
+
+function showPinInput() {
+    state.step = 'pin';
+    state.input = '';
+    updateScreen(`
+        <div style="margin-bottom: 12px; font-size: 18px; font-weight: bold;">输入CVV2（3位）</div>
+        <div style="font-size: 11px; color: #666; margin-bottom: 8px;">卡片背面签名栏右侧3位</div>
+        <div class="pin-dots" id="pinDots">
+            <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+        </div>
+        <div class="error-text" id="errorText"></div>
+    `);
+}
+
+function pressKey(key) {
+    AudioSys.keypress();
+    if (key === 'CANCEL') { resetScreen(); return; }
+    
+    switch(state.step) {
+        case 'amount': handleAmountKey(key); break;
+        case 'auth': handleAuthKey(key); break;
+        case 'pin': handlePinKey(key); break;
+    }
+}
+
+function handleAmountKey(key) {
+    const display = document.getElementById('inputDisplay');
+    const error = document.getElementById('errorText');
+    
+    if (key === 'CLEAR') { state.input = ''; error.classList.remove('show'); }
+    else if (key === 'BACK') { state.input = state.input.slice(0, -1); }
+    else if (key === 'ENTER') {
+        if (state.input.length === 0) return;
+        const amt = parseFloat(state.input) / 100;
+        
+        if (amt <= 0) {
+            AudioSys.error();
+            error.textContent = '金额>0';
+            error.classList.add('show');
+            return;
+        }
+        
+        if (state.mode === 'complete' && amt > state.preauthAmount) {
+            AudioSys.error();
+            error.textContent = `超限额¥${state.preauthAmount.toFixed(2)}`;
+            error.classList.add('show');
+            return;
+        }
+        
+        state.amount = amt;
+        showCardWait();
+        return;
+    }
+    else if (/\d/.test(key) && state.input.length < 8) { state.input += key; }
+    else if (key === '00' && state.input.length < 7) { state.input += '00'; }
+    
+    display.textContent = state.input === '' ? '¥0.00' : '¥' + (parseFloat(state.input) / 100).toFixed(2);
+}
+
+function handleAuthKey(key) {
+    const display = document.getElementById('inputDisplay');
+    const error = document.getElementById('errorText');
+    const isRefund = state.mode === 'refund';
+    const maxLen = isRefund ? 12 : 6;
+    const targetCode = isRefund ? state.rrn : state.authCode;
+    
+    if (key === 'CLEAR') { state.input = ''; error.classList.remove('show'); }
+    else if (key === 'BACK') { state.input = state.input.slice(0, -1); }
+    else if (key === 'ENTER') {
+        if (state.input.length !== maxLen) {
+            AudioSys.error();
+            error.textContent = `需${maxLen}位`;
+            error.classList.add('show');
+            return;
+        }
+        
+        if (state.input !== targetCode) {
+            AudioSys.error();
+            error.textContent = '错误！';
+            error.classList.add('show');
+            return;
+        }
+        
+        processTransaction();
+        return;
+    }
+    else if (/\d/.test(key) && state.input.length < maxLen) { state.input += key; }
+    
+    let str = '';
+    for (let i = 0; i < maxLen; i++) {
+        str += i < state.input.length ? state.input[i] : '_';
+        if (i < maxLen - 1) str += ' ';
+    }
+    display.textContent = str;
+}
+
+function handlePinKey(key) {
+    const dots = document.querySelectorAll('.pin-dot');
+    const error = document.getElementById('errorText');
+    
+    if (key === 'CLEAR') { state.input = ''; error.classList.remove('show'); }
+    else if (key === 'BACK') { state.input = state.input.slice(0, -1); }
+    else if (key === 'ENTER') {
+        if (state.input.length !== 3) {
+            AudioSys.error();
+            error.textContent = '需3位CVV';
+            error.classList.add('show');
+            return;
+        }
+        
+        if (state.input !== state.currentCardCvv) {
+            AudioSys.error();
+            error.textContent = 'CVV错误';
+            error.classList.add('show');
+            state.input = '';
+            dots.forEach(dot => dot.classList.remove('filled'));
+            return;
+        }
+        
+        processTransaction();
+        return;
+    }
+    else if (/\d/.test(key) && state.input.length < 3) { state.input += key; }
+    
+    dots.forEach((dot, idx) => {
+        dot.classList.toggle('filled', idx < state.input.length);
+    });
+}
+
+function processTransaction() {
+    state.step = 'processing';
+    const isVoid = state.mode === 'void';
+    
+    updateScreen(`
+        <div style="font-weight: bold; margin-bottom: 15px; font-size: 18px; color: ${isVoid ? '#e74c3c' : '#1a1f1a'};">
+            ${isVoid ? '取消中...' : '处理中...'}
+        </div>
+        <div style="width: 180px; height: 4px; background: #ddd; border-radius: 2px; overflow: hidden;">
+            <div style="height: 100%; background: ${isVoid ? '#e74c3c' : '#27ae60'}; width: 0%; animation: load 1.5s forwards;"></div>
+        </div>
+        <style>@keyframes load { to { width: 100%; } }</style>
+    `);
+    
+    setTimeout(() => {
+        if (state.mode === 'void' && state.selectedReceipt) {
+            state.selectedReceipt.voided = true;
+        } else if (state.mode === 'refund' && state.selectedReceipt) {
+            state.selectedReceipt.refunded = true;
+        } else if (state.mode === 'auth') {
+            state.authCode = Math.floor(100000 + Math.random() * 900000).toString();
+            historyData.unshift({
+                id: Date.now(),
+                type: 'auth',
+                typeName: '预授权',
+                card: '4111 22** **** 4444',
+                amount: state.amount,
+                auth: state.authCode,
+                rrn: Date.now().toString().slice(-12),
+                date: new Date().toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}),
+                status: 'normal',
+                voided: false,
+                refunded: false
+            });
+        } else if (state.mode === 'sale') {
+            state.authCode = Math.floor(100000 + Math.random() * 900000).toString();
+            historyData.unshift({
+                id: Date.now(),
+                type: 'sale',
+                typeName: '餐饮消费',
+                card: state.currentCard ? (state.currentCard === '4111 2222 3333 4444' ? '4111 22** **** 4444' : '6222 88** **** 8888') : '4111 22** **** 4444',
+                amount: state.amount,
+                auth: state.authCode,
+                rrn: Date.now().toString().slice(-12),
+                date: new Date().toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}),
+                status: 'normal',
+                voided: false,
+                refunded: false
+            });
+        }
+        
+        AudioSys.success();
+        showSuccess();
+    }, 1500);
+}
+
+function showSuccess() {
+    state.step = 'done';
+    const titles = {auth: '预授权', complete: '预授权完成', sale: '消费', void: '预授权取消', refund: '退款'};
+    const isVoid = state.mode === 'void';
+    
+    updateScreen(`
+        <div style="font-size: 48px; color: ${isVoid ? '#e74c3c' : '#27ae60'}; margin-bottom: 10px;">✓</div>
+        <div style="font-weight: bold; font-size: 20px; margin-bottom: 8px; color: ${isVoid ? '#e74c3c' : '#1a1f1a'};">${titles[state.mode]}成功</div>
+        ${state.mode === 'auth' ? `<div style="font-size: 14px; color: #d32f2f;"><b>授权码:${state.authCode}</b></div>` : ''}
+        ${isVoid ? '<div style="font-size: 12px; color: #27ae60;">✓ 资金已释放</div>' : ''}
+        ${state.amount > 0 && !isVoid ? `<div style="font-size: 14px; color: #555;">¥${state.amount.toFixed(2)}</div>` : ''}
+        ${isVoid ? `<div style="font-size: 12px; color: #555;">释放¥${state.selectedReceipt.amount.toFixed(2)}</div>` : ''}
+    `);
+    
+    initReceiptList();
+    printReceipt();
+}
+
+function printReceipt() {
+    const receipt = document.getElementById('receiptOut');
+    const titles = {auth: '预授权', complete: '预授权完成', sale: '消费', void: '预授权取消', refund: '退款'};
+    const isVoid = state.mode === 'void';
+    
+    receipt.innerHTML = `
+        <div style="text-align: center; font-weight: bold; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 6px; font-size: 14px;">
+            ${isVoid ? '❌ ' : ''}🏨 格兰德大酒店
+        </div>
+        <div style="margin: 4px 0; font-size: 12px;"><b>${titles[state.mode]}</b></div>
+        <div style="margin: 4px 0; font-size: 11px;">${state.currentCard ? state.currentCard.replace(/(\d{4})\d{8}(\d{4})/, '$1 **** $2') : ''}</div>
+        ${state.amount > 0 && !isVoid ? `<div style="margin: 4px 0; font-size: 14px;"><b>¥${state.amount.toFixed(2)}</b></div>` : ''}
+        ${isVoid ? `<div style="margin: 4px 0; font-size: 13px; color: #e74c3c;"><b>¥${state.selectedReceipt.amount.toFixed(2)}</b></div>` : ''}
+        ${state.mode === 'auth' ? `<div style="margin: 4px 0; font-size: 12px; color: #d32f2f;">授权码:${state.authCode}</div>` : ''}
+        <div style="font-size: 10px; color: #666; margin-top: 8px;">${new Date().toLocaleString()}</div>
+    `;
+    
+    receipt.classList.add('show');
+    setTimeout(() => receipt.classList.remove('show'), 5000);
+}
+
+function resetScreen() {
+    state.step = 'idle';
+    state.input = '';
+    state.amount = 0;
+    state.selectedReceipt = null;
+    state.currentCard = null;
+    state.currentCardCvv = null;
+    
+    document.getElementById('visaCard').classList.remove('active');
+    document.getElementById('unionCard').classList.remove('active');
+    document.getElementById('icSlot').classList.remove('highlight');
+    document.getElementById('magSlot').classList.remove('highlight');
+    document.getElementById('flowHint').style.display = 'none';
+    
+    updateScreen(`
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 12px;">欢迎使用</div>
+        <div style="color: #555; font-size: 14px;">请选择交易类型</div>
+    `);
+}
+
+function selectFunc(func) {
+    const btn = event.target;
+    document.querySelectorAll('.fkey').forEach(k => k.classList.remove('active'));
+    btn.classList.add('active');
+    
+    const map = {auth: 0, complete: 1, void: 2, refund: 3, sale: 4};
+    const sceneBtns = document.querySelectorAll('.scene-btn');
+    if (sceneBtns[map[func]]) {
+        sceneBtns[map[func]].click();
+    }
+}
+
+function updateScreen(html) {
+    document.getElementById('screenBody').innerHTML = html;
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+    if (e.key === 'Enter') pressKey('ENTER');
+    if (e.key === 'Escape') pressKey('CANCEL');
+    if (e.key === 'Backspace') pressKey('BACK');
+});
+
+initReceiptList();
+</script>
+
+</body>
+</html>
