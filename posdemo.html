@@ -256,7 +256,7 @@
             white-space: nowrap;
         }
 
-        /* 单据列表 */
+        /* 单据列表 - 授权码字体加大 */
         .receipt-list {
             display: flex;
             flex-direction: column;
@@ -293,6 +293,8 @@
         .receipt-item.active { border-left-color: #f0c040; background: #fffef0; box-shadow: 0 0 15px rgba(240, 192, 64, 0.4); }
         .receipt-item.voided, .receipt-item.refunded { opacity: 0.6; border-left-color: #ccc; background: #f9f9f9; }
         
+        .receipt-item.partial { border-left-color: #ff9800; background: #fff8e1; }
+        
         .receipt-item.voided::after {
             content: '已取消'; position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%) rotate(-15deg);
@@ -320,13 +322,388 @@
         .receipt-label { color: #666; }
         .receipt-value { font-weight: bold; }
 
-        .auth-code-box, .rrn-box {
-            background: #fffde7; border: 1px solid #f44336;
-            padding: 4px; margin: 6px 0; text-align: center;
-            font-size: 13px; font-weight: bold; color: #d32f2f;
+        /* 授权码样式 - 字体加大加粗 */
+        .auth-code-box {
+            background: #fffde7; 
+            border: 2px solid #f44336;
+            padding: 6px; 
+            margin: 8px 0; 
+            text-align: center;
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #d32f2f;
+            border-radius: 4px;
+            letter-spacing: 2px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .rrn-box { 
+            background: #f5f5f5;
+            border: 1px solid #999;
+            padding: 4px; 
+            margin: 6px 0; 
+            text-align: center;
+            font-size: 11px; 
+            letter-spacing: 1px; 
+            color: #333;
             border-radius: 4px;
         }
-        .rrn-box { font-size: 11px; letter-spacing: 1px; }
+
+        /* 小票历史存档区 */
+        .receipt-archive {
+            flex: 1;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .archive-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            overflow-y: auto;
+            max-height: 300px;
+            padding-right: 3px;
+        }
+
+        .archive-grid::-webkit-scrollbar { width: 4px; }
+        .archive-grid::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        /* 热敏纸小票样式 */
+        .receipt-tile {
+            background: #f5f5dc;
+            color: #333;
+            padding: 12px 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            line-height: 1.4;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 2px;
+            background-image: 
+                linear-gradient(to right, rgba(0,0,0,0.05) 0%, transparent 5%, transparent 95%, rgba(0,0,0,0.05) 100%),
+                repeating-linear-gradient(
+                    transparent,
+                    transparent 20px,
+                    rgba(0,0,0,0.03) 20px,
+                    rgba(0,0,0,0.03) 21px
+                );
+        }
+
+        .receipt-tile::before,
+        .receipt-tile::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: 
+                linear-gradient(135deg, transparent 45%, #f5f5dc 45%, #f5f5dc 55%, transparent 55%),
+                linear-gradient(-135deg, transparent 45%, #f5f5dc 45%, #f5f5dc 55%, transparent 55%);
+            background-size: 8px 8px;
+            background-position: 0 0, 4px 0;
+        }
+
+        .receipt-tile::before { top: -4px; transform: rotate(180deg); }
+        .receipt-tile::after { bottom: -4px; }
+
+        .receipt-tile:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+
+        .receipt-tile.voided {
+            background: #e8e8e8;
+            opacity: 0.7;
+        }
+
+        .receipt-tile.voided::after {
+            content: 'VOID';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 24px;
+            color: #e74c3c;
+            border: 3px solid #e74c3c;
+            padding: 4px 12px;
+            font-weight: bold;
+            opacity: 0.6;
+            pointer-events: none;
+            font-family: 'Arial Black', sans-serif;
+            letter-spacing: 2px;
+        }
+
+        .receipt-tile.refunded {
+            background: #fff8e1;
+            opacity: 0.8;
+        }
+
+        .receipt-tile.refunded::after {
+            content: 'REFUND';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 18px;
+            color: #ff9800;
+            border: 2px solid #ff9800;
+            padding: 4px 8px;
+            font-weight: bold;
+            opacity: 0.6;
+            pointer-events: none;
+            font-family: 'Arial Black', sans-serif;
+        }
+
+        .receipt-tile.partial {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+        }
+
+        .tile-header {
+            text-align: center;
+            border-bottom: 1px dashed #999;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            color: #d32f2f;
+        }
+
+        .tile-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            font-size: 9px;
+        }
+
+        .tile-amount {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 6px 0;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            padding: 4px 0;
+        }
+
+        .tile-date {
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .tile-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #f0c040;
+            color: #000;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 20;
+        }
+
+        /* 小票详情弹窗 */
+        .receipt-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .receipt-modal.show {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .receipt-detail {
+            background: #f5f5dc;
+            width: 320px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px 20px;
+            font-family: 'Courier New', monospace;
+            color: #333;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .receipt-modal.show .receipt-detail {
+            transform: scale(1);
+        }
+
+        .receipt-detail::before,
+        .receipt-detail::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 12px;
+            background: 
+                linear-gradient(135deg, transparent 45%, #f5f5dc 45%, #f5f5dc 55%, transparent 55%),
+                linear-gradient(-135deg, transparent 45%, #f5f5dc 45%, #f5f5dc 55%, transparent 55%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 0;
+        }
+
+        .receipt-detail::before { 
+            top: -12px; 
+            transform: rotate(180deg);
+            filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.1));
+        }
+        .receipt-detail::after { 
+            bottom: -12px;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+        }
+
+        .detail-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.1);
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            color: #666;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .detail-close:hover {
+            background: rgba(0,0,0,0.2);
+            color: #000;
+            transform: rotate(90deg);
+        }
+
+        .detail-header {
+            text-align: center;
+            border-bottom: 2px dashed #999;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .detail-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #d32f2f;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+
+        .detail-subtitle {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 13px;
+            padding: 4px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+
+        .detail-label { color: #666; }
+        .detail-value { font-weight: bold; }
+
+        .detail-amount {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+        }
+
+        /* 详情页授权码样式 - 字体加大 */
+        .detail-code {
+            background: #fffde7;
+            border: 2px solid #f44336;
+            padding: 15px;
+            text-align: center;
+            margin: 15px 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #d32f2f;
+            letter-spacing: 4px;
+            font-family: 'Courier New', monospace;
+            border-radius: 6px;
+        }
+
+        .detail-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px dashed #999;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .detail-stamp {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 48px;
+            border: 4px solid;
+            padding: 10px 20px;
+            font-weight: bold;
+            opacity: 0.3;
+            pointer-events: none;
+            font-family: 'Arial Black', sans-serif;
+            letter-spacing: 4px;
+        }
+
+        .detail-stamp.void { color: #e74c3c; border-color: #e74c3c; }
+        .detail-stamp.refund { color: #ff9800; border-color: #ff9800; }
+        .detail-stamp.partial { color: #ff9800; border-color: #ff9800; }
+
+        /* 部分取消信息框 */
+        .partial-info {
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid #ff9800;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+
+        .partial-info .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            color: #e65100;
+        }
 
         /* POS设备 */
         .pos-device {
@@ -404,7 +781,7 @@
         .key.red { background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%); }
         .key.green { background: linear-gradient(180deg, #27ae60 0%, #1e8449 100%); }
 
-        .func-keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
+        .func-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
         .fkey {
             height: 42px; background: #2a2d32; border: 1px solid #3a3f45;
             color: #888; border-radius: 8px; font-size: 11px;
@@ -484,6 +861,46 @@
         .sound-bar:nth-child(4) { height: 18px; animation-delay: 0.3s; }
 
         @keyframes soundWave { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+
+        .error-text {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-weight: bold;
+        }
+        .error-text.show { opacity: 1; }
+        
+        /* 金额切换提示 */
+        .amount-toggle {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        
+        .toggle-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.5);
+            border-radius: 15px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .toggle-btn.active {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        .toggle-btn.partial {
+            background: #ff9800;
+            color: white;
+            border-color: #ff9800;
+        }
     </style>
 </head>
 <body>
@@ -495,6 +912,14 @@
         <div class="sound-bar"></div><div class="sound-bar"></div>
     </div>
     <span id="soundText">播放音效...</span>
+</div>
+
+<!-- 小票详情弹窗 -->
+<div class="receipt-modal" id="receiptModal" onclick="closeReceiptDetail(event)">
+    <div class="receipt-detail" onclick="event.stopPropagation()">
+        <button class="detail-close" onclick="closeReceiptDetail()">×</button>
+        <div id="receiptDetailContent"></div>
+    </div>
 </div>
 
 <div class="reference-panel">
@@ -565,6 +990,12 @@
         <div class="receipt-list" id="receiptList" style="flex: 1;"></div>
         <div class="flow-hint" id="flowHint" style="display: none; margin-top: 8px;"></div>
     </div>
+
+    <!-- 小票历史存档区 -->
+    <div class="ref-card receipt-archive">
+        <div class="ref-title">🧾 小票存档 <span style="font-size: 11px; color: #888; font-weight: normal;">(点击查看详情)</span></div>
+        <div class="archive-grid" id="receiptArchive"></div>
+    </div>
 </div>
 
 <div class="pos-device">
@@ -594,7 +1025,7 @@
     <div class="func-keys">
         <button class="fkey" onclick="selectFunc('auth')">预授权</button>
         <button class="fkey" onclick="selectFunc('complete')">完成</button>
-        <button class="fkey" onclick="selectFunc('void')">预授权取消</button>
+        <button class="fkey" onclick="selectFunc('void')">取消</button>
         <button class="fkey" onclick="selectFunc('refund')">退款</button>
         <button class="fkey" onclick="selectFunc('sale')">消费</button>
     </div>
@@ -630,10 +1061,10 @@
             <span>🏨 入住预授权</span><span class="status-tag">冻结押金</span>
         </button>
         <button class="scene-btn" onclick="setScene('complete')">
-            <span>💳 退房结算</span><span class="status-tag">需授权码</span>
+            <span>💳 预授权完成</span><span class="status-tag">结算扣款</span>
         </button>
         <button class="scene-btn" onclick="setScene('void')">
-            <span>❌ 预授权取消</span><span class="status-tag">需原卡+原码</span>
+            <span>🚫 预授权取消</span><span class="status-tag">全额/部分</span>
         </button>
         <button class="scene-btn" onclick="setScene('refund')">
             <span>↩️ 退款</span><span class="status-tag">需原交易</span>
@@ -644,18 +1075,19 @@
     </div>
 
     <div class="control-card">
-        <div class="control-title">📚 核心区别</div>
+        <div class="control-title">📚 操作指南</div>
         <div class="diff-box">
             <h4>🚫 预授权取消（Void）</h4>
-            <div class="diff-item"><span class="diff-icon">•</span><span><b>针对：</b>未结算的预授权</span></div>
-            <div class="diff-item"><span class="diff-icon">•</span><span><b>验证：</b>原授权码 + 原卡</span></div>
-            <div class="diff-item"><span class="diff-icon">•</span><span><b>资金：</b>实时释放</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>默认：</b>全额取消（释放全部押金）</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>可选：</b>修改金额为部分取消</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>剩余：</b>部分取消后剩余金额继续冻结</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>验证：</b>需原卡+原授权码</span></div>
         </div>
         <div class="diff-box" style="margin-top: 12px;">
-            <h4>↩️ 退款（Refund）</h4>
-            <div class="diff-item"><span class="diff-icon">•</span><span><b>针对：</b>已扣款交易</span></div>
-            <div class="diff-item"><span class="diff-icon">•</span><span><b>验证：</b>原参考号(RRN)</span></div>
-            <div class="diff-item"><span class="diff-icon">•</span><span><b>资金：</b>3-5工作日</span></div>
+            <h4>💳 预授权完成（Complete）</h4>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>结算：</b>输入实际消费金额</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>解冻：</b>差额自动解冻至客户卡内</span></div>
+            <div class="diff-item"><span class="diff-icon">•</span><span><b>小票：</b>生成结算凭证并存档</span></div>
         </div>
     </div>
 </div>
@@ -695,6 +1127,11 @@ const AudioSys = {
         this.showIndicator('❌ 操作失败', '#e74c3c');
     },
     keypress() { this.playTone(800, 0.05); },
+    paper() {
+        this.playTone(400, 0.05);
+        setTimeout(() => this.playTone(600, 0.05), 50);
+        setTimeout(() => this.playTone(800, 0.05), 100);
+    },
     alert() {
         this.playTone(600, 0.1);
         setTimeout(() => this.playTone(600, 0.1), 150);
@@ -709,14 +1146,8 @@ const AudioSys = {
     }
 };
 
-// 历史交易数据
-let historyData = [
-    { id: 1, type: 'auth', typeName: '预授权', card: '4111 22** **** 4444', amount: 2000, auth: '123456', rrn: '202401150001', date: '01-15 14:30', status: 'normal', voided: false, refunded: false },
-    { id: 2, type: 'auth', typeName: '预授权', card: '6222 88** **** 8888', amount: 1500, auth: '654321', rrn: '202401150002', date: '01-15 16:45', status: 'normal', voided: false, refunded: false },
-    { id: 3, type: 'sale', typeName: '餐饮消费', card: '4111 22** **** 4444', amount: 580, auth: '789012', rrn: '202401150003', date: '01-15 18:20', status: 'normal', voided: false, refunded: false },
-    { id: 4, type: 'complete', typeName: '预授权完成', card: '6222 88** **** 8888', amount: 1200, auth: '345678', rrn: '202401160001', date: '01-16 09:15', status: 'normal', voided: false, refunded: false },
-    { id: 5, type: 'auth', typeName: '预授权', card: '4111 22** **** 4444', amount: 3000, auth: '111222', rrn: '202401140001', date: '01-14 09:00', status: 'normal', voided: true, refunded: false }
-];
+// 历史交易数据 - 默认清空
+let historyData = [];
 
 let currentFilter = 'all';
 
@@ -731,14 +1162,14 @@ const state = {
     selectedReceipt: null,
     errorSim: null,
     currentCard: null,
-    currentCardCvv: null
+    currentCardCvv: null,
+    voidType: 'full'
 };
 
 function log(msg, type = 'normal') {
     console.log(`[${type.toUpperCase()}] ${msg}`);
 }
 
-// 重置所有历史记录
 function resetAllHistory() {
     if (!confirm('确定要清空所有交易记录吗？\n此操作不可恢复，将删除所有预授权、消费、退款等历史数据。')) {
         return;
@@ -767,6 +1198,7 @@ function resetAllHistory() {
     document.getElementById('magSlot').classList.remove('highlight');
     
     initReceiptList();
+    initReceiptArchive();
     
     AudioSys.alert();
     updateScreen(`
@@ -844,7 +1276,7 @@ function initReceiptList() {
         
         if (item.voided) {
             statusClass = 'voided';
-            selectHint = '已取消';
+            selectHint = item.type === 'partialVoid' ? '部分取消' : '已取消';
         } else if (item.refunded) {
             statusClass = 'refunded';
             selectHint = '已退款';
@@ -877,6 +1309,9 @@ function initReceiptList() {
             `<div class="auth-code-box">授权:${item.auth}</div>` :
             `<div class="rrn-box">RRN:${item.rrn}</div>`;
         
+        const extraInfo = item.remainingAmount ? 
+            `<div style="font-size:10px; color:#ff9800; text-align:center; margin-top:2px;">剩余冻结:¥${item.remainingAmount.toFixed(2)}</div>` : '';
+        
         return `
         <div class="receipt-item ${statusClass}" 
              onclick="selectReceipt(${item.id})" id="receipt-${item.id}">
@@ -887,11 +1322,182 @@ function initReceiptList() {
             <div class="receipt-row"><span class="receipt-label">卡:</span><span class="receipt-value">${item.card}</span></div>
             <div class="receipt-row"><span class="receipt-label">金额:</span><span class="receipt-value">¥${item.amount.toFixed(2)}</span></div>
             ${codeBox}
+            ${extraInfo}
             <div style="color: ${isSelectable ? '#27ae60' : '#999'}; text-align: center; margin-top: 2px; font-size: 10px;">
                 ${selectHint}
             </div>
         </div>`;
     }).join('');
+}
+
+function initReceiptArchive() {
+    const archive = document.getElementById('receiptArchive');
+    
+    if (historyData.length === 0) {
+        archive.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #888; font-size: 12px;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🧾</div>
+                暂无小票存档<br>
+                <span style="font-size: 11px; color: #666;">完成交易后将自动生成小票</span>
+            </div>
+        `;
+        return;
+    }
+    
+    archive.innerHTML = historyData.map(item => {
+        let className = 'receipt-tile';
+        let badge = '';
+        
+        if (item.voided) {
+            className += ' voided';
+            const isPartial = item.type === 'partialVoid' || item.remainingAmount > 0;
+            badge = `<span class="tile-badge" style="background: ${isPartial ? '#ff9800' : '#e74c3c'};">${isPartial ? '部分取消' : '已取消'}</span>`;
+        } else if (item.refunded) {
+            className += ' refunded';
+            badge = '<span class="tile-badge" style="background: #ff9800;">已退款</span>';
+        } else if (item.type === 'auth') {
+            badge = '<span class="tile-badge" style="background: #27ae60;">预授权</span>';
+        } else if (item.type === 'complete') {
+            badge = '<span class="tile-badge" style="background: #2196f3;">已完成</span>';
+        }
+        
+        const cardLast4 = item.card.split(' ').pop() || '****';
+        
+        return `
+        <div class="${className}" onclick="showReceiptDetail(${item.id})">
+            ${badge}
+            <div class="tile-header">${item.typeName}</div>
+            <div class="tile-row"><span>卡号:</span><span>****${cardLast4}</span></div>
+            <div class="tile-row"><span>时间:</span><span>${item.date}</span></div>
+            <div class="tile-amount">¥${item.amount.toFixed(2)}</div>
+            ${item.remainingAmount ? `<div style="text-align:center; font-size:9px; color:#ff9800;">剩余:¥${item.remainingAmount.toFixed(2)}</div>` : ''}
+            ${item.auth ? `<div style="text-align: center; font-size: 9px; color: #d32f2f; font-weight: bold;">授权:${item.auth}</div>` : ''}
+        </div>
+        `;
+    }).join('');
+}
+
+function showReceiptDetail(id) {
+    AudioSys.paper();
+    const item = historyData.find(r => r.id === id);
+    if (!item) return;
+    
+    const modal = document.getElementById('receiptModal');
+    const content = document.getElementById('receiptDetailContent');
+    
+    let statusStamp = '';
+    let statusText = '';
+    let statusColor = '#27ae60';
+    
+    if (item.voided) {
+        const isPartial = item.type === 'partialVoid' || item.remainingAmount > 0;
+        if (isPartial) {
+            statusStamp = '<div class="detail-stamp partial">PARTIAL</div>';
+            statusText = '【部分取消】';
+            statusColor = '#ff9800';
+        } else {
+            statusStamp = '<div class="detail-stamp void">VOID</div>';
+            statusText = '【已取消】';
+            statusColor = '#e74c3c';
+        }
+    } else if (item.refunded) {
+        statusStamp = '<div class="detail-stamp refund">REFUNDED</div>';
+        statusText = '【已退款】';
+        statusColor = '#ff9800';
+    }
+    
+    const typeNames = {
+        'auth': '预授权凭证',
+        'sale': '消费凭证',
+        'complete': '预授权完成',
+        'void': '预授权取消',
+        'partialVoid': '部分预授权取消',
+        'refund': '退款凭证'
+    };
+    
+    let partialInfoHtml = '';
+    if (item.type === 'partialVoid' || (item.voided && item.remainingAmount > 0)) {
+        partialInfoHtml = `
+        <div class="partial-info">
+            <div class="info-row"><span>原预授权金额</span><span>¥${(item.amount + (item.remainingAmount || 0)).toFixed(2)}</span></div>
+            <div class="info-row"><span>本次取消金额</span><span style="color:#e74c3c;">-¥${item.amount.toFixed(2)}</span></div>
+            <div class="info-row" style="border-top:1px solid #ff9800; padding-top:4px; margin-top:4px; font-weight:bold;">
+                <span>剩余冻结金额</span><span style="color:#27ae60;">¥${(item.remainingAmount || 0).toFixed(2)}</span>
+            </div>
+        </div>`;
+    } else if (item.type === 'complete' && item.preauthAmount) {
+        partialInfoHtml = `
+        <div class="partial-info" style="border-color:#2196f3; background:rgba(33,150,243,0.1);">
+            <div class="info-row"><span>原预授权金额</span><span>¥${item.preauthAmount.toFixed(2)}</span></div>
+            <div class="info-row"><span>实际结算金额</span><span style="color:#2196f3;">¥${item.amount.toFixed(2)}</span></div>
+            <div class="info-row" style="border-top:1px solid #2196f3; padding-top:4px; margin-top:4px; font-weight:bold;">
+                <span>解冻差额</span><span style="color:#27ae60;">¥${(item.preauthAmount - item.amount).toFixed(2)}</span>
+            </div>
+        </div>`;
+    }
+    
+    content.innerHTML = `
+        ${statusStamp}
+        <div class="detail-header">
+            <div class="detail-title">🏨 格兰德大酒店</div>
+            <div class="detail-subtitle">Grand Hotel POS System</div>
+            <div style="margin-top: 8px; font-size: 14px; color: ${statusColor}; font-weight: bold;">${typeNames[item.type] || item.typeName} ${statusText}</div>
+        </div>
+        
+        <div class="detail-row">
+            <span class="detail-label">交易时间</span>
+            <span class="detail-value">${item.date}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">流水号</span>
+            <span class="detail-value">${item.rrn}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">卡号</span>
+            <span class="detail-value">${item.card}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">卡类型</span>
+            <span class="detail-value">${item.card.startsWith('4') ? 'VISA 信用卡' : '银联 借记卡'}</span>
+        </div>
+        
+        ${partialInfoHtml}
+        
+        <div class="detail-amount">
+            <div style="font-size: 12px; color: #666; margin-bottom: 4px;">${item.type === 'partialVoid' ? '本次取消金额' : '交易金额'}</div>
+            ¥${item.amount.toFixed(2)}
+        </div>
+        
+        ${item.auth ? `
+        <div class="detail-code">
+            <div style="font-size: 11px; margin-bottom: 4px; font-weight: normal; color: #666;">授权码 Authorization Code</div>
+            ${item.auth}
+        </div>
+        ` : ''}
+        
+        <div class="detail-row">
+            <span class="detail-label">参考号 RRN</span>
+            <span class="detail-value" style="font-size: 11px; letter-spacing: 1px;">${item.rrn}</span>
+        </div>
+        
+        ${item.note ? `<div style="margin:10px 0; padding:8px; background:rgba(0,0,0,0.05); border-radius:4px; font-size:11px; color:#666; text-align:center;">${item.note}</div>` : ''}
+        
+        <div class="detail-footer">
+            <div style="font-size: 10px; color: #999; margin-bottom: 4px;">感谢您的光临</div>
+            <div style="font-size: 9px; color: #bbb;">请妥善保管此凭证</div>
+            <div style="margin-top: 10px; font-family: monospace; font-size: 10px;">
+                ${Array(20).fill('━').join('')}
+            </div>
+        </div>
+    `;
+    
+    modal.classList.add('show');
+}
+
+function closeReceiptDetail(e) {
+    if (!e || e.target.id === 'receiptModal') {
+        document.getElementById('receiptModal').classList.remove('show');
+    }
 }
 
 function selectReceipt(id) {
@@ -912,8 +1518,7 @@ function selectReceipt(id) {
             canSelect = (receipt.type === 'sale' || receipt.type === 'complete') && !receipt.refunded;
             break;
         default:
-            document.querySelectorAll('.receipt-item').forEach(el => el.classList.remove('active'));
-            document.getElementById(`receipt-${id}`).classList.add('active');
+            showReceiptDetail(id);
             return;
     }
     
@@ -926,8 +1531,7 @@ function selectReceipt(id) {
     }
     
     if (state.step !== 'select_receipt') {
-        document.querySelectorAll('.receipt-item').forEach(el => el.classList.remove('active'));
-        document.getElementById(`receipt-${id}`).classList.add('active');
+        showReceiptDetail(id);
         return;
     }
     
@@ -941,12 +1545,52 @@ function selectReceipt(id) {
     
     setTimeout(() => {
         if (state.mode === 'void') {
-            state.amount = receipt.amount;
-            showCardWait();
+            showVoidAmountInput();
         } else if (state.mode === 'complete' || state.mode === 'refund') {
             showAmountInput();
         }
     }, 300);
+}
+
+function showVoidAmountInput() {
+    state.step = 'void_amount';
+    state.input = '';
+    state.amount = state.preauthAmount;
+    state.voidType = 'full';
+    
+    updateScreen(`
+        <div style="margin-bottom: 8px; font-size: 18px; font-weight: bold;">预授权取消金额</div>
+        <div style="font-size: 12px; color: #666; margin-bottom: 10px;">可修改金额进行部分取消</div>
+        <div class="input-display active" id="inputDisplay">¥${state.preauthAmount.toFixed(2)}</div>
+        <div class="amount-toggle">
+            <button class="toggle-btn active" onclick="setVoidType('full')" id="btnFull">全额取消</button>
+            <button class="toggle-btn partial" onclick="setVoidType('partial')" id="btnPartial">部分取消</button>
+        </div>
+        <div style="font-size: 11px; color: #888; margin-top: 8px;" id="voidHint">
+            点击确认进行全额取消，或修改金额后确认
+        </div>
+        <div class="error-text" id="errorText"></div>
+    `);
+}
+
+function setVoidType(type) {
+    AudioSys.keypress();
+    state.voidType = type;
+    
+    document.getElementById('btnFull').classList.toggle('active', type === 'full');
+    document.getElementById('btnPartial').classList.toggle('active', type === 'partial');
+    
+    if (type === 'full') {
+        state.input = '';
+        state.amount = state.preauthAmount;
+        document.getElementById('inputDisplay').textContent = '¥' + state.preauthAmount.toFixed(2);
+        document.getElementById('voidHint').textContent = '将释放全部冻结金额';
+    } else {
+        document.getElementById('voidHint').textContent = '请输入要取消的金额（剩余将继续冻结）';
+        document.getElementById('inputDisplay').textContent = '¥0.00';
+        state.input = '';
+        state.amount = 0;
+    }
 }
 
 function setScene(mode) {
@@ -967,6 +1611,7 @@ function setScene(mode) {
     state.errorSim = null;
     state.currentCard = null;
     state.currentCardCvv = null;
+    state.voidType = 'full';
     
     document.getElementById('visaCard').classList.remove('active');
     document.getElementById('unionCard').classList.remove('active');
@@ -984,21 +1629,22 @@ function setScene(mode) {
             hint.style.display = 'none';
             showAmountInput();
             break;
-        case 'void':
-            hint.innerHTML = '<b>预授权取消：</b><br>1. 选<span style="color:#27ae60">绿色</span>单据<br>2. 刷原卡<br>3. 输入授权码';
+        case 'complete':
+            hint.innerHTML = '<b>预授权完成：</b><br>1. 选<span style="color:#27ae60">绿色</span>单据<br>2. 输入结算金额（可小于预授权）<br>3. 刷原卡+授权码<br>4. <span style="color:#2196f3">差额自动解冻</span>';
             hint.style.display = 'block';
             updateScreen(`
-                <div style="color: #f0c040; font-weight: bold; margin-bottom: 12px; font-size: 18px;">📋 选择要取消的预授权</div>
-                <div style="font-size: 13px; color: #555;">列表中标记"✓ 可取消"的单据</div>
+                <div style="color: #f0c040; font-weight: bold; margin-bottom: 12px; font-size: 18px;">📋 选择要结算的预授权</div>
+                <div style="font-size: 13px; color: #555;">点击下方小票可查看详情</div>
             `);
             state.step = 'select_receipt';
             AudioSys.alert();
             break;
-        case 'complete':
-            hint.innerHTML = '<b>预授权完成：</b><br>1. 选<span style="color:#27ae60">绿色</span>单据<br>2. 输入金额<br>3. 刷原卡+授权码';
+        case 'void':
+            hint.innerHTML = '<b>预授权取消：</b><br>1. 选<span style="color:#27ae60">绿色</span>单据<br>2. 选择<span style="color:#e74c3c">全额</span>或<span style="color:#ff9800">部分</span>取消<br>3. 输入金额（全额时默认可直接确认）<br>4. 刷原卡+授权码';
             hint.style.display = 'block';
             updateScreen(`
-                <div style="color: #f0c040; font-weight: bold; margin-bottom: 12px; font-size: 18px;">📋 选择要结算的预授权</div>
+                <div style="color: #f0c040; font-weight: bold; margin-bottom: 12px; font-size: 18px;">📋 选择要取消的预授权</div>
+                <div style="font-size: 13px; color: #555;">支持全额取消或部分金额取消</div>
             `);
             state.step = 'select_receipt';
             AudioSys.alert();
@@ -1008,6 +1654,7 @@ function setScene(mode) {
             hint.style.display = 'block';
             updateScreen(`
                 <div style="color: #f0c040; font-weight: bold; margin-bottom: 12px; font-size: 18px;">📋 选择要退款的交易</div>
+                <div style="font-size: 13px; color: #555;">点击下方小票可查看详情</div>
             `);
             state.step = 'select_receipt';
             AudioSys.alert();
@@ -1023,7 +1670,7 @@ function showAmountInput() {
     switch(state.mode) {
         case 'auth': title = '预授权金额'; hint = '冻结押金'; break;
         case 'sale': title = '消费金额'; hint = '直接扣款'; break;
-        case 'complete': title = '结算金额'; hint = `最大¥${state.preauthAmount.toFixed(2)}`; break;
+        case 'complete': title = '结算金额'; hint = `最大¥${state.preauthAmount.toFixed(2)}，差额将解冻`; break;
         case 'refund': title = '退款金额'; hint = `最大¥${state.selectedReceipt ? state.selectedReceipt.amount.toFixed(2) : '0.00'}`; break;
         default: title = '金额'; hint = '';
     }
@@ -1044,15 +1691,22 @@ function showCardWait() {
     document.getElementById('magSlot').classList.add('highlight');
     
     let msg = '';
-    if (state.mode === 'void') {
-        msg = `¥${state.selectedReceipt.amount.toFixed(2)}<br><span style="font-size: 12px; color: #e74c3c;">尾号${state.selectedReceipt.card.slice(-4)}</span>`;
+    const isVoid = state.mode === 'void';
+    const isPartial = state.voidType === 'partial';
+    
+    if (isVoid) {
+        if (isPartial) {
+            msg = `部分取消<br><span style="font-size: 14px; color: #ff9800;">取消¥${state.amount.toFixed(2)}</span><br><span style="font-size: 12px; color: #666;">剩余¥${(state.preauthAmount - state.amount).toFixed(2)}</span>`;
+        } else {
+            msg = `全额取消<br><span style="font-size: 14px; color: #e74c3c;">¥${state.amount.toFixed(2)}</span>`;
+        }
     } else if (state.amount > 0) {
         msg = `¥${state.amount.toFixed(2)}`;
     }
     
     updateScreen(`
-        <div style="font-size: 20px; font-weight: bold; margin-bottom: 15px;">请刷卡/插卡</div>
-        <div style="font-size: 24px; color: #2e7d32; margin-bottom: 12px; font-weight: bold; line-height: 1.4;">${msg}</div>
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">请刷卡/插卡</div>
+        <div style="font-size: 20px; color: ${isVoid ? (isPartial ? '#ff9800' : '#e74c3c') : '#2e7d32'}; margin-bottom: 12px; font-weight: bold; line-height: 1.4;">${msg}</div>
         <div style="font-size: 12px; color: #666;">点击左侧银行卡</div>
     `);
 }
@@ -1094,9 +1748,7 @@ function handleCardAction(cardType, cardNum, cvv) {
         }
     }
     
-    if (state.mode === 'void' || state.mode === 'complete') {
-        showAuthInput();
-    } else if (state.mode === 'refund') {
+    if (state.mode === 'void' || state.mode === 'complete' || state.mode === 'refund') {
         showAuthInput();
     } else {
         showPinInput();
@@ -1108,6 +1760,7 @@ function showAuthInput() {
     state.input = '';
     
     const isRefund = state.mode === 'refund';
+    const isPartial = state.mode === 'void' && state.voidType === 'partial';
     
     updateScreen(`
         <div style="margin-bottom: 12px; font-size: 18px; font-weight: bold;">
@@ -1117,7 +1770,7 @@ function showAuthInput() {
             ${isRefund ? '_ _ _ _ _ _ _ _ _ _ _ _' : '_ _ _ _ _ _'}
         </div>
         <div style="font-size: 11px; color: #555; margin-top: 12px;">
-            ${isRefund ? '查看左侧单据RRN' : '查看左侧单据授权码'}
+            ${isRefund ? '查看左侧单据RRN' : isPartial ? '部分取消需验证原授权码' : '查看左侧单据授权码'}
         </div>
         <div class="error-text" id="errorText"></div>
     `);
@@ -1142,8 +1795,79 @@ function pressKey(key) {
     
     switch(state.step) {
         case 'amount': handleAmountKey(key); break;
+        case 'void_amount': handleVoidAmountKey(key); break;
         case 'auth': handleAuthKey(key); break;
         case 'pin': handlePinKey(key); break;
+    }
+}
+
+function handleVoidAmountKey(key) {
+    const display = document.getElementById('inputDisplay');
+    const error = document.getElementById('errorText');
+    
+    if (key === 'CLEAR') { 
+        state.input = ''; 
+        state.amount = 0;
+        display.textContent = '¥0.00';
+        error.classList.remove('show'); 
+    }
+    else if (key === 'BACK') { 
+        state.input = state.input.slice(0, -1); 
+        if (state.input === '') {
+            state.amount = 0;
+            display.textContent = '¥0.00';
+        } else {
+            state.amount = parseFloat(state.input) / 100;
+            display.textContent = '¥' + state.amount.toFixed(2);
+        }
+    }
+    else if (key === 'ENTER') {
+        if (state.input.length === 0 && state.voidType === 'full') {
+            state.amount = state.preauthAmount;
+            showCardWait();
+            return;
+        }
+        
+        if (state.amount <= 0) {
+            AudioSys.error();
+            error.textContent = '金额必须大于0';
+            error.classList.add('show');
+            return;
+        }
+        
+        if (state.amount > state.preauthAmount) {
+            AudioSys.error();
+            error.textContent = `不能超过预授权金额¥${state.preauthAmount.toFixed(2)}`;
+            error.classList.add('show');
+            return;
+        }
+        
+        if (state.amount === state.preauthAmount) {
+            state.voidType = 'full';
+        } else {
+            state.voidType = 'partial';
+        }
+        
+        showCardWait();
+        return;
+    }
+    else if (/\d/.test(key) && state.input.length < 8) { 
+        state.input += key; 
+        state.amount = parseFloat(state.input) / 100;
+        display.textContent = '¥' + state.amount.toFixed(2);
+        
+        if (state.amount > 0 && state.amount < state.preauthAmount) {
+            document.getElementById('btnFull').classList.remove('active');
+            document.getElementById('btnPartial').classList.add('active');
+        } else if (state.amount === state.preauthAmount) {
+            document.getElementById('btnFull').classList.add('active');
+            document.getElementById('btnPartial').classList.remove('active');
+        }
+    }
+    else if (key === '00' && state.input.length < 7) { 
+        state.input += '00'; 
+        state.amount = parseFloat(state.input) / 100;
+        display.textContent = '¥' + state.amount.toFixed(2);
     }
 }
 
@@ -1253,23 +1977,80 @@ function handlePinKey(key) {
 
 function processTransaction() {
     state.step = 'processing';
-    const isVoid = state.mode === 'void';
+    const isVoid = state.mode === 'void' && state.voidType === 'full';
+    const isPartial = state.mode === 'void' && state.voidType === 'partial';
+    const isComplete = state.mode === 'complete';
     
     updateScreen(`
-        <div style="font-weight: bold; margin-bottom: 15px; font-size: 18px; color: ${isVoid ? '#e74c3c' : '#1a1f1a'};">
-            ${isVoid ? '取消中...' : '处理中...'}
+        <div style="font-weight: bold; margin-bottom: 15px; font-size: 18px; color: ${isVoid ? '#e74c3c' : isPartial ? '#ff9800' : '#1a1f1a'};">
+            ${isVoid ? '全额取消中...' : isPartial ? '部分取消中...' : isComplete ? '结算中...' : '处理中...'}
         </div>
         <div style="width: 180px; height: 4px; background: #ddd; border-radius: 2px; overflow: hidden;">
-            <div style="height: 100%; background: ${isVoid ? '#e74c3c' : '#27ae60'}; width: 0%; animation: load 1.5s forwards;"></div>
+            <div style="height: 100%; background: ${isVoid ? '#e74c3c' : isPartial ? '#ff9800' : isComplete ? '#2196f3' : '#27ae60'}; width: 0%; animation: load 1.5s forwards;"></div>
         </div>
         <style>@keyframes load { to { width: 100%; } }</style>
     `);
     
     setTimeout(() => {
         if (state.mode === 'void' && state.selectedReceipt) {
+            if (state.voidType === 'partial') {
+                const cancelAmount = state.amount;
+                const remainingAmount = state.preauthAmount - cancelAmount;
+                
+                historyData.unshift({
+                    id: Date.now(),
+                    type: 'partialVoid',
+                    typeName: '部分预授权取消',
+                    card: state.selectedReceipt.card,
+                    amount: cancelAmount,
+                    remainingAmount: remainingAmount,
+                    originalAmount: state.preauthAmount,
+                    auth: state.authCode,
+                    rrn: Date.now().toString().slice(-12),
+                    date: new Date().toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}),
+                    status: 'normal',
+                    voided: true,
+                    refunded: false,
+                    note: `原预授权¥${state.preauthAmount.toFixed(2)}，取消¥${cancelAmount.toFixed(2)}，剩余¥${remainingAmount.toFixed(2)}继续冻结`
+                });
+                
+                state.selectedReceipt.amount = remainingAmount;
+                state.selectedReceipt.note = `已部分取消¥${cancelAmount.toFixed(2)}，剩余¥${remainingAmount.toFixed(2)}`;
+                
+            } else {
+                state.selectedReceipt.voided = true;
+                state.selectedReceipt.typeName = '预授权取消(全额)';
+            }
+            AudioSys.success();
+            showSuccess();
+        } else if (state.mode === 'complete' && state.selectedReceipt) {
+            const newRrn = Date.now().toString().slice(-12);
+            historyData.unshift({
+                id: Date.now(),
+                type: 'complete',
+                typeName: '预授权完成',
+                card: state.currentCard ? (state.currentCard === '4111 2222 3333 4444' ? '4111 22** **** 4444' : '6222 88** **** 8888') : state.selectedReceipt.card,
+                amount: state.amount,
+                preauthAmount: state.preauthAmount,
+                auth: state.authCode,
+                rrn: newRrn,
+                originalRrn: state.selectedReceipt.rrn,
+                date: new Date().toLocaleString('zh-CN', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}),
+                status: 'normal',
+                voided: false,
+                refunded: false,
+                note: `原预授权¥${state.preauthAmount.toFixed(2)}，结算¥${state.amount.toFixed(2)}，差额¥${(state.preauthAmount - state.amount).toFixed(2)}已解冻`
+            });
+            
+            state.selectedReceipt.completed = true;
             state.selectedReceipt.voided = true;
+            
+            AudioSys.success();
+            showSuccess();
         } else if (state.mode === 'refund' && state.selectedReceipt) {
             state.selectedReceipt.refunded = true;
+            AudioSys.success();
+            showSuccess();
         } else if (state.mode === 'auth') {
             state.authCode = Math.floor(100000 + Math.random() * 900000).toString();
             historyData.unshift({
@@ -1285,6 +2066,8 @@ function processTransaction() {
                 voided: false,
                 refunded: false
             });
+            AudioSys.success();
+            showSuccess();
         } else if (state.mode === 'sale') {
             state.authCode = Math.floor(100000 + Math.random() * 900000).toString();
             historyData.unshift({
@@ -1300,44 +2083,98 @@ function processTransaction() {
                 voided: false,
                 refunded: false
             });
+            AudioSys.success();
+            showSuccess();
         }
-        
-        AudioSys.success();
-        showSuccess();
     }, 1500);
 }
 
 function showSuccess() {
     state.step = 'done';
-    const titles = {auth: '预授权', complete: '预授权完成', sale: '消费', void: '预授权取消', refund: '退款'};
-    const isVoid = state.mode === 'void';
+    const titles = {
+        auth: '预授权', 
+        complete: '预授权完成', 
+        sale: '消费', 
+        void: '预授权取消', 
+        refund: '退款'
+    };
+    const isVoid = state.mode === 'void' && state.voidType === 'full';
+    const isPartial = state.mode === 'void' && state.voidType === 'partial';
+    const isComplete = state.mode === 'complete';
+    
+    let extraInfo = '';
+    if (isPartial) {
+        extraInfo = `<div style="font-size: 12px; color: #ff9800; margin-top: 8px;">
+            取消¥${state.amount.toFixed(2)}<br>
+            剩余¥${(state.preauthAmount - state.amount).toFixed(2)}继续冻结
+        </div>`;
+    } else if (isComplete) {
+        extraInfo = `<div style="font-size: 12px; color: #2196f3; margin-top: 8px;">
+            结算¥${state.amount.toFixed(2)}<br>
+            差额¥${(state.preauthAmount - state.amount).toFixed(2)}已解冻
+        </div>`;
+    } else if (isVoid) {
+        extraInfo = '<div style="font-size: 12px; color: #27ae60; margin-top: 8px;">✓ 全部资金已释放</div>';
+    }
+    
+    const successColor = isVoid ? '#e74c3c' : isPartial ? '#ff9800' : isComplete ? '#2196f3' : '#27ae60';
+    const typeName = isPartial ? '部分取消' : (titles[state.mode] || '交易');
     
     updateScreen(`
-        <div style="font-size: 48px; color: ${isVoid ? '#e74c3c' : '#27ae60'}; margin-bottom: 10px;">✓</div>
-        <div style="font-weight: bold; font-size: 20px; margin-bottom: 8px; color: ${isVoid ? '#e74c3c' : '#1a1f1a'};">${titles[state.mode]}成功</div>
+        <div style="font-size: 48px; color: ${successColor}; margin-bottom: 10px;">✓</div>
+        <div style="font-weight: bold; font-size: 20px; margin-bottom: 8px; color: ${isVoid || isPartial ? '#e74c3c' : '#1a1f1a'};">${typeName}成功</div>
         ${state.mode === 'auth' ? `<div style="font-size: 14px; color: #d32f2f;"><b>授权码:${state.authCode}</b></div>` : ''}
-        ${isVoid ? '<div style="font-size: 12px; color: #27ae60;">✓ 资金已释放</div>' : ''}
-        ${state.amount > 0 && !isVoid ? `<div style="font-size: 14px; color: #555;">¥${state.amount.toFixed(2)}</div>` : ''}
-        ${isVoid ? `<div style="font-size: 12px; color: #555;">释放¥${state.selectedReceipt.amount.toFixed(2)}</div>` : ''}
+        ${(!isVoid && !isPartial) ? (state.amount > 0 ? `<div style="font-size: 14px; color: #555;">¥${state.amount.toFixed(2)}</div>` : '') : ''}
+        ${isVoid ? `<div style="font-size: 14px; color: #555;">释放¥${state.amount.toFixed(2)}</div>` : ''}
+        ${extraInfo}
     `);
     
     initReceiptList();
+    initReceiptArchive();
     printReceipt();
 }
 
 function printReceipt() {
     const receipt = document.getElementById('receiptOut');
-    const titles = {auth: '预授权', complete: '预授权完成', sale: '消费', void: '预授权取消', refund: '退款'};
-    const isVoid = state.mode === 'void';
+    const titles = {
+        auth: '预授权', 
+        complete: '预授权完成', 
+        sale: '消费', 
+        void: '预授权取消', 
+        refund: '退款'
+    };
+    const isVoid = state.mode === 'void' && state.voidType === 'full';
+    const isPartial = state.mode === 'void' && state.voidType === 'partial';
+    const isComplete = state.mode === 'complete';
+    
+    let amountHtml = '';
+    if (isVoid) {
+        amountHtml = `<div style="margin: 4px 0; font-size: 13px; color: #e74c3c;"><b>全额取消 ¥${state.amount.toFixed(2)}</b></div>`;
+    } else if (isPartial) {
+        amountHtml = `
+            <div style="margin: 4px 0; font-size: 12px;">原预授权: ¥${state.preauthAmount.toFixed(2)}</div>
+            <div style="margin: 4px 0; font-size: 13px; color: #ff9800;"><b>部分取消: ¥${state.amount.toFixed(2)}</b></div>
+            <div style="margin: 4px 0; font-size: 11px; color: #666;">剩余冻结: ¥${(state.preauthAmount - state.amount).toFixed(2)}</div>
+        `;
+    } else if (isComplete) {
+        amountHtml = `
+            <div style="margin: 4px 0; font-size: 12px;">原预授权: ¥${state.preauthAmount.toFixed(2)}</div>
+            <div style="margin: 4px 0; font-size: 14px; color: #2196f3;"><b>结算金额: ¥${state.amount.toFixed(2)}</b></div>
+            <div style="margin: 4px 0; font-size: 11px; color: #27ae60;">解冻差额: ¥${(state.preauthAmount - state.amount).toFixed(2)}</div>
+        `;
+    } else {
+        amountHtml = state.amount > 0 ? `<div style="margin: 4px 0; font-size: 14px;"><b>¥${state.amount.toFixed(2)}</b></div>` : '';
+    }
+    
+    const icon = isVoid ? '❌ ' : isPartial ? '✂️ ' : isComplete ? '💳 ' : '';
     
     receipt.innerHTML = `
         <div style="text-align: center; font-weight: bold; margin-bottom: 10px; border-bottom: 1px dashed #000; padding-bottom: 6px; font-size: 14px;">
-            ${isVoid ? '❌ ' : ''}🏨 格兰德大酒店
+            ${icon}🏨 格兰德大酒店
         </div>
-        <div style="margin: 4px 0; font-size: 12px;"><b>${titles[state.mode]}</b></div>
-        <div style="margin: 4px 0; font-size: 11px;">${state.currentCard ? state.currentCard.replace(/(\d{4})\d{8}(\d{4})/, '$1 **** $2') : ''}</div>
-        ${state.amount > 0 && !isVoid ? `<div style="margin: 4px 0; font-size: 14px;"><b>¥${state.amount.toFixed(2)}</b></div>` : ''}
-        ${isVoid ? `<div style="margin: 4px 0; font-size: 13px; color: #e74c3c;"><b>¥${state.selectedReceipt.amount.toFixed(2)}</b></div>` : ''}
+        <div style="margin: 4px 0; font-size: 12px;"><b>${isPartial ? '部分预授权取消' : (titles[state.mode] || '交易')}</b></div>
+        <div style="margin: 4px 0; font-size: 11px;">${state.currentCard ? state.currentCard.replace(/(\d{4})\d{8}(\d{4})/, '$1 **** $2') : (state.selectedReceipt ? state.selectedReceipt.card : '')}</div>
+        ${amountHtml}
         ${state.mode === 'auth' ? `<div style="margin: 4px 0; font-size: 12px; color: #d32f2f;">授权码:${state.authCode}</div>` : ''}
         <div style="font-size: 10px; color: #666; margin-top: 8px;">${new Date().toLocaleString()}</div>
     `;
@@ -1353,6 +2190,7 @@ function resetScreen() {
     state.selectedReceipt = null;
     state.currentCard = null;
     state.currentCardCvv = null;
+    state.voidType = 'full';
     
     document.getElementById('visaCard').classList.remove('active');
     document.getElementById('unionCard').classList.remove('active');
@@ -1390,7 +2228,9 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Backspace') pressKey('BACK');
 });
 
+// 初始化 - 默认清空状态
 initReceiptList();
+initReceiptArchive();
 </script>
 
 </body>
