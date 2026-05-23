@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple 设备截图分辨率识别工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8892b0;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #ccd6f6;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon {
+            font-size: 20px;
+        }
+
+        /* 上传区域 */
+        .upload-zone {
+            border: 2px dashed rgba(0,212,255,0.3);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.05);
+        }
+
+        .upload-zone input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: #ccd6f6;
+        }
+
+        .upload-hint {
+            font-size: 13px;
+            color: #8892b0;
+            margin-top: 8px;
+        }
+
+        /* 输入区域 */
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #8892b0;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            color: #e0e0e0;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: #00d4ff;
+        }
+
+        .input-group input::placeholder {
+            color: #555;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,212,255,0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            margin-left: 10px;
+        }
+
+        /* 结果区域 */
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-item {
+            background: rgba(0,212,255,0.08);
+            border: 1px solid rgba(0,212,255,0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s;
+        }
+
+        .result-item:hover {
+            background: rgba(0,212,255,0.12);
+            transform: translateX(4px);
+        }
+
+        .result-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .result-info {
+            flex: 1;
+        }
+
+        .result-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ccd6f6;
+            margin-bottom: 4px;
+        }
+
+        .result-detail {
+            font-size: 13px;
+            color: #8892b0;
+            line-height: 1.5;
+        }
+
+        .result-match {
+            background: rgba(0,255,136,0.15);
+            border-color: rgba(0,255,136,0.3);
+        }
+
+        .result-match .result-name {
+            color: #00ff88;
+        }
+
+        .match-badge {
+            background: #00ff88;
+            color: #0a192f;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+
+        .no-result {
+            text-align: center;
+            padding: 30px;
+            color: #8892b0;
+        }
+
+        .no-result-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        /* 预览图 */
+        .preview-container {
+            display: none;
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .preview-container.show {
+            display: block;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .preview-info {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #8892b0;
+        }
+
+        /* 快捷标签 */
+        .quick-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .quick-tag {
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            font-size: 13px;
+            color: #ccd6f6;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-tag:hover {
+            background: rgba(0,212,255,0.15);
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+
+        /* 统计 */
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            font-size: 13px;
+            color: #8892b0;
+        }
+
+        .stat-value {
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .input-row {
+                flex-direction: column;
+            }
+            .input-group {
+                width: 100%;
+            }
+            h1 {
+                font-size: 22px;
+            }
+        }
+    
+        .mode-tab.active {
+            box-shadow: 0 4px 15px rgba(0,212,255,0.3);
+        }
+        .mode-tab:not(.active):hover {
+            background: rgba(0,212,255,0.15) !important;
+            border-color: #00d4ff !important;
+            color: #00d4ff !important;
+        }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Apple 设备识别工具</h1>
+        <p class="subtitle">上传截图/照片或输入分辨率，自动识别设备型号 · 支持 2010-2026 全系列</p>
+
+        <!-- 模式切换标签 -->
+<div style="display:flex; gap:8px; margin-bottom:20px; justify-content:center; flex-wrap:wrap;">
+    <button class="mode-tab active" id="tabScreenshot" onclick="switchMode('screenshot')" style="padding:10px 20px; background:linear-gradient(135deg,#00d4ff,#7b2cbf); border:none; border-radius:10px; color:white; font-size:14px; font-weight:600; cursor:pointer;">📱 截图识别</button>
+    <button class="mode-tab" id="tabCamera" onclick="switchMode('camera')" style="padding:10px 20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; color:#ccd6f6; font-size:14px; font-weight:600; cursor:pointer;">📷 拍照识别</button>
+    <button class="mode-tab" id="tabCompressed" onclick="switchMode('compressed')" style="padding:10px 20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; color:#ccd6f6; font-size:14px; font-weight:600; cursor:pointer;">🗜️ 压缩识别</button>
+</div>
+
+<div id="screenshotMode">
+<!-- 上传区域 -->
+        <div class="card">
+            <div class="card-title"><span class="icon">📤</span>上传截图自动识别</div>
+            <div class="upload-zone" id="uploadZone">
+                <input type="file" id="fileInput" accept="image/*" multiple>
+                <div class="upload-icon">🖼️</div>
+                <div class="upload-text">点击或拖拽截图到此处</div>
+                <div class="upload-hint">支持 PNG、JPG、HEIC 等格式，可同时上传多张</div>
+            </div>
+            <div class="preview-container" id="previewContainer">
+                <img class="preview-img" id="previewImg" alt="预览">
+                <div class="preview-info" id="previewInfo"></div>
+            </div>
+        </div>
+
+        <!-- 手动输入 -->
+        <div class="card">
+            <div class="card-title"><span class="icon">⌨️</span>手动输入分辨率</div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label>宽度 (px)</label>
+                    <input type="number" id="widthInput" placeholder="如: 1179">
+                </div>
+                <div class="input-group">
+                    <label>高度 (px)</label>
+                    <input type="number" id="heightInput" placeholder="如: 2556">
+                </div>
+                <div class="input-group">
+                    <label>设备类型筛选</label>
+                    <select id="typeFilter">
+                        <option value="all">全部设备</option>
+                        <option value="iphone">iPhone</option>
+                        <option value="ipad">iPad</option>
+                        <option value="mac">Mac</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 12px;">
+                <button class="btn" onclick="searchByResolution()">🔍 识别设备</button>
+                <button class="btn btn-secondary" onclick="clearAll()">清空</button>
+            </div>
+            <div class="quick-tags">
+                <span style="font-size: 12px; color: #8892b0; margin-right: 4px;">快捷输入:</span>
+                <span class="quick-tag" onclick="fillResolution(1179,2556)">iPhone 16</span>
+                <span class="quick-tag" onclick="fillResolution(1290,2796)">iPhone Pro Max</span>
+                <span class="quick-tag" onclick="fillResolution(1668,2388)">iPad Pro 11"</span>
+                <span class="quick-tag" onclick="fillResolution(2048,2732)">iPad Pro 12.9"</span>
+                <span class="quick-tag" onclick="fillResolution(3024,1964)">MacBook Pro 14"</span>
+                <span class="quick-tag" onclick="fillResolution(2560,1664)">MacBook Air 13"</span>
+            </div>
+        </div>
+
+        <!-- 结果展示 -->
+        <div class="card results" id="resultsCard">
+            <div class="card-title"><span class="icon">🎯</span>识别结果</div>
+            <div id="resultsList"></div>
+            <div class="stats" id="statsArea"></div>
+        </div>
+
+        <!-- 数据说明 -->
+        <div class="card">
+            <div class="card-title"><span class="icon">📊</span>截图 + 拍照数据覆盖范围</div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="iphoneCount">-</div>
+                    <div>iPhone 型号</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="ipadCount">-</div>
+                    <div>iPad 型号</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="macCount">-</div>
+                    <div>Mac 型号</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">-</div>
+                    <div>总计设备</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ==================== 设备数据库 ====================
+const deviceDB = {
+    iphone: [
+        // iPhone 16 系列 (2024)
+        { name: "iPhone 16 Pro Max", w: 1320, h: 2868, year: 2024, scale: "@3x", note: "6.9英寸, A18 Pro" },
+        { name: "iPhone 16 Pro", w: 1206, h: 2622, year: 2024, scale: "@3x", note: "6.3英寸, A18 Pro" },
+        { name: "iPhone 16 Plus", w: 1290, h: 2796, year: 2024, scale: "@3x", note: "6.7英寸, A18" },
+        { name: "iPhone 16", w: 1179, h: 2556, year: 2024, scale: "@3x", note: "6.1英寸, A18" },
+
+        // iPhone 15 系列 (2023)
+        { name: "iPhone 15 Pro Max", w: 1290, h: 2796, year: 2023, scale: "@3x", note: "6.7英寸, A17 Pro" },
+        { name: "iPhone 15 Pro", w: 1179, h: 2556, year: 2023, scale: "@3x", note: "6.1英寸, A17 Pro" },
+        { name: "iPhone 15 Plus", w: 1290, h: 2796, year: 2023, scale: "@3x", note: "6.7英寸, A16" },
+        { name: "iPhone 15", w: 1179, h: 2556, year: 2023, scale: "@3x", note: "6.1英寸, A16" },
+
+        // iPhone 14 系列 (2022)
+        { name: "iPhone 14 Pro Max", w: 1290, h: 2796, year: 2022, scale: "@3x", note: "6.7英寸, A16, 灵动岛" },
+        { name: "iPhone 14 Pro", w: 1179, h: 2556, year: 2022, scale: "@3x", note: "6.1英寸, A16, 灵动岛" },
+        { name: "iPhone 14 Plus", w: 1284, h: 2778, year: 2022, scale: "@3x", note: "6.7英寸, A15" },
+        { name: "iPhone 14", w: 1170, h: 2532, year: 2022, scale: "@3x", note: "6.1英寸, A15" },
+
+        // iPhone 13 系列 (2021)
+        { name: "iPhone 13 Pro Max", w: 1284, h: 2778, year: 2021, scale: "@3x", note: "6.7英寸, A15" },
+        { name: "iPhone 13 Pro", w: 1170, h: 2532, year: 2021, scale: "@3x", note: "6.1英寸, A15, 120Hz" },
+        { name: "iPhone 13", w: 1170, h: 2532, year: 2021, scale: "@3x", note: "6.1英寸, A15" },
+        { name: "iPhone 13 mini", w: 1080, h: 2340, year: 2021, scale: "@3x", note: "5.4英寸, A15" },
+
+        // iPhone 12 系列 (2020)
+        { name: "iPhone 12 Pro Max", w: 1284, h: 2778, year: 2020, scale: "@3x", note: "6.7英寸, A14" },
+        { name: "iPhone 12 Pro", w: 1170, h: 2532, year: 2020, scale: "@3x", note: "6.1英寸, A14" },
+        { name: "iPhone 12", w: 1170, h: 2532, year: 2020, scale: "@3x", note: "6.1英寸, A14, 5G" },
+        { name: "iPhone 12 mini", w: 1080, h: 2340, year: 2020, scale: "@3x", note: "5.4英寸, A14" },
+
+        // iPhone 11 系列 (2019)
+        { name: "iPhone 11 Pro Max", w: 1242, h: 2688, year: 2019, scale: "@3x", note: "6.5英寸, A13" },
+        { name: "iPhone 11 Pro", w: 1125, h: 2436, year: 2019, scale: "@3x", note: "5.8英寸, A13, 三摄" },
+        { name: "iPhone 11", w: 828, h: 1792, year: 2019, scale: "@2x", note: "6.1英寸, A13, 双摄" },
+
+        // iPhone XS/XR 系列 (2018)
+        { name: "iPhone XS Max", w: 1242, h: 2688, year: 2018, scale: "@3x", note: "6.5英寸, A12" },
+        { name: "iPhone XS", w: 1125, h: 2436, year: 2018, scale: "@3x", note: "5.8英寸, A12" },
+        { name: "iPhone XR", w: 828, h: 1792, year: 2018, scale: "@2x", note: "6.1英寸, A12, LCD" },
+
+        // iPhone X 系列 (2017)
+        { name: "iPhone X", w: 1125, h: 2436, year: 2017, scale: "@3x", note: "5.8英寸, A11, 首款全面屏" },
+
+        // iPhone 8 系列 (2017)
+        { name: "iPhone 8 Plus", w: 1080, h: 1920, year: 2017, scale: "@3x", note: "5.5英寸, A11, 最后一代Plus" },
+        { name: "iPhone 8", w: 750, h: 1334, year: 2017, scale: "@2x", note: "4.7英寸, A11, 最后一代带Home键基础款" },
+
+        // iPhone 7 系列 (2016)
+        { name: "iPhone 7 Plus", w: 1080, h: 1920, year: 2016, scale: "@3x", note: "5.5英寸, A10, 双摄" },
+        { name: "iPhone 7", w: 750, h: 1334, year: 2016, scale: "@2x", note: "4.7英寸, A10" },
+
+        // iPhone SE / 6s 系列 (2015-2016)
+        { name: "iPhone SE (1代)", w: 640, h: 1136, year: 2016, scale: "@2x", note: "4英寸, A9, 复刻5s外观" },
+        { name: "iPhone 6s Plus", w: 1080, h: 1920, year: 2015, scale: "@3x", note: "5.5英寸, A9" },
+        { name: "iPhone 6s", w: 750, h: 1334, year: 2015, scale: "@2x", note: "4.7英寸, A9, 3D Touch" },
+
+        // iPhone SE 后续款
+        { name: "iPhone SE (2代)", w: 750, h: 1334, year: 2020, scale: "@2x", note: "4.7英寸, A13, 复刻8外观" },
+        { name: "iPhone SE (3代)", w: 750, h: 1334, year: 2022, scale: "@2x", note: "4.7英寸, A15, 5G" },
+    ],
+
+    ipad: [
+        // iPad Pro M4 (2024)
+        { name: "iPad Pro 13" (M4)", w: 2064, h: 2752, year: 2024, scale: "@2x", note: "Ultra Retina XDR, 纳米纹理玻璃可选" },
+        { name: "iPad Pro 11" (M4)", w: 1668, h: 2388, year: 2024, scale: "@2x", note: "Ultra Retina XDR, OLED首次搭载" },
+
+        // iPad Pro M2 (2022)
+        { name: "iPad Pro 12.9" (M2)", w: 2048, h: 2732, year: 2022, scale: "@2x", note: "mini-LED, M2芯片" },
+        { name: "iPad Pro 11" (M2)", w: 1668, h: 2388, year: 2022, scale: "@2x", note: "M2芯片" },
+
+        // iPad Pro M1 (2021)
+        { name: "iPad Pro 12.9" (M1)", w: 2048, h: 2732, year: 2021, scale: "@2x", note: "mini-LED首发, M1芯片" },
+        { name: "iPad Pro 11" (M1)", w: 1668, h: 2388, year: 2021, scale: "@2x", note: "M1芯片, Thunderbolt" },
+
+        // iPad Pro 2020
+        { name: "iPad Pro 12.9" (2020)", w: 2048, h: 2732, year: 2020, scale: "@2x", note: "A12Z, LiDAR首发" },
+        { name: "iPad Pro 11" (2020)", w: 1668, h: 2388, year: 2020, scale: "@2x", note: "A12Z" },
+
+        // iPad Pro 2018
+        { name: "iPad Pro 12.9" (2018)", w: 2048, h: 2732, year: 2018, scale: "@2x", note: "全面屏设计, Face ID, USB-C" },
+        { name: "iPad Pro 11" (2018)", w: 1668, h: 2388, year: 2018, scale: "@2x", note: "全面屏设计首发" },
+
+        // iPad Air 系列
+        { name: "iPad Air 13" (M2)", w: 2048, h: 2732, year: 2024, scale: "@2x", note: "M2芯片, 横向前置摄像头" },
+        { name: "iPad Air 11" (M2)", w: 1640, h: 2360, year: 2024, scale: "@2x", note: "M2芯片, 支持Apple Pencil Pro" },
+        { name: "iPad Air 5", w: 1640, h: 2360, year: 2022, scale: "@2x", note: "M1芯片, 支持Stage Manager" },
+        { name: "iPad Air 4", w: 1640, h: 2360, year: 2020, scale: "@2x", note: "全面屏设计, A14, 多款配色" },
+        { name: "iPad Air 3", w: 1536, h: 2048, year: 2019, scale: "@2x", note: "10.5英寸, A12, 支持Smart Keyboard" },
+        { name: "iPad Air 2", w: 1536, h: 2048, year: 2014, scale: "@2x", note: "A8X, 首款全贴合屏幕" },
+
+        // iPad mini 系列
+        { name: "iPad mini (A17 Pro)", w: 1488, h: 2266, year: 2024, scale: "@2x", note: "A17 Pro, 支持Apple Pencil Pro" },
+        { name: "iPad mini 6", w: 1488, h: 2266, year: 2021, scale: "@2x", note: "全面屏设计, A15, USB-C" },
+        { name: "iPad mini 5", w: 1536, h: 2048, year: 2019, scale: "@2x", note: "A12, 支持Apple Pencil 1代" },
+        { name: "iPad mini 4", w: 1536, h: 2048, year: 2015, scale: "@2x", note: "A8, 2GB RAM" },
+
+        // iPad 基础款
+        { name: "iPad (第 10 代)", w: 1620, h: 2160, year: 2022, scale: "@2x", note: "10.9英寸, A14, 横向前置摄像头, USB-C" },
+        { name: "iPad (第 9 代)", w: 1620, h: 2160, year: 2021, scale: "@2x", note: "10.2英寸, A13, 最后一代Lightning" },
+        { name: "iPad (第 8 代)", w: 1620, h: 2160, year: 2020, scale: "@2x", note: "10.2英寸, A12" },
+        { name: "iPad (第 7 代)", w: 1620, h: 2160, year: 2019, scale: "@2x", note: "10.2英寸, A10, 首次支持Smart Keyboard" },
+        { name: "iPad (第 6 代)", w: 1536, h: 2048, year: 2018, scale: "@2x", note: "9.7英寸, A10, 支持Apple Pencil" },
+        { name: "iPad (第 5 代)", w: 1536, h: 2048, year: 2017, scale: "@2x", note: "9.7英寸, A9, 平价款定位" },
+        { name: "iPad Air (初代)", w: 1536, h: 2048, year: 2013, scale: "@2x", note: "A7, 轻薄设计" },
+        { name: "iPad (第 4 代)", w: 1536, h: 2048, year: 2012, scale: "@2x", note: "A6X, Lightning接口" },
+        { name: "iPad (第 3 代)", w: 1536, h: 2048, year: 2012, scale: "@2x", note: "Retina首发, A5X" },
+        { name: "iPad 2", w: 768, h: 1024, year: 2011, scale: "@1x", note: "A5, 非Retina" },
+    ],
+
+    mac: [
+        // MacBook Pro M4 (2024)
+        { name: "MacBook Pro 16" (M4 Pro/Max)", w: 3456, h: 2234, year: 2024, scale: "@2x", note: "Liquid Retina XDR, 纳米纹理可选" },
+        { name: "MacBook Pro 14" (M4 Pro/Max)", w: 3024, h: 1964, year: 2024, scale: "@2x", note: "M4系列, 120Hz ProMotion" },
+        { name: "MacBook Pro 14" (M4)", w: 3024, h: 1964, year: 2024, scale: "@2x", note: "基础版M4, 3个雷雳口" },
+
+        // MacBook Pro M3 (2023)
+        { name: "MacBook Pro 16" (M3 Pro/Max)", w: 3456, h: 2234, year: 2023, scale: "@2x", note: "深空黑色, M3系列" },
+        { name: "MacBook Pro 14" (M3 Pro/Max)", w: 3024, h: 1964, year: 2023, scale: "@2x", note: "M3 Pro/Max" },
+        { name: "MacBook Pro 14" (M3)", w: 3024, h: 1964, year: 2023, scale: "@2x", note: "基础版M3, 入门Pro" },
+
+        // MacBook Pro M2 (2023)
+        { name: "MacBook Pro 16" (M2 Pro/Max)", w: 3456, h: 2234, year: 2023, scale: "@2x", note: "M2系列, Wi-Fi 6E" },
+        { name: "MacBook Pro 14" (M2 Pro/Max)", w: 3024, h: 1964, year: 2023, scale: "@2x", note: "M2系列" },
+
+        // MacBook Pro M1 (2021)
+        { name: "MacBook Pro 16" (M1 Pro/Max)", w: 3456, h: 2234, year: 2021, scale: "@2x", note: "刘海屏设计首发, 回归丰富接口" },
+        { name: "MacBook Pro 14" (M1 Pro/Max)", w: 3024, h: 1964, year: 2021, scale: "@2x", note: "M1 Pro/Max, mini-LED" },
+
+        // MacBook Air M3 (2024)
+        { name: "MacBook Air 15" (M3)", w: 2880, h: 1864, year: 2024, scale: "@2x", note: "15.3英寸, M3, 支持双外接显示器" },
+        { name: "MacBook Air 13" (M3)", w: 2560, h: 1664, year: 2024, scale: "@2x", note: "13.6英寸, M3, 午夜色防指纹" },
+
+        // MacBook Air M2 (2022)
+        { name: "MacBook Air 15" (M2)", w: 2880, h: 1864, year: 2023, scale: "@2x", note: "15英寸Air首发, M2" },
+        { name: "MacBook Air 13" (M2)", w: 2560, h: 1664, year: 2022, scale: "@2x", note: "全新设计, 刘海屏, MagSafe回归" },
+
+        // MacBook Air M1 (2020)
+        { name: "MacBook Air 13" (M1)", w: 2560, h: 1600, year: 2020, scale: "@2x", note: "M1芯片首发, 无风扇设计" },
+
+        // Intel 时代 MacBook
+        { name: "MacBook Pro 16" (2019)", w: 3072, h: 1920, year: 2019, scale: "@2x", note: "最后一代Intel 16英寸, 剪刀脚键盘回归" },
+        { name: "MacBook Pro 15" (2019)", w: 2880, h: 1800, year: 2019, scale: "@2x", note: "第9代Intel, 蝶式键盘末期" },
+        { name: "MacBook Pro 13" (2020 Intel)", w: 2560, h: 1600, year: 2020, scale: "@2x", note: "最后一代Intel 13英寸" },
+        { name: "MacBook Air 13" (2020 Intel)", w: 2560, h: 1600, year: 2020, scale: "@2x", note: "10代Intel, 剪刀脚键盘" },
+        { name: "MacBook Air 13" (2019)", w: 2560, h: 1600, year: 2019, scale: "@2x", note: "True Tone, 蝶式键盘" },
+        { name: "MacBook Air 13" (2018)", w: 2560, h: 1600, year: 2018, scale: "@2x", note: "Retina首发Air, 蝶式键盘" },
+        { name: "MacBook 12" (2017)", w: 2304, h: 1440, year: 2017, scale: "@2x", note: "12英寸, 无风扇, USB-C唯一接口" },
+        { name: "MacBook Pro 15" (2018)", w: 2880, h: 1800, year: 2018, scale: "@2x", note: "第8代6核Intel, True Tone" },
+        { name: "MacBook Pro 13" (2018)", w: 2560, h: 1600, year: 2018, scale: "@2x", note: "四核Intel, Touch Bar" },
+        { name: "MacBook Pro 15" (2017)", w: 2880, h: 1800, year: 2017, scale: "@2x", note: "Kaby Lake, 更快SSD" },
+        { name: "MacBook Pro 13" (2017)", w: 2560, h: 1600, year: 2017, scale: "@2x", note: "Kaby Lake" },
+        { name: "MacBook Pro 15" (2016)", w: 2880, h: 1800, year: 2016, scale: "@2x", note: "Touch Bar首发, 蝶式键盘, 仅USB-C/雷雳3" },
+        { name: "MacBook Pro 13" (2016)", w: 2560, h: 1600, year: 2016, scale: "@2x", note: "Touch Bar版本" },
+        { name: "MacBook Pro 13" (2015)", w: 2560, h: 1600, year: 2015, scale: "@2x", note: "最后一代丰富接口, 信仰灯" },
+        { name: "MacBook Pro 15" (2015)", w: 2880, h: 1800, year: 2015, scale: "@2x", note: "Force Touch触控板首发" },
+        { name: "MacBook Pro 13" (Retina, 2014)", w: 2560, h: 1600, year: 2014, scale: "@2x", note: "Retina 13英寸降价版" },
+        { name: "MacBook Pro 15" (Retina, 2014)", w: 2880, h: 1800, year: 2014, scale: "@2x", note: "Crystalwell缓存, 更快闪存" },
+        { name: "MacBook Pro 13" (Retina, 2013)", w: 2560, h: 1600, year: 2013, scale: "@2x", note: "Haswell, 电池续航大幅提升" },
+        { name: "MacBook Pro 15" (Retina, 2013)", w: 2880, h: 1800, year: 2013, scale: "@2x", note: "Haswell, 独立显卡可选" },
+        { name: "MacBook Pro 15" (Retina, 2012)", w: 2880, h: 1800, year: 2012, scale: "@2x", note: "首款Retina MacBook Pro" },
+
+        // iMac 系列
+        { name: "iMac 24" (M3, 2023)", w: 4480, h: 2520, year: 2023, scale: "@2x", note: "M3芯片, 4.5K Retina, 多彩配色" },
+        { name: "iMac 24" (M1, 2021)", w: 4480, h: 2520, year: 2021, scale: "@2x", note: "M1芯片, 全新设计, 7色可选" },
+        { name: "iMac 27" (2020 Intel)", w: 5120, h: 2880, year: 2020, scale: "@2x", note: "5K Retina, 10代Intel, 纳米纹理玻璃可选" },
+        { name: "iMac 27" (5K, 2019)", w: 5120, h: 2880, year: 2019, scale: "@2x", note: "第9代Intel, 可选Vega显卡" },
+        { name: "iMac 27" (5K, 2017)", w: 5120, h: 2880, year: 2017, scale: "@2x", note: "Kaby Lake, 首次支持10bit色深" },
+        { name: "iMac 27" (5K, 2015)", w: 5120, h: 2880, year: 2015, scale: "@2x", note: "Skylake, P3广色域首发" },
+        { name: "iMac 27" (5K, 2014)", w: 5120, h: 2880, year: 2014, scale: "@2x", note: "首款5K iMac, 降价普及" },
+        { name: "iMac 21.5" (4K, 2015-2017)", w: 4096, h: 2304, year: 2015, scale: "@2x", note: "4K Retina, P3色域" },
+        { name: "iMac 21.5" (Retina, 2015)", w: 4096, h: 2304, year: 2015, scale: "@2x", note: "21.5英寸首次Retina" },
+        { name: "iMac 21.5" (2012-2014, 非Retina)", w: 1920, h: 1080, year: 2012, scale: "@1x", note: "1080p, 最后一代非Retina 21.5" },
+        { name: "iMac 27" (2011-2012, 非Retina)", w: 2560, h: 1440, year: 2011, scale: "@1x", note: "2K, 最后一代非Retina 27" },
+
+        // 显示器
+        { name: "Studio Display", w: 5120, h: 2880, year: 2022, scale: "@2x", note: "27英寸5K, A13芯片, 内置摄像头" },
+        { name: "Pro Display XDR", w: 6016, h: 3384, year: 2019, scale: "@2x", note: "32英寸6K, mini-LED, 纳米纹理可选" },
+        { name: "LG UltraFine 5K (Apple合作款)", w: 5120, h: 2880, year: 2016, scale: "@2x", note: "27英寸5K, 雷雳3, 已停产" },
+        { name: "LG UltraFine 4K (Apple合作款)", w: 3840, h: 2160, year: 2016, scale: "@2x", note: "21.5英寸4K, USB-C" },
+        { name: "Apple Thunderbolt Display", w: 2560, h: 1440, year: 2011, scale: "@1x", note: "27英寸2K, 最后一代Apple显示器(至2016)" },
+        { name: "Apple LED Cinema Display 27"", w: 2560, h: 1440, year: 2010, scale: "@1x", note: "Mini DisplayPort, 2K" },
+        { name: "Apple LED Cinema Display 24"", w: 1920, h: 1200, year: 2008, scale: "@1x", note: "24英寸, 16:10比例" },
+
+        // Mac mini / Studio / Pro (外接显示器分辨率取决于外接屏，以下为常见配置)
+        { name: "Mac Studio / mini (外接4K)", w: 3840, h: 2160, year: 2022, scale: "@2x", note: "常见外接4K显示器配置" },
+        { name: "Mac Studio / mini (外接5K)", w: 5120, h: 2880, year: 2022, scale: "@2x", note: "常见外接5K显示器配置" },
+        { name: "Mac Studio / mini (外接6K)", w: 6016, h: 3384, year: 2022, scale: "@2x", note: "Pro Display XDR配置" },
+        { name: "Mac Pro (2019)", w: 5120, h: 2880, year: 2019, scale: "@2x", note: "模块化设计, Intel Xeon" },
+        { name: "Mac Pro (2013 垃圾桶)", w: 2560, h: 1440, year: 2013, scale: "@1x", note: "圆柱形设计, 双AMD FirePro" },
+
+        // MacBook 12英寸系列
+        { name: "MacBook 12" (2016)", w: 2304, h: 1440, year: 2016, scale: "@2x", note: "Skylake, 玫瑰金配色" },
+        { name: "MacBook 12" (2015)", w: 2304, h: 1440, year: 2015, scale: "@2x", note: "首款12英寸MacBook, 超轻薄" },
+
+        // 常见外接显示器分辨率
+        { name: "外接显示器 (1080p)", w: 1920, h: 1080, year: 0, scale: "@1x", note: "常见全高清外接显示器" },
+        { name: "外接显示器 (2K/1440p)", w: 2560, h: 1440, year: 0, scale: "@1x", note: "常见2K外接显示器" },
+        { name: "外接显示器 (4K/2160p)", w: 3840, h: 2160, year: 0, scale: "@2x", note: "常见4K外接显示器" },
+        { name: "外接显示器 ( ultrawide 34" )", w: 3440, h: 1440, year: 0, scale: "@1x", note: "常见34英寸带鱼屏" },
+        { name: "外接显示器 ( ultrawide 38" )", w: 3840, h: 1600, year: 0, scale: "@1x", note: "常见38英寸带鱼屏" },
+        { name: "外接显示器 ( ultrawide 49" )", w: 5120, h: 1440, year: 0, scale: "@1x", note: "常见49英寸超宽屏" },
+    ]
+};
+
+// 统计
+function updateStats() {
+    document.getElementById('iphoneCount').textContent = deviceDB.iphone.length;
+    document.getElementById('ipadCount').textContent = deviceDB.ipad.length;
+    document.getElementById('macCount').textContent = deviceDB.mac.length;
+    document.getElementById('totalCount').textContent = deviceDB.iphone.length + deviceDB.ipad.length + deviceDB.mac.length;
+}
+
+// 获取所有设备（扁平化）
+function getAllDevices(filter = 'all') {
+    let devices = [];
+    if (filter === 'all' || filter === 'iphone') devices = devices.concat(deviceDB.iphone.map(d => ({...d, type: 'iphone', icon: '📱'})));
+    if (filter === 'all' || filter === 'ipad') devices = devices.concat(deviceDB.ipad.map(d => ({...d, type: 'ipad', icon: '📟'})));
+    if (filter === 'all' || filter === 'mac') devices = devices.concat(deviceDB.mac.map(d => ({...d, type: 'mac', icon: '💻'})));
+    return devices;
+}
+
+// 搜索逻辑 - 优化版：增加像素数量级过滤
+function findDevices(width, height, filter = 'all') {
+    const w = parseInt(width);
+    const h = parseInt(height);
+    if (!w || !h) return [];
+
+    const inputPixels = w * h;
+    const inputRatio = w / h;
+
+    // 支持横竖屏互换
+    const devices = getAllDevices(filter);
+    const results = [];
+
+    for (const d of devices) {
+        const devicePixels = d.w * d.h;
+        const deviceRatio = d.w / d.h;
+
+        // 精确匹配
+        const exactMatch = (d.w === w && d.h === h) || (d.w === h && d.h === w);
+        // 近似匹配（允许±2像素误差，处理缩放档位差异）
+        const approxMatch = (Math.abs(d.w - w) <= 2 && Math.abs(d.h - h) <= 2) || 
+                           (Math.abs(d.w - h) <= 2 && Math.abs(d.h - w) <= 2);
+        // 比例匹配 - 增加像素数量级限制，避免4800万和1200万互相干扰
+        // 只允许像素差异在2倍以内（截图分辨率差异不会太大）
+        const ratioMatch = !exactMatch && !approxMatch && 
+                          Math.abs(inputRatio - deviceRatio) < 0.01 &&
+                          Math.max(inputPixels, devicePixels) / Math.min(inputPixels, devicePixels) <= 2.5;
+
+        if (exactMatch) {
+            results.push({...d, matchType: 'exact', orientation: d.w === w && d.h === h ? '竖屏/原始' : '横屏'});
+        } else if (approxMatch) {
+            results.push({...d, matchType: 'approx', orientation: Math.abs(d.w - w) <= 2 ? '竖屏/原始' : '横屏'});
+        } else if (ratioMatch) {
+            results.push({...d, matchType: 'ratio', orientation: '相同比例, 相近分辨率'});
+        }
+    }
+
+    // 按匹配类型排序
+    const matchOrder = { exact: 0, approx: 1, ratio: 2 };
+    results.sort((a, b) => {
+        if (matchOrder[a.matchType] !== matchOrder[b.matchType]) {
+            return matchOrder[a.matchType] - matchOrder[b.matchType];
+        }
+        return b.year - a.year;
+    });
+
+    return results;
+}
+
+// 搜索并展示结果
+function searchByResolution() {
+    const w = document.getElementById('widthInput').value;
+    const h = document.getElementById('heightInput').value;
+    const filter = document.getElementById('typeFilter').value;
+
+    if (!w || !h) {
+        alert('请输入宽度和高度');
+        return;
+    }
+
+    showResults(findDevices(w, h, filter), w, h);
+}
+
+// 展示结果
+function showResults(results, inputW, inputH) {
+    const card = document.getElementById('resultsCard');
+    const list = document.getElementById('resultsList');
+    const stats = document.getElementById('statsArea');
+
+    card.classList.add('show');
+
+    if (results.length === 0) {
+        list.innerHTML = `
+            <div class="no-result">
+                <div class="no-result-icon">🔍</div>
+                <div>未找到匹配 ${inputW} × ${inputH} 的设备</div>
+                <div style="font-size: 12px; margin-top: 8px;">可能是外接显示器、安卓设备，或截图经过裁剪/压缩</div>
+            </div>
+        `;
+        stats.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    const exactCount = results.filter(r => r.matchType === 'exact').length;
+
+    for (const r of results) {
+        const isExact = r.matchType === 'exact';
+        const matchLabel = isExact ? '<span class="match-badge">精确匹配</span>' : '<span class="match-badge" style="background:#ffd700;color:#333;">近似匹配</span>';
+        const orientationIcon = r.orientation.includes('横') ? '🔄' : '📐';
+
+        html += `
+            <div class="result-item ${isExact ? 'result-match' : ''}">
+                <div class="result-icon">${r.icon}</div>
+                <div class="result-info">
+                    <div class="result-name">${r.name} ${matchLabel}</div>
+                    <div class="result-detail">
+                        ${orientationIcon} ${r.orientation} · ${r.w} × ${r.h} px · ${r.scale} · ${r.year > 0 ? r.year + '年' : '外接设备'}
+                        <br>💡 ${r.note}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    list.innerHTML = html;
+
+    // 计算置信度
+    const features = { estimatedYear: results.length > 0 ? results[0].year : null };
+    const confidence = calculateConfidence(results, features);
+
+    let confidenceHtml = '';
+    if (confidence.level === 'high') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,255,136,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#00ff88; font-weight:700;">✅ 高置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    } else if (confidence.level === 'medium') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,215,0,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#ffd700; font-weight:700;">⚠️ 中等置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    } else if (confidence.level === 'low') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,107,107,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#ff6b6b; font-weight:700;">❓ 低置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    }
+
+    // 将置信度插入到结果列表前面
+    list.innerHTML = confidenceHtml + list.innerHTML;
+
+    // 计算置信度
+    const features = { estimatedYear: results.length > 0 ? results[0].year : null };
+    const confidence = calculateConfidence(results, features);
+
+    let confidenceHtml = '';
+    if (confidence.level === 'high') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,255,136,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#00ff88; font-weight:700;">✅ 高置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    } else if (confidence.level === 'medium') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,215,0,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#ffd700; font-weight:700;">⚠️ 中等置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    } else if (confidence.level === 'low') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,107,107,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#ff6b6b; font-weight:700;">❓ 低置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    }
+
+    list.innerHTML = confidenceHtml + list.innerHTML;
+
+    // 统计
+    const typeCount = {};
+    results.forEach(r => {
+        const t = r.type === 'iphone' ? 'iPhone' : r.type === 'ipad' ? 'iPad' : 'Mac';
+        typeCount[t] = (typeCount[t] || 0) + 1;
+    });
+
+    stats.innerHTML = `
+        <div class="stat-item">
+            <div class="stat-value">${results.length}</div>
+            <div>匹配结果</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${exactCount}</div>
+            <div>精确匹配</div>
+        </div>
+        ${Object.entries(typeCount).map(([k,v]) => `
+            <div class="stat-item">
+                <div class="stat-value">${v}</div>
+                <div>${k}</div>
+            </div>
+        `).join('')}
+    `;
+}
+
+// 填充快捷输入
+function fillResolution(w, h) {
+    document.getElementById('widthInput').value = w;
+    document.getElementById('heightInput').value = h;
+    searchByResolution();
+}
+
+// 清空
+function clearAll() {
+    document.getElementById('widthInput').value = '';
+    document.getElementById('heightInput').value = '';
+    document.getElementById('resultsCard').classList.remove('show');
+    document.getElementById('previewContainer').classList.remove('show');
+    document.getElementById('fileInput').value = '';
+}
+
+
+
+
+
+// ==================== 相机拍照像素数据库 ====================
+const cameraDB = {
+    iphone: [
+        // iPhone 16 系列 (2024) - 4800万主摄
+        { name: "iPhone 16 Pro Max", mp: 48, w: 8064, h: 6048, year: 2024, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, ProRAW 4800万, 1200万像素合并", note: "A18 Pro, 5x长焦, 4800万超广角" },
+        { name: "iPhone 16 Pro", mp: 48, w: 8064, h: 6048, year: 2024, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, ProRAW 4800万, 1200万像素合并", note: "A18 Pro, 5x长焦, 4800万超广角" },
+        { name: "iPhone 16 Plus", mp: 48, w: 8064, h: 6048, year: 2024, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, 1200万像素合并", note: "A18, 2x长焦(裁切), 超广角" },
+        { name: "iPhone 16", mp: 48, w: 8064, h: 6048, year: 2024, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, 1200万像素合并", note: "A18, 2x长焦(裁切), 超广角" },
+
+        // iPhone 15 系列 (2023)
+        { name: "iPhone 15 Pro Max", mp: 48, w: 8064, h: 6048, year: 2023, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, ProRAW 4800万, 1200万", note: "A17 Pro, 5x潜望长焦, 4800万超广角" },
+        { name: "iPhone 15 Pro", mp: 48, w: 8064, h: 6048, year: 2023, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, ProRAW 4800万, 1200万", note: "A17 Pro, 3x长焦, 4800万超广角" },
+        { name: "iPhone 15 Plus", mp: 48, w: 8064, h: 6048, year: 2023, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, 1200万", note: "A16, 2x长焦(裁切), 超广角" },
+        { name: "iPhone 15", mp: 48, w: 8064, h: 6048, year: 2023, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, 1200万", note: "A16, 2x长焦(裁切), 超广角, USB-C" },
+
+        // iPhone 14 系列 (2022)
+        { name: "iPhone 14 Pro Max", mp: 48, w: 8064, h: 6048, year: 2022, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, ProRAW 4800万, 1200万", note: "A16, 4800万主摄首发, 2x长焦(裁切)" },
+        { name: "iPhone 14 Pro", mp: 48, w: 8064, h: 6048, year: 2022, sensor: "48MP 主摄", modes: "HEIF/JPEG 4800万, ProRAW 4800万, 1200万", note: "A16, 4800万主摄首发, 2x长焦(裁切)" },
+        { name: "iPhone 14 Plus", mp: 12, w: 4032, h: 3024, year: 2022, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A15, 双摄, 传感器位移防抖" },
+        { name: "iPhone 14", mp: 12, w: 4032, h: 3024, year: 2022, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A15, 双摄, 光像引擎" },
+
+        // iPhone 13 系列 (2021)
+        { name: "iPhone 13 Pro Max", mp: 12, w: 4032, h: 3024, year: 2021, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万, ProRAW 1200万", note: "A15, 传感器位移防抖, 微距模式" },
+        { name: "iPhone 13 Pro", mp: 12, w: 4032, h: 3024, year: 2021, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万, ProRAW 1200万", note: "A15, 120Hz, 微距摄影" },
+        { name: "iPhone 13", mp: 12, w: 4032, h: 3024, year: 2021, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A15, 对角线双摄, 电影模式" },
+        { name: "iPhone 13 mini", mp: 12, w: 4032, h: 3024, year: 2021, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A15, 最后一代mini" },
+
+        // iPhone 12 系列 (2020)
+        { name: "iPhone 12 Pro Max", mp: 12, w: 4032, h: 3024, year: 2020, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万, ProRAW 1200万", note: "A14, 传感器位移防抖, 2.5x长焦" },
+        { name: "iPhone 12 Pro", mp: 12, w: 4032, h: 3024, year: 2020, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万, ProRAW 1200万", note: "A14, LiDAR, 夜间模式人像" },
+        { name: "iPhone 12", mp: 12, w: 4032, h: 3024, year: 2020, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A14, 超瓷晶面板, 5G" },
+        { name: "iPhone 12 mini", mp: 12, w: 4032, h: 3024, year: 2020, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A14, 首款mini, 5.4英寸" },
+
+        // iPhone 11 系列 (2019)
+        { name: "iPhone 11 Pro Max", mp: 12, w: 4032, h: 3024, year: 2019, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A13, 三摄系统, 夜间模式" },
+        { name: "iPhone 11 Pro", mp: 12, w: 4032, h: 3024, year: 2019, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A13, 三摄, 超广角+长焦" },
+        { name: "iPhone 11", mp: 12, w: 4032, h: 3024, year: 2019, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A13, 双摄, 超广角, 夜间模式" },
+
+        // iPhone XS/XR 系列 (2018)
+        { name: "iPhone XS Max", mp: 12, w: 4032, h: 3024, year: 2018, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A12, 智能HDR, 更大传感器" },
+        { name: "iPhone XS", mp: 12, w: 4032, h: 3024, year: 2018, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A12, 智能HDR, 景深控制" },
+        { name: "iPhone XR", mp: 12, w: 4032, h: 3024, year: 2018, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A12, 单摄, 人像模式(算法)" },
+
+        // iPhone X/8 系列 (2017)
+        { name: "iPhone X", mp: 12, w: 4032, h: 3024, year: 2017, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A11, 双摄竖排, 人像光效" },
+        { name: "iPhone 8 Plus", mp: 12, w: 4032, h: 3024, year: 2017, sensor: "12MP 主摄", modes: "JPEG 1200万", note: "A11, 双摄, 人像光效" },
+        { name: "iPhone 8", mp: 12, w: 4032, h: 3024, year: 2017, sensor: "12MP 主摄", modes: "JPEG 1200万", note: "A11, 单摄, 4K 60fps" },
+
+        // iPhone 7 系列 (2016)
+        { name: "iPhone 7 Plus", mp: 12, w: 4032, h: 3024, year: 2016, sensor: "12MP 主摄", modes: "JPEG 1200万", note: "A10, 双摄首发, 2x光学变焦" },
+        { name: "iPhone 7", mp: 12, w: 4032, h: 3024, year: 2016, sensor: "12MP 主摄", modes: "JPEG 1200万", note: "A10, 光学防抖, f/1.8光圈" },
+
+        // iPhone SE / 6s 系列 (2015-2016)
+        { name: "iPhone SE (1代)", mp: 12, w: 4032, h: 3024, year: 2016, sensor: "12MP 主摄", modes: "JPEG 1200万", note: "A9, 6s同款相机, 无光学防抖" },
+        { name: "iPhone 6s Plus", mp: 12, w: 4032, h: 3024, year: 2015, sensor: "12MP 主摄", modes: "JPEG 1200万", note: "A9, 光学防抖, Live Photos首发" },
+        { name: "iPhone 6s", mp: 12, w: 4032, h: 3024, year: 2015, sensor: "12MP 主摄", modes: "JPEG 1200万", note: "A9, 1200万像素首发, 3D Touch" },
+
+        // iPhone 6 系列 (2014)
+        { name: "iPhone 6 Plus", mp: 8, w: 3264, h: 2448, year: 2014, sensor: "8MP 主摄", modes: "JPEG 800万", note: "A8, 光学防抖, 1080p 60fps" },
+        { name: "iPhone 6", mp: 8, w: 3264, h: 2448, year: 2014, sensor: "8MP 主摄", modes: "JPEG 800万", note: "A8, 相位对焦, 更大像素" },
+
+        // iPhone 5s/5c (2013)
+        { name: "iPhone 5s", mp: 8, w: 3264, h: 2448, year: 2013, sensor: "8MP 主摄", modes: "JPEG 800万", note: "A7, True Tone闪光灯, 慢动作120fps" },
+        { name: "iPhone 5c", mp: 8, w: 3264, h: 2448, year: 2013, sensor: "8MP 主摄", modes: "JPEG 800万", note: "A6, iPhone 5同款相机, 多彩塑料壳" },
+
+        // iPhone 5 (2012)
+        { name: "iPhone 5", mp: 8, w: 3264, h: 2448, year: 2012, sensor: "8MP 主摄", modes: "JPEG 800万", note: "A6, 蓝宝石镜头, 全景模式" },
+
+        // iPhone 4s (2011)
+        { name: "iPhone 4s", mp: 8, w: 3264, h: 2448, year: 2011, sensor: "8MP 主摄", modes: "JPEG 800万", note: "A5, 1080p视频, 面部检测" },
+
+        // iPhone 4 (2010)
+        { name: "iPhone 4", mp: 5, w: 2592, h: 1936, year: 2010, sensor: "5MP 主摄", modes: "JPEG 500万", note: "A4, LED闪光灯, 720p视频, Retina屏" },
+
+        // iPhone SE 后续款
+        { name: "iPhone SE (2代)", mp: 12, w: 4032, h: 3024, year: 2020, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A13, iPhone 8外观, 人像模式" },
+        { name: "iPhone SE (3代)", mp: 12, w: 4032, h: 3024, year: 2022, sensor: "12MP 主摄", modes: "HEIF/JPEG 1200万", note: "A15, 5G, 智能HDR 4" },
+    ],
+
+    ipad: [
+        // iPad Pro 系列 (后置摄像头)
+        { name: "iPad Pro 12.9" (M4/2022/2021/2020/2018)", mp: 12, w: 4032, h: 3024, year: 2024, sensor: "12MP 广角", modes: "HEIF/JPEG 1200万", note: "后置单摄/双摄(LiDAR), Pro系列共享相同相机模组" },
+        { name: "iPad Pro 11" (M4/2022/2021/2020/2018)", mp: 12, w: 4032, h: 3024, year: 2024, sensor: "12MP 广角", modes: "HEIF/JPEG 1200万", note: "后置单摄/双摄(LiDAR), 与12.9英寸相同相机" },
+
+        // iPad Air 系列
+        { name: "iPad Air (M2/5/4)", mp: 12, w: 4032, h: 3024, year: 2024, sensor: "12MP 广角", modes: "HEIF/JPEG 1200万", note: "后置单摄, 4K视频, 无LiDAR" },
+        { name: "iPad Air 3", mp: 8, w: 3264, h: 2448, year: 2019, sensor: "8MP 主摄", modes: "JPEG 800万", note: "后置单摄, 无闪光灯" },
+
+        // iPad mini 系列
+        { name: "iPad mini (A17 Pro/6)", mp: 12, w: 4032, h: 3024, year: 2024, sensor: "12MP 广角", modes: "HEIF/JPEG 1200万", note: "后置单摄, 4K视频, 闪光灯" },
+        { name: "iPad mini 5", mp: 8, w: 3264, h: 2448, year: 2019, sensor: "8MP 主摄", modes: "JPEG 800万", note: "后置单摄, 无闪光灯" },
+        { name: "iPad mini 4", mp: 8, w: 3264, h: 2448, year: 2015, sensor: "8MP 主摄", modes: "JPEG 800万", note: "后置单摄, 慢动作视频" },
+
+        // iPad 基础款
+        { name: "iPad (第 10/9/8/7 代)", mp: 8, w: 3264, h: 2448, year: 2022, sensor: "8MP 广角", modes: "JPEG 800万", note: "后置单摄, 无闪光灯, 基础拍摄" },
+        { name: "iPad (第 6/5 代)", mp: 8, w: 3264, h: 2448, year: 2018, sensor: "8MP 主摄", modes: "JPEG 800万", note: "后置单摄, 支持Live Photos" },
+        { name: "iPad (第 4/3/2 代/Air 2)", mp: 8, w: 3264, h: 2448, year: 2014, sensor: "8MP 主摄", modes: "JPEG 800万", note: "后置单摄, 基础拍摄能力" },
+        { name: "iPad (初代/iPad 2)", mp: 0.7, w: 960, h: 720, year: 2011, sensor: "0.7MP", modes: "JPEG 70万", note: "后置摄像头, 无闪光灯, 基础画质" },
+    ],
+
+    // Mac 系列基本无后置摄像头，主要是 FaceTime 摄像头（前置），拍照像素较低
+    mac: [
+        { name: "MacBook Pro / Air (FaceTime HD)", mp: 1.2, w: 1280, h: 960, year: 2021, sensor: "1.2MP 前置", modes: "JPEG 120万", note: "1080p FaceTime摄像头, 用于视频通话" },
+        { name: "iMac / Studio Display (FaceTime HD)", mp: 1.2, w: 1920, h: 1080, year: 2021, sensor: "1.2MP 前置", modes: "JPEG 120万", note: "1080p FaceTime摄像头, 中心舞台功能" },
+        { name: "MacBook (旧款 FaceTime)", mp: 0.3, w: 640, h: 480, year: 2015, sensor: "0.3MP 前置", modes: "JPEG 30万", note: "480p FaceTime摄像头, 基础视频通话" },
+    ]
+};
+
+// 相机搜索逻辑 - 优化版
+function findCameraDevices(width, height, filter = 'all') {
+    const w = parseInt(width);
+    const h = parseInt(height);
+    if (!w || !h) return [];
+
+    const inputPixels = w * h;
+    const inputRatio = w / h;
+
+    const devices = [];
+    if (filter === 'all' || filter === 'iphone') devices.push(...cameraDB.iphone.map(d => ({...d, type: 'iphone', icon: '📱'})));
+    if (filter === 'all' || filter === 'ipad') devices.push(...cameraDB.ipad.map(d => ({...d, type: 'ipad', icon: '📟'})));
+    if (filter === 'all' || filter === 'mac') devices.push(...cameraDB.mac.map(d => ({...d, type: 'mac', icon: '💻'})));
+
+    const results = [];
+
+    for (const d of devices) {
+        const devicePixels = d.w * d.h;
+        const deviceRatio = d.w / d.h;
+
+        // 精确匹配
+        const exactMatch = (d.w === w && d.h === h) || (d.w === h && d.h === w);
+        // 近似匹配（允许±4像素，处理不同格式/裁切）
+        const approxMatch = (Math.abs(d.w - w) <= 4 && Math.abs(d.h - h) <= 4) || 
+                           (Math.abs(d.w - h) <= 4 && Math.abs(d.h - w) <= 4);
+        // 比例匹配 - 相机模式下放宽像素限制（因为像素合并会产生不同分辨率）
+        // 但限制在4倍以内，避免4800万和500万互相干扰
+        const ratioMatch = !exactMatch && !approxMatch && 
+                          Math.abs(inputRatio - deviceRatio) < 0.01 &&
+                          Math.max(inputPixels, devicePixels) / Math.min(inputPixels, devicePixels) <= 4;
+
+        if (exactMatch) {
+            results.push({...d, matchType: 'exact', orientation: d.w === w && d.h === h ? '原始方向' : '旋转方向'});
+        } else if (approxMatch) {
+            results.push({...d, matchType: 'approx', orientation: Math.abs(d.w - w) <= 4 ? '原始方向' : '旋转方向'});
+        } else if (ratioMatch) {
+            results.push({...d, matchType: 'ratio', orientation: '相同比例, 像素合并/裁切'});
+        }
+    }
+
+    // 排序：精确 > 近似 > 比例
+    const matchOrder = { exact: 0, approx: 1, ratio: 2 };
+    results.sort((a, b) => {
+        if (matchOrder[a.matchType] !== matchOrder[b.matchType]) {
+            return matchOrder[a.matchType] - matchOrder[b.matchType];
+        }
+        return b.year - a.year;
+    });
+
+    return results;
+}
+
+// 相机识别展示
+function showCameraResults(results, inputW, inputH) {
+    const card = document.getElementById('cameraResultsCard');
+    const list = document.getElementById('cameraResultsList');
+    const stats = document.getElementById('cameraStatsArea');
+
+    card.classList.add('show');
+
+    if (results.length === 0) {
+        list.innerHTML = `
+            <div class="no-result">
+                <div class="no-result-icon">📷</div>
+                <div>未找到匹配 ${inputW} × ${inputH} 的拍照设备</div>
+                <div style="font-size: 12px; margin-top: 8px;">可能是第三方相机App导出、安卓设备、或经过后期裁切/压缩</div>
+            </div>
+        `;
+        stats.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    const exactCount = results.filter(r => r.matchType === 'exact').length;
+
+    for (const r of results) {
+        const isExact = r.matchType === 'exact';
+        const isApprox = r.matchType === 'approx';
+        let matchLabel;
+        if (isExact) matchLabel = '<span class="match-badge">精确匹配</span>';
+        else if (isApprox) matchLabel = '<span class="match-badge" style="background:#ffd700;color:#333;">近似匹配</span>';
+        else matchLabel = '<span class="match-badge" style="background:#ff6b6b;color:#fff;">比例匹配</span>';
+
+        const mpInfo = r.mp >= 1 ? r.mp + 'MP' : (r.mp * 100).toFixed(0) + '万像素';
+
+        html += `
+            <div class="result-item ${isExact ? 'result-match' : ''}">
+                <div class="result-icon">${r.icon}</div>
+                <div class="result-info">
+                    <div class="result-name">${r.name} ${matchLabel}</div>
+                    <div class="result-detail">
+                        📐 ${r.orientation} · ${r.w} × ${r.h} px · ${mpInfo} · ${r.scale}
+                        <br>📷 ${r.sensor} · ${r.modes}
+                        <br>💡 ${r.note}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    list.innerHTML = html;
+
+    // 计算置信度
+    const features = { estimatedYear: results.length > 0 ? results[0].year : null };
+    const confidence = calculateConfidence(results, features);
+
+    let confidenceHtml = '';
+    if (confidence.level === 'high') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,255,136,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#00ff88; font-weight:700;">✅ 高置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    } else if (confidence.level === 'medium') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,215,0,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#ffd700; font-weight:700;">⚠️ 中等置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    } else if (confidence.level === 'low') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,107,107,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#ff6b6b; font-weight:700;">❓ 低置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    }
+
+    // 将置信度插入到结果列表前面
+    list.innerHTML = confidenceHtml + list.innerHTML;
+
+    // 计算置信度
+    const features = { estimatedYear: results.length > 0 ? results[0].year : null };
+    const confidence = calculateConfidence(results, features);
+
+    let confidenceHtml = '';
+    if (confidence.level === 'high') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,255,136,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#00ff88; font-weight:700;">✅ 高置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    } else if (confidence.level === 'medium') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,215,0,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#ffd700; font-weight:700;">⚠️ 中等置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    } else if (confidence.level === 'low') {
+        confidenceHtml = `<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,107,107,0.15); padding:6px 14px; border-radius:20px; margin-bottom:12px;"><span style="color:#ff6b6b; font-weight:700;">❓ 低置信度 (${confidence.score}分)</span><span style="color:#8892b0; font-size:12px;">${confidence.reasons.join(' · ')}</span></div>`;
+    }
+
+    list.innerHTML = confidenceHtml + list.innerHTML;
+
+    // 统计
+    const typeCount = {};
+    results.forEach(r => {
+        const t = r.type === 'iphone' ? 'iPhone' : r.type === 'ipad' ? 'iPad' : 'Mac';
+        typeCount[t] = (typeCount[t] || 0) + 1;
+    });
+
+    stats.innerHTML = `
+        <div class="stat-item">
+            <div class="stat-value">${results.length}</div>
+            <div>匹配结果</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${exactCount}</div>
+            <div>精确匹配</div>
+        </div>
+        ${Object.entries(typeCount).map(([k,v]) => `
+            <div class="stat-item">
+                <div class="stat-value">${v}</div>
+                <div>${k}</div>
+            </div>
+        `).join('')}
+    `;
+}
+
+
+
+// ==================== 压缩/处理后分辨率数据库 ====================
+const compressedDB = {
+    // 微信压缩后的常见分辨率
+    wechat: [
+        { name: "微信原图 (iPhone 4800万)", w: 8064, h: 6048, source: "微信原图", note: "发送时选择'原图'选项" },
+        { name: "微信压缩图 (iPhone 4800万)", w: 4032, h: 3024, source: "微信压缩", note: "默认发送，压缩至约1200万像素" },
+        { name: "微信压缩图 (iPhone 1200万)", w: 4032, h: 3024, source: "微信压缩", note: "默认发送，保持原分辨率但降低质量" },
+        { name: "微信缩略图 (iPhone)", w: 1280, h: 960, source: "微信缩略", note: "预览/转发时生成的缩略图" },
+        { name: "微信头像/朋友圈", w: 640, h: 480, source: "微信压缩", note: "朋友圈图片压缩至约30万像素" },
+        { name: "微信视频封面", w: 720, h: 540, source: "微信压缩", note: "视频封面截图" },
+        { name: "微信聊天图片", w: 1080, h: 810, source: "微信压缩", note: "聊天窗口显示尺寸" },
+        { name: "微信收藏/笔记", w: 2048, h: 1536, source: "微信压缩", note: "收藏夹图片压缩" },
+    ],
+
+    // 社交平台压缩
+    social: [
+        { name: "微博原图", w: 4096, h: 3072, source: "微博", note: "上传原图选项" },
+        { name: "微博普通图", w: 2048, h: 1536, source: "微博", note: "默认压缩至约300万像素" },
+        { name: "微博缩略图", w: 1024, h: 768, source: "微博", note: "信息流显示尺寸" },
+        { name: "小红书原图", w: 4096, h: 3072, source: "小红书", note: "上传原图" },
+        { name: "小红书发布图", w: 1080, h: 1440, source: "小红书", note: "3:4比例裁剪后，约150万像素" },
+        { name: "小红书封面", w: 720, h: 960, source: "小红书", note: "封面裁剪尺寸" },
+        { name: "抖音/快手原图", w: 4096, h: 3072, source: "短视频", note: "上传原图" },
+        { name: "抖音/快手封面", w: 720, h: 1280, source: "短视频", note: "9:16封面裁剪" },
+        { name: "Instagram原图", w: 4096, h: 3072, source: "Instagram", note: "上传原图" },
+        { name: "Instagram正方形", w: 1080, h: 1080, source: "Instagram", note: "1:1正方形裁剪" },
+        { name: "Instagram故事", w: 1080, h: 1920, source: "Instagram", note: "9:16故事尺寸" },
+        { name: "Twitter/X原图", w: 4096, h: 3072, source: "Twitter", note: "上传原图" },
+        { name: "Twitter/X压缩", w: 1200, h: 900, source: "Twitter", note: "默认显示尺寸" },
+        { name: "Facebook原图", w: 4096, h: 3072, source: "Facebook", note: "上传原图" },
+        { name: "Facebook压缩", w: 2048, h: 1536, source: "Facebook", note: "默认压缩" },
+    ],
+
+    // 系统/App处理
+    system: [
+        { name: "iOS照片App编辑", w: 4032, h: 3024, source: "iOS编辑", note: "编辑后保持原分辨率" },
+        { name: "iOS裁剪/旋转", w: 3024, h: 4032, source: "iOS裁剪", note: "旋转后宽高互换" },
+        { name: "iOS实况照片关键帧", w: 4032, h: 3024, source: "iOS实况", note: "Live Photo静态帧" },
+        { name: "iOS截图裁剪", w: 1170, h: 2532, source: "iOS截图", note: "截图后局部裁剪" },
+        { name: "iOS快捷指令处理", w: 2048, h: 1536, source: "快捷指令", note: "快捷指令自动化压缩" },
+        { name: "iCloud照片优化", w: 2048, h: 1536, source: "iCloud", note: "优化存储空间后下载的版本" },
+        { name: "iCloud照片原图", w: 4032, h: 3024, source: "iCloud", note: "下载原图版本" },
+        { name: "AirDrop传输", w: 4032, h: 3024, source: "AirDrop", note: "默认保持原分辨率" },
+        { name: "AirDrop自动压缩", w: 2048, h: 1536, source: "AirDrop", note: "旧设备间传输可能压缩" },
+        { name: "邮件附件", w: 2048, h: 1536, source: "邮件", note: "邮件附件自动压缩" },
+        { name: "备忘录插入", w: 1440, h: 1080, source: "备忘录", note: "备忘录插入图片压缩" },
+        { name: "Pages/Keynote插入", w: 2048, h: 1536, source: "iWork", note: "文档插入图片压缩" },
+        { name: "Safari下载图片", w: 1920, h: 1080, source: "Safari", note: "网页图片原始尺寸" },
+        { name: "Safari长按保存", w: 1200, h: 900, source: "Safari", note: "长按保存可能压缩" },
+    ],
+
+    // 第三方App压缩
+    thirdparty: [
+        { name: "美图秀秀原图", w: 4032, h: 3024, source: "美图秀秀", note: "选择原图画质" },
+        { name: "美图秀秀高清", w: 2048, h: 1536, source: "美图秀秀", note: "高清模式压缩" },
+        { name: "美图秀秀标准", w: 1280, h: 960, source: "美图秀秀", note: "标准模式压缩" },
+        { name: "美颜相机原图", w: 4032, h: 3024, source: "美颜相机", note: "原图画质" },
+        { name: "美颜相机高清", w: 2448, h: 1836, source: "美颜相机", note: "高清模式" },
+        { name: "轻颜相机", w: 1080, h: 1440, source: "轻颜相机", note: "默认3:4比例" },
+        { name: "B612咔叽", w: 1080, h: 1440, source: "B612", note: "默认3:4比例" },
+        { name: "醒图原图", w: 4032, h: 3024, source: "醒图", note: "原图画质导出" },
+        { name: "醒图高清", w: 2048, h: 1536, source: "醒图", note: "高清导出" },
+        { name: "剪映封面", w: 720, h: 1280, source: "剪映", note: "9:16视频封面" },
+        { name: "剪映导出帧", w: 1920, h: 1080, source: "剪映", note: "16:9视频导出帧" },
+        { name: "Canva设计导出", w: 1080, h: 1080, source: "Canva", note: "1:1社交媒体尺寸" },
+        { name: "Canva故事导出", w: 1080, h: 1920, source: "Canva", note: "9:16故事尺寸" },
+        { name: "PS Express导出", w: 2048, h: 1536, source: "PS Express", note: "默认导出分辨率" },
+        { name: "VSCO导出", w: 2048, h: 1536, source: "VSCO", note: "免费版导出限制" },
+        { name: "VSCO会员导出", w: 4032, h: 3024, source: "VSCO", note: "会员原图导出" },
+    ],
+
+    // 通用压缩比例
+    generic: [
+        { name: "50%比例压缩", w: 2016, h: 1512, source: "通用压缩", note: "原图50%尺寸压缩" },
+        { name: "25%比例压缩", w: 1008, h: 756, source: "通用压缩", note: "原图25%尺寸压缩" },
+        { name: "1080p短边适配", w: 1440, h: 1080, source: "通用压缩", note: "短边限制1080px" },
+        { name: "720p短边适配", w: 960, h: 720, source: "通用压缩", note: "短边限制720px" },
+        { name: "480p短边适配", w: 640, h: 480, source: "通用压缩", note: "短边限制480px" },
+        { name: "4K显示适配", w: 3840, h: 2160, source: "通用压缩", note: "16:9 4K分辨率" },
+        { name: "2K显示适配", w: 2560, h: 1440, source: "通用压缩", note: "16:9 2K分辨率" },
+        { name: "1080p显示适配", w: 1920, h: 1080, source: "通用压缩", note: "16:9 1080p分辨率" },
+        { name: "正方形裁剪", w: 3024, h: 3024, source: "通用裁剪", note: "1:1正方形居中裁剪" },
+        { name: "16:9裁剪", w: 4032, h: 2268, source: "通用裁剪", note: "16:9视频比例裁剪" },
+        { name: "3:2裁剪", w: 4032, h: 2688, source: "通用裁剪", note: "3:2传统照片比例" },
+        { name: "21:9裁剪", w: 4032, h: 1728, source: "通用裁剪", note: "21:9电影比例" },
+    ]
+};
+
+// 获取所有压缩场景设备
+function getAllCompressedDevices(filter = 'all') {
+    let devices = [];
+    if (filter === 'all' || filter === 'wechat') devices = devices.concat(compressedDB.wechat.map(d => ({...d, type: 'compressed', icon: '💬', category: '微信'})));
+    if (filter === 'all' || filter === 'social') devices = devices.concat(compressedDB.social.map(d => ({...d, type: 'compressed', icon: '🌐', category: '社交平台'})));
+    if (filter === 'all' || filter === 'system') devices = devices.concat(compressedDB.system.map(d => ({...d, type: 'compressed', icon: '⚙️', category: '系统/App'})));
+    if (filter === 'all' || filter === 'thirdparty') devices = devices.concat(compressedDB.thirdparty.map(d => ({...d, type: 'compressed', icon: '📲', category: '第三方App'})));
+    if (filter === 'all' || filter === 'generic') devices = devices.concat(compressedDB.generic.map(d => ({...d, type: 'compressed', icon: '📐', category: '通用压缩'})));
+    return devices;
+}
+
+// 压缩场景搜索 - 优化版
+function findCompressedDevices(width, height, filter = 'all') {
+    const w = parseInt(width);
+    const h = parseInt(height);
+    if (!w || !h) return [];
+
+    const inputPixels = w * h;
+
+    const devices = getAllCompressedDevices(filter);
+    const results = [];
+
+    for (const d of devices) {
+        const devicePixels = d.w * d.h;
+
+        const exactMatch = (d.w === w && d.h === h) || (d.w === h && d.h === w);
+        const approxMatch = (Math.abs(d.w - w) <= 4 && Math.abs(d.h - h) <= 4) || 
+                           (Math.abs(d.w - h) <= 4 && Math.abs(d.h - w) <= 4);
+        // 压缩场景下比例匹配更严格，因为压缩后分辨率差异大但比例相同
+        const ratioMatch = !exactMatch && !approxMatch && 
+                          Math.abs((w/h) - (d.w/d.h)) < 0.01 &&
+                          Math.max(inputPixels, devicePixels) / Math.min(inputPixels, devicePixels) <= 3;
+
+        if (exactMatch) {
+            results.push({...d, matchType: 'exact', orientation: d.w === w && d.h === h ? '原始方向' : '旋转方向'});
+        } else if (approxMatch) {
+            results.push({...d, matchType: 'approx', orientation: Math.abs(d.w - w) <= 4 ? '原始方向' : '旋转方向'});
+        } else if (ratioMatch) {
+            results.push({...d, matchType: 'ratio', orientation: '相同比例, 相近规格'});
+        }
+    }
+
+    results.sort((a, b) => {
+        const order = { exact: 0, approx: 1, ratio: 2 };
+        return order[a.matchType] - order[b.matchType];
+    });
+
+    return results;
+}
+
+// 反向推断原始设备 - 从压缩分辨率反推可能的原始设备
+function inferOriginalDevice(w, h, compressedResults) {
+    const inferences = [];
+
+    // 根据压缩场景推断原始分辨率
+    for (const cr of compressedResults) {
+        let originalW, originalH, possibleDevices = [];
+
+        // 微信压缩：通常是原图的一半或保持
+        if (cr.source === '微信压缩' && cr.w === 4032 && cr.h === 3024) {
+            originalW = 8064; originalH = 6048;
+            possibleDevices = cameraDB.iphone.filter(d => d.w === 8064 && d.h === 6048);
+        }
+        else if (cr.source === '微信缩略') {
+            originalW = 4032; originalH = 3024;
+            possibleDevices = cameraDB.iphone.filter(d => d.w === 4032 && d.h === 3024);
+        }
+        // 社交平台压缩
+        else if (cr.source === '微博' && cr.w === 2048) {
+            originalW = 4032; originalH = 3024;
+            possibleDevices = cameraDB.iphone.filter(d => d.w === 4032 && d.h === 3024);
+        }
+        else if (cr.source === '小红书' && cr.w === 1080) {
+            // 小红书3:4裁剪，原始可能是多种比例
+            possibleDevices = cameraDB.iphone.filter(d => d.w >= 4032);
+        }
+        // 通用压缩
+        else if (cr.source === '通用压缩') {
+            if (cr.w === 2016) { originalW = 4032; originalH = 3024; }
+            else if (cr.w === 1008) { originalW = 4032; originalH = 3024; }
+            else if (cr.w === 1440) { originalW = 4032; originalH = 3024; }
+            else if (cr.w === 960) { originalW = 4032; originalH = 3024; }
+            else if (cr.w === 640) { originalW = 3264; originalH = 2448; }
+
+            if (originalW) {
+                possibleDevices = cameraDB.iphone.filter(d => d.w === originalW && d.h === originalH);
+            }
+        }
+
+        if (possibleDevices.length > 0) {
+            inferences.push({
+                compressedResult: cr,
+                originalW,
+                originalH,
+                possibleDevices: possibleDevices.slice(0, 3) // 最多3个
+            });
+        }
+    }
+
+    return inferences;
+}
+
+// 相机搜索入口
+function searchByCameraResolution() {
+    const w = document.getElementById('cameraWidthInput').value;
+    const h = document.getElementById('cameraHeightInput').value;
+    const filter = document.getElementById('cameraTypeFilter').value;
+
+    if (!w || !h) {
+        alert('请输入宽度和高度');
+        return;
+    }
+
+    showCameraResults(findCameraDevices(w, h, filter), w, h);
+}
+
+// 相机快捷标签
+function fillCameraResolution(w, h) {
+    document.getElementById('cameraWidthInput').value = w;
+    document.getElementById('cameraHeightInput').value = h;
+    searchByCameraResolution();
+}
+
+// 清空相机
+function clearCamera() {
+    document.getElementById('cameraWidthInput').value = '';
+    document.getElementById('cameraHeightInput').value = '';
+    document.getElementById('cameraResultsCard').classList.remove('show');
+    document.getElementById('cameraPreviewContainer').classList.remove('show');
+    document.getElementById('cameraFileInput').value = '';
+}
+
+
+
+// ==================== 增强识别逻辑 ====================
+
+// 综合特征分析器 - 结合多种条件提高准确性
+function analyzeDeviceFeatures(file, img, w, h, mode) {
+    const features = {
+        width: w,
+        height: h,
+        ratio: parseFloat((w / h).toFixed(4)),
+        mp: parseFloat(((w * h) / 1000000).toFixed(1)),
+        isLandscape: w > h,
+        isPortrait: h > w,
+        isSquare: Math.abs(w - h) <= 2,
+        fileName: file ? file.name : '',
+        fileSize: file ? file.size : 0,
+        fileType: file ? file.type : '',
+        colorSpace: null,
+        hasAlpha: false,
+        estimatedYear: null,
+        confidence: 'medium'
+    };
+
+    // 从文件名推断
+    if (file) {
+        const name = file.name.toLowerCase();
+        if (name.includes('screenshot') || name.includes('截屏') || name.includes('屏幕')) {
+            features.sourceType = 'screenshot';
+        } else if (name.includes('photo') || name.includes('img') || name.includes('image') || name.includes('照片')) {
+            features.sourceType = 'photo';
+        } else if (name.includes('camera') || name.includes('相机')) {
+            features.sourceType = 'camera';
+        } else {
+            features.sourceType = 'unknown';
+        }
+
+        // 从文件名推断日期
+        const dateMatch = name.match(/(20\d{2})/);
+        if (dateMatch) {
+            features.fileYear = parseInt(dateMatch[1]);
+        }
+    }
+
+    // 从像素推断大致年份
+    if (mode === 'camera') {
+        if (features.mp >= 48) features.estimatedYear = 2022;
+        else if (features.mp >= 12) features.estimatedYear = 2015;
+        else if (features.mp >= 8) features.estimatedYear = 2012;
+        else if (features.mp >= 5) features.estimatedYear = 2010;
+        else features.estimatedYear = 2007;
+    } else {
+        // 截图模式年份推断
+        if (w >= 1320 || h >= 2868) features.estimatedYear = 2024;
+        else if (w >= 1290 || h >= 2796) features.estimatedYear = 2022;
+        else if (w >= 1284 || h >= 2778) features.estimatedYear = 2020;
+        else if (w >= 1179 || h >= 2556) features.estimatedYear = 2020;
+        else if (w >= 1125 || h >= 2436) features.estimatedYear = 2017;
+        else if (w >= 1080 || h >= 1920) features.estimatedYear = 2015;
+        else if (w >= 750 || h >= 1334) features.estimatedYear = 2014;
+        else features.estimatedYear = 2012;
+    }
+
+    // 比例特征分析
+    const ratio = features.ratio;
+    if (Math.abs(ratio - 9/19.5) < 0.01) features.screenType = 'iPhone全面屏';
+    else if (Math.abs(ratio - 9/16) < 0.01) features.screenType = 'iPhone传统屏';
+    else if (Math.abs(ratio - 3/4) < 0.01) features.screenType = 'iPad竖屏';
+    else if (Math.abs(ratio - 4/3) < 0.01) features.screenType = 'iPad横屏';
+    else if (Math.abs(ratio - 16/9) < 0.01) features.screenType = 'Mac/显示器';
+    else if (Math.abs(ratio - 16/10) < 0.01) features.screenType = 'Mac笔记本';
+    else if (Math.abs(ratio - 4/3) < 0.02) features.screenType = 'iPad';
+    else features.screenType = '未知比例';
+
+    return features;
+}
+
+// 交叉验证 - 结合截图和拍照数据库双重验证
+function crossValidate(w, h, mode) {
+    const results = {
+        screenshot: mode === 'screenshot' ? findDevices(w, h, 'all') : findDevices(w, h, 'all'),
+        camera: mode === 'camera' ? findCameraDevices(w, h, 'all') : findCameraDevices(w, h, 'all'),
+        combined: [],
+        analysis: {}
+    };
+
+    // 合并结果并标记来源
+    const allResults = [];
+
+    results.screenshot.forEach(r => {
+        allResults.push({...r, source: 'screenshot', priority: r.matchType === 'exact' ? 1 : 2});
+    });
+
+    results.camera.forEach(r => {
+        allResults.push({...r, source: 'camera', priority: r.matchType === 'exact' ? 1 : 3});
+    });
+
+    // 去重 - 同型号取最精确匹配
+    const seen = new Set();
+    results.combined = allResults.filter(r => {
+        const key = r.name + '|' + r.source;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    // 排序
+    results.combined.sort((a, b) => {
+        const priorityOrder = { exact: 0, approx: 1, ratio: 2 };
+        if (priorityOrder[a.matchType] !== priorityOrder[b.matchType]) {
+            return priorityOrder[a.matchType] - priorityOrder[b.matchType];
+        }
+        return b.year - a.year;
+    });
+
+    return results;
+}
+
+// 置信度评分
+function calculateConfidence(results, features) {
+    let score = 0;
+    let reasons = [];
+
+    // 精确匹配加分
+    const exactCount = results.filter(r => r.matchType === 'exact').length;
+    if (exactCount > 0) {
+        score += 40;
+        reasons.push(`精确匹配 ${exactCount} 个型号`);
+    }
+
+    // 近似匹配加分
+    const approxCount = results.filter(r => r.matchType === 'approx').length;
+    if (approxCount > 0) {
+        score += 20;
+        reasons.push(`近似匹配 ${approxCount} 个型号`);
+    }
+
+    // 比例匹配
+    const ratioCount = results.filter(r => r.matchType === 'ratio').length;
+    if (ratioCount > 0) {
+        score += 10;
+        reasons.push(`比例匹配 ${ratioCount} 个型号`);
+    }
+
+    // 年份一致性
+    if (features.estimatedYear) {
+        const yearMatches = results.filter(r => Math.abs(r.year - features.estimatedYear) <= 2);
+        if (yearMatches.length > 0) {
+            score += 15;
+            reasons.push('年份推断一致');
+        }
+    }
+
+    // 文件特征
+    if (features.sourceType === 'screenshot' || features.sourceType === 'photo') {
+        score += 10;
+        reasons.push('文件名特征辅助确认');
+    }
+
+    // 单一精确匹配最高置信度
+    if (exactCount === 1 && results.length === 1) {
+        score += 20;
+        reasons.push('唯一精确匹配');
+    }
+
+    // 置信度等级
+    let level;
+    if (score >= 80) level = 'high';
+    else if (score >= 50) level = 'medium';
+    else if (score >= 20) level = 'low';
+    else level = 'uncertain';
+
+    return { score, level, reasons };
+}
+
+
+
+// 更新统计（包含相机）
+function updateAllStats() {
+    const totalDevices = deviceDB.iphone.length + deviceDB.ipad.length + deviceDB.mac.length +
+                         cameraDB.iphone.length + cameraDB.ipad.length + cameraDB.mac.length;
+    document.getElementById('totalCount').textContent = totalDevices;
+}
+
+// 初始化
+updateStats();
+updateAllStats();
+initUploadHandlers();
+
+function switchMode(mode) {
+    const screenshotMode = document.getElementById('screenshotMode');
+    const cameraMode = document.getElementById('cameraMode');
+    const compressedMode = document.getElementById('compressedMode');
+    const tabScreenshot = document.getElementById('tabScreenshot');
+    const tabCamera = document.getElementById('tabCamera');
+    const tabCompressed = document.getElementById('tabCompressed');
+
+    // 重置所有标签
+    [tabScreenshot, tabCamera, tabCompressed].forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.background = 'rgba(255,255,255,0.1)';
+        tab.style.color = '#ccd6f6';
+    });
+
+    // 隐藏所有模式
+    screenshotMode.style.display = 'none';
+    cameraMode.style.display = 'none';
+    if (compressedMode) compressedMode.style.display = 'none';
+
+    if (mode === 'screenshot') {
+        screenshotMode.style.display = 'block';
+        tabScreenshot.classList.add('active');
+        tabScreenshot.style.background = 'linear-gradient(135deg,#00d4ff,#7b2cbf)';
+        tabScreenshot.style.color = 'white';
+    } else if (mode === 'camera') {
+        cameraMode.style.display = 'block';
+        tabCamera.classList.add('active');
+        tabCamera.style.background = 'linear-gradient(135deg,#ff6b6b,#ee5a24)';
+        tabCamera.style.color = 'white';
+    } else if (mode === 'compressed') {
+        compressedMode.style.display = 'block';
+        tabCompressed.classList.add('active');
+        tabCompressed.style.background = 'linear-gradient(135deg,#a8e6cf,#1de9b6)';
+        tabCompressed.style.color = '#0a192f';
+    }
+}
+
+// 压缩场景搜索入口
+function searchByCompressedResolution() {
+    const w = document.getElementById('compressedWidthInput').value;
+    const h = document.getElementById('compressedHeightInput').value;
+    const filter = document.getElementById('compressedTypeFilter').value;
+
+    if (!w || !h) {
+        alert('请输入宽度和高度');
+        return;
+    }
+
+    showCompressedResults(findCompressedDevices(w, h, filter), w, h);
+}
+
+// 展示压缩结果
+function showCompressedResults(results, inputW, inputH) {
+    const card = document.getElementById('compressedResultsCard');
+    const list = document.getElementById('compressedResultsList');
+    const stats = document.getElementById('compressedStatsArea');
+    const inferenceCard = document.getElementById('inferenceCard');
+    const inferenceList = document.getElementById('inferenceList');
+
+    card.classList.add('show');
+
+    if (results.length === 0) {
+        list.innerHTML = `
+            <div class="no-result">
+                <div class="no-result-icon">🗜️</div>
+                <div>未找到匹配 ${inputW} × ${inputH} 的压缩场景</div>
+                <div style="font-size: 12px; margin-top: 8px;">可能是自定义压缩、其他平台、或已多次压缩</div>
+            </div>
+        `;
+        stats.innerHTML = '';
+        inferenceCard.style.display = 'none';
+        return;
+    }
+
+    let html = '';
+    const exactCount = results.filter(r => r.matchType === 'exact').length;
+
+    for (const r of results) {
+        const isExact = r.matchType === 'exact';
+        let matchLabel;
+        if (isExact) matchLabel = '<span class="match-badge">精确匹配</span>';
+        else if (r.matchType === 'approx') matchLabel = '<span class="match-badge" style="background:#ffd700;color:#333;">近似匹配</span>';
+        else matchLabel = '<span class="match-badge" style="background:#ff6b6b;color:#fff;">比例匹配</span>';
+
+        html += `
+            <div class="result-item ${isExact ? 'result-match' : ''}">
+                <div class="result-icon">${r.icon}</div>
+                <div class="result-info">
+                    <div class="result-name">${r.name} ${matchLabel}</div>
+                    <div class="result-detail">
+                        📐 ${r.orientation} · ${r.w} × ${r.h} px · 来源: ${r.source}
+                        <br>🏷️ ${r.category} · 💡 ${r.note}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    list.innerHTML = html;
+
+    // 统计
+    const categoryCount = {};
+    results.forEach(r => {
+        categoryCount[r.category] = (categoryCount[r.category] || 0) + 1;
+    });
+
+    stats.innerHTML = `
+        <div class="stat-item">
+            <div class="stat-value">${results.length}</div>
+            <div>匹配场景</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">${exactCount}</div>
+            <div>精确匹配</div>
+        </div>
+        ${Object.entries(categoryCount).map(([k,v]) => `
+            <div class="stat-item">
+                <div class="stat-value">${v}</div>
+                <div>${k}</div>
+            </div>
+        `).join('')}
+    `;
+
+    // 原始设备推断
+    const inferences = inferOriginalDevice(parseInt(inputW), parseInt(inputH), results);
+    if (inferences.length > 0) {
+        inferenceCard.style.display = 'block';
+        let infHtml = '';
+        for (const inf of inferences) {
+            infHtml += `<div style="margin-bottom:12px; padding:12px; background:rgba(0,212,255,0.05); border-radius:8px; border-left:3px solid #00d4ff;">`;
+            infHtml += `<div style="font-weight:600; color:#ccd6f6; margin-bottom:6px;">🔍 推断原始分辨率: ${inf.originalW} × ${inf.originalH} px</div>`;
+            infHtml += `<div style="font-size:13px; color:#8892b0; margin-bottom:8px;">基于: ${inf.compressedResult.source} - ${inf.compressedResult.name}</div>`;
+            infHtml += `<div style="font-size:13px;">可能的原始设备:</div>`;
+            for (const dev of inf.possibleDevices) {
+                infHtml += `<div style="padding:6px 10px; margin:4px 0; background:rgba(255,255,255,0.05); border-radius:6px; font-size:13px; color:#e0e0e0;">📱 ${dev.name} · ${dev.year}年 · ${dev.note}</div>`;
+            }
+            infHtml += `</div>`;
+        }
+        inferenceList.innerHTML = infHtml;
+    } else {
+        inferenceCard.style.display = 'none';
+    }
+}
+
+// 压缩快捷标签
+function fillCompressedResolution(w, h) {
+    document.getElementById('compressedWidthInput').value = w;
+    document.getElementById('compressedHeightInput').value = h;
+    searchByCompressedResolution();
+}
+
+// 清空压缩
+function clearCompressed() {
+    document.getElementById('compressedWidthInput').value = '';
+    document.getElementById('compressedHeightInput').value = '';
+    document.getElementById('compressedResultsCard').classList.remove('show');
+    document.getElementById('compressedPreviewContainer').classList.remove('show');
+    document.getElementById('inferenceCard').style.display = 'none';
+    document.getElementById('compressedFileInput').value = '';
+}
+
+
+
+
+// ==================== 统一的文件上传处理 ====================
+
+// 配置三个模式的上传区域
+const uploadConfigs = {
+    screenshot: {
+        zoneId: 'uploadZone',
+        inputId: 'fileInput',
+        previewContainerId: 'previewContainer',
+        previewImgId: 'previewImg',
+        previewInfoId: 'previewInfo',
+        widthInputId: 'widthInput',
+        heightInputId: 'heightInput',
+        searchFunc: 'searchByResolution',
+        mode: 'screenshot'
+    },
+    camera: {
+        zoneId: 'cameraUploadZone',
+        inputId: 'cameraFileInput',
+        previewContainerId: 'cameraPreviewContainer',
+        previewImgId: 'cameraPreviewImg',
+        previewInfoId: 'cameraPreviewInfo',
+        widthInputId: 'cameraWidthInput',
+        heightInputId: 'cameraHeightInput',
+        searchFunc: 'searchByCameraResolution',
+        mode: 'camera'
+    },
+    compressed: {
+        zoneId: 'compressedUploadZone',
+        inputId: 'compressedFileInput',
+        previewContainerId: 'compressedPreviewContainer',
+        previewImgId: 'compressedPreviewImg',
+        previewInfoId: 'compressedPreviewInfo',
+        widthInputId: 'compressedWidthInput',
+        heightInputId: 'compressedHeightInput',
+        searchFunc: 'searchByCompressedResolution',
+        mode: 'compressed'
+    }
+};
+
+// 初始化所有上传区域
+function initUploadHandlers() {
+    for (const [mode, config] of Object.entries(uploadConfigs)) {
+        const zone = document.getElementById(config.zoneId);
+        const input = document.getElementById(config.inputId);
+        const previewContainer = document.getElementById(config.previewContainerId);
+        const previewImg = document.getElementById(config.previewImgId);
+        const previewInfo = document.getElementById(config.previewInfoId);
+
+        if (!zone || !input) continue;
+
+        // 点击上传区域触发文件选择
+        zone.addEventListener('click', (e) => {
+            // 防止点击 input 本身时重复触发
+            if (e.target !== input) {
+                input.click();
+            }
+        });
+
+        // 拖拽进入
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.add('dragover');
+        });
+
+        // 拖拽离开
+        zone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.remove('dragover');
+        });
+
+        // 拖拽放下
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            zone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleUnifiedFile(files[0], mode, config);
+            }
+        });
+
+        // 文件选择变化
+        input.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleUnifiedFile(e.target.files[0], mode, config);
+            }
+        });
+    }
+}
+
+// 统一的文件处理函数
+function handleUnifiedFile(file, mode, config) {
+    if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件 (PNG/JPG/HEIC/WebP 等)');
+        return;
+    }
+
+    const previewContainer = document.getElementById(config.previewContainerId);
+    const previewImg = document.getElementById(config.previewImgId);
+    const previewInfo = document.getElementById(config.previewInfoId);
+
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+        alert('文件读取失败，请重试');
+    };
+
+    reader.onload = (e) => {
+        const img = new Image();
+
+        img.onerror = () => {
+            alert('图片加载失败，文件可能已损坏');
+        };
+
+        img.onload = () => {
+            const w = img.naturalWidth;
+            const h = img.naturalHeight;
+            const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+
+            // 显示预览
+            previewImg.src = e.target.result;
+            previewContainer.classList.add('show');
+
+            // 构建信息HTML
+            let infoHtml = '';
+
+            if (mode === 'screenshot') {
+                const features = analyzeDeviceFeatures(file, img, w, h, 'screenshot');
+                infoHtml = `📐 原始尺寸: <strong>${w} × ${h}</strong> px · 比例 ${features.ratio}<br>`;
+                infoHtml += `📁 文件: ${file.name}<br>`;
+                infoHtml += `📊 推断: ${features.screenType} · 预估年份 ~${features.estimatedYear}`;
+                if (features.sourceType && features.sourceType !== 'unknown') {
+                    infoHtml += ` · 来源: ${features.sourceType === 'screenshot' ? '截图' : features.sourceType}`;
+                }
+            } else if (mode === 'camera') {
+                const features = analyzeDeviceFeatures(file, img, w, h, 'camera');
+                infoHtml = `📐 照片尺寸: <strong>${w} × ${h}</strong> px · ${features.mp}MP · 比例 ${features.ratio}<br>`;
+                infoHtml += `📁 文件: ${file.name} · ${fileSizeMB}MB<br>`;
+                infoHtml += `📊 推断: ${features.screenType} · 预估年份 ~${features.estimatedYear}`;
+                if (features.sourceType && features.sourceType !== 'unknown') {
+                    infoHtml += ` · 来源: ${features.sourceType === 'screenshot' ? '截图' : features.sourceType === 'photo' ? '照片' : features.sourceType}`;
+                }
+            } else if (mode === 'compressed') {
+                infoHtml = `📐 图片尺寸: <strong>${w} × ${h}</strong> px · ${fileSizeMB}MB<br>`;
+                infoHtml += `📁 文件: ${file.name}<br>`;
+
+                if (fileSizeMB < 0.1) {
+                    infoHtml += `🗜️ <strong>高度压缩</strong> - 可能经过多次转发/压缩`;
+                } else if (fileSizeMB < 0.5) {
+                    infoHtml += `🗜️ <strong>中度压缩</strong> - 可能经过社交平台压缩`;
+                } else if (fileSizeMB < 2) {
+                    infoHtml += `📷 <strong>轻度压缩</strong> - 可能为App导出或原图压缩`;
+                } else {
+                    infoHtml += `📷 <strong>接近原图</strong> - 文件较大，压缩程度低`;
+                }
+            }
+
+            previewInfo.innerHTML = infoHtml;
+
+            // 填入输入框
+            document.getElementById(config.widthInputId).value = w;
+            document.getElementById(config.heightInputId).value = h;
+
+            // 调用对应的搜索函数
+            if (config.searchFunc === 'searchByResolution') {
+                searchByResolution();
+            } else if (config.searchFunc === 'searchByCameraResolution') {
+                searchByCameraResolution();
+            } else if (config.searchFunc === 'searchByCompressedResolution') {
+                searchByCompressedResolution();
+            }
+        };
+
+        img.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+}
+
+</script>
+</body>
+</html>
