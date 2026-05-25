@@ -1,0 +1,158 @@
+<div style="font-family:-apple-system,sans-serif;padding:20px;max-width:920px;margin:0 auto;color:#1a1a2e;">
+<style>
+#ud *{box-sizing:border-box}#ud h2{margin:0 0 4px;font-size:20px;font-weight:700}#ud .sub{color:#888;font-size:12px;margin-bottom:12px}
+#ud textarea{width:100%;min-height:90px;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:14px;font-family:monospace;resize:vertical;outline:none}
+#ud textarea:focus{border-color:#4f7cff}
+#ud .stats{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}#ud .sc{flex:1;min-width:70px;padding:6px;border-radius:8px;text-align:center}#ud .sc .n{font-size:20px;font-weight:800}#ud .sc .l{font-size:10px;color:#666;margin-top:1px}#ud .sc.w{background:#fff3e0}#ud .sc.w .n{color:#e65100}#ud .sc.ok{background:#e8f5e9}#ud .sc.ok .n{color:#2e7d32}#ud .sc.i{background:#e3f2fd}#ud .sc.i .n{color:#1565c0}
+#ud .br{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}#ud .bt{padding:4px 12px;border-radius:7px;border:1px solid #ddd;background:#fff;font-size:12px;cursor:pointer}#ud .bt:hover{background:#f0f0f0}#ud .bt.p{background:#4f7cff;color:#fff;border-color:#4f7cff}
+#ud .lg{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;font-size:11px;color:#666}#ud .lg span{display:flex;align-items:center;gap:3px}#ud .lg .dt{width:9px;height:9px;border-radius:3px}
+#ud .ci{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;margin-bottom:3px;font-size:11px;border:1px solid #f0f0f0}#ud .ci:hover{background:#fafafa}#ud .cb{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;border-radius:4px;font-size:10px;font-weight:700;color:#fff;padding:0 4px;white-space:nowrap}
+#ud .hb{margin-top:10px;padding:12px;background:#1a1a2e;border-radius:8px;font-family:monospace;font-size:14px;line-height:1.9;word-break:break-all;color:#ddd;position:relative}
+#ud .hw{border-bottom:2px solid;cursor:help;position:relative}#ud .hw.c1{border-bottom-color:#e53935;background:rgba(229,57,53,.15)}#ud .hw.c2{border-bottom-color:#fb8c00;background:rgba(251,140,0,.15)}#ud .hw.c3{border-bottom-color:#8e24aa;background:rgba(142,36,170,.15)}#ud .hw.c4{border-bottom-color:#00897b;background:rgba(0,137,123,.15)}#ud .hw.c5{border-bottom-color:#1e88e5;background:rgba(30,136,229,.15)}#ud .hw.c6{border-bottom-color:#546e7a;background:rgba(84,110,122,.15)}
+#ud .st{font-size:12px;font-weight:700;margin:10px 0 4px;color:#333}#ud .empty{text-align:center;color:#aaa;padding:20px 0;font-size:13px}
+#ud .tt{position:fixed;background:#333;color:#fff;padding:4px 8px;border-radius:5px;font-size:11px;pointer-events:none;z-index:9999;max-width:260px;display:none;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#ud .ct{display:flex;gap:3px;flex-wrap:wrap;margin:4px 0}#ud .ct span{padding:2px 7px;border-radius:5px;font-size:10px;cursor:pointer;border:1px solid #e0e0e0;background:#fff}#ud .ct span:hover{background:#f5f5f5}#ud .ct span.a{background:#4f7cff;color:#fff;border-color:#4f7cff}
+</style>
+<div id="ud">
+<h2>🔍 Unicode 不可见/易混淆字符检测器</h2>
+<p class="sub">零宽字符 · 方向控制 · 变体选择符 · 软连字符 · 盲文空格 · 填充字符 · 标签字符 · 数学字母 · 希腊/西里尔钓鱼 · 全角字符 · 异常空格 · 结构控制</p>
+<textarea id="uI" placeholder="粘贴文本后点击检测…"></textarea>
+<div class="br"><button class="bt p" onclick="uDet()">检测</button><button class="bt" onclick="uClr()">清空</button><button class="bt" onclick="uDemo()">填入示例</button><button class="bt" onclick="uCp()">复制清理后文本</button></div>
+<div class="lg"><span><span class="dt" style="background:#e53935"></span>零宽/隐藏</span><span><span class="dt" style="background:#fb8c00"></span>异常空格</span><span><span class="dt" style="background:#8e24aa"></span>易混淆</span><span><span class="dt" style="background:#00897b"></span>方向/结构</span><span><span class="dt" style="background:#1e88e5"></span>中文/全角</span><span><span class="dt" style="background:#546e7a"></span>其他控制</span></div>
+<div id="uS"></div><div id="uH"></div><div id="uC"></div><div id="uL"></div><div class="tt" id="uTT"></div>
+</div>
+<script>
+const C1='c1',C2='c2',C3='c3',C4='c4',C5='c5',C6='c6';
+const CN={[C1]:'零宽/隐藏',[C2]:'异常空格',[C3]:'易混淆',[C4]:'方向/结构',[C5]:'中文/全角',[C6]:'其他控制'};
+const CC={[C1]:'#e53935',[C2]:'#fb8c00',[C3]:'#8e24aa',[C4]:'#00897b',[C5]:'#1e88e5',[C6]:'#546e7a'};
+const ZW=new Set([0x200B,0x200C,0x200D,0x2060,0xFEFF]);
+const DR=new Set([0x200E,0x200F,0x202A,0x202B,0x202C,0x202D,0x202E,0x2066,0x2067,0x2068,0x2069]);
+const VS=[[0xFE00,0xFE0F],[0xE0100,0xE01EF]];const TG=[[0xE0001,0xE0001],[0xE0020,0xE007F]];
+const SP=new Set([0x00A0,0x1680,0x2000,0x2001,0x2002,0x2003,0x2004,0x2005,0x2006,0x2007,0x2008,0x2009,0x200A,0x202F,0x205F,0x3000,0x2800]);
+const FL=new Set([0x180E,0x3164,0x115F,0x1160]);
+const ST=new Set([0x2028,0x2029,0xFFF9,0xFFFA,0xFFFB,0xFFFC,0x0640]);
+const SH=0x00AD;
+const LA={};
+function a(cp,r,d){LA[cp]=[r,d]}
+a(0x2013,'-','短划线→减号');a(0x2014,'-','长划线→减号');a(0xFF0D,'-','全角减号→减号');
+a(0x201C,'"','左弯引号→直引号');a(0x201D,'"','右弯引号→直引号');a(0x2018,"'",'左弯单引号→直引号');a(0x2019,"'",'右弯单引号→直引号');
+a(0x02BA,"'",'MODIFIER LETTER DOUBLE PRIME→直引号');a(0x02BB,"'",'MODIFIER LETTER TURNED COMMA→直引号');
+a(0xFF08,'(','全角(→半角');a(0xFF09,')','全角)→半角');a(0xFF3B,'[','全角[→半角');a(0xFF3D,']','全角]→半角');a(0xFF5B,'{','全角{→半角');a(0xFF5D,'}','全角}→半角');
+a(0xFF0C,',','全角逗号→半角');a(0xFF1E,'>','全角>→半角');a(0xFF1C,'<','全角<→半角');a(0xFF1A,':','全角冒号→半角');a(0xFF1B,';','全角分号→半角');
+a(0xFF01,'!','全角!→半角');a(0xFF1F,'?','全角?→半角');a(0xFF04,'$','全角$→半角');a(0xFF05,'%','全角%→半角');
+a(0xFF06,'&','全角&→半角');a(0xFF0A,'*','全角*→半角');a(0xFF0B,'+','全角+→半角');a(0xFF0F,'/','全角/→半角');
+a(0xFF1D,'=','全角=→半角');a(0xFF20,'@','全角@→半角');a(0xFF3C,'\\','全角\\→半角');a(0xFF3E,'^','全角^→半角');
+a(0xFF5E,'~','全角~→半角');a(0xFFE0,'¢','全角¢→半角');a(0xFFE1,'£','全角£→半角');a(0xFFE2,'¬','全角¬→半角');a(0xFFE5,'¥','全角¥→半角');
+for(let i=0;i<=9;i++)a(0xFF10+i,String(i),'全角'+i+'→半角');
+for(let i=0;i<26;i++){a(0xFF21+i,String.fromCharCode(65+i),'全角'+String.fromCharCode(65+i)+'→半角');a(0xFF41+i,String.fromCharCode(97+i),'全角'+String.fromCharCode(97+i)+'→半角');}
+a(0x0430,'a','西里尔а→a');a(0x0435,'e','西里尔е→e');a(0x043E,'o','西里尔о→o');a(0x0440,'p','西里尔р→p');
+a(0x0441,'c','西里尔с→c');a(0x0443,'y','西里尔у→y');a(0x0456,'i','西里尔і→i');a(0x0455,'s','西里尔ѕ→s');
+a(0x0458,'j','西里尔ј→j');a(0x045C,'k','西里尔ќ→k');a(0x04BB,'h','西里尔һ→h');
+a(0x0410,'A','西里尔А→A');a(0x0412,'B','西里尔В→B');a(0x0415,'E','西里尔Е→E');a(0x041A,'K','西里尔К→K');
+a(0x041C,'M','西里尔М→M');a(0x041D,'H','西里尔Н→H');a(0x0420,'P','西里尔Р→P');a(0x0421,'C','西里尔С→C');
+a(0x0422,'T','西里尔Т→T');a(0x0425,'X','西里尔Х→X');a(0x0405,'S','西里尔Ѕ→S');a(0x0408,'J','西里尔Ј→J');
+a(0x0391,'A','希腊Α→A');a(0x0392,'B','希腊Β→B');a(0x0395,'E','希腊Ε→E');a(0x0396,'Z','希腊Ζ→Z');
+a(0x0397,'H','希腊Η→H');a(0x0399,'I','希腊Ι→I');a(0x039A,'K','希腊Κ→K');a(0x039C,'M','希腊Μ→M');
+a(0x039D,'N','希腊Ν→N');a(0x039F,'O','希腊Ο→O');a(0x03A1,'P','希腊Ρ→P');a(0x03A4,'T','希腊Τ→T');
+a(0x03A5,'Y','希腊Υ→Y');a(0x03A7,'X','希腊Χ→X');
+a(0x03B1,'a','希腊α→a');a(0x03B5,'e','希腊ε→e');a(0x03B7,'n','希腊η→n');a(0x03B9,'i','希腊ι→i');
+a(0x03BA,'k','希腊κ→k');a(0x03BC,'m','希腊μ→m');a(0x03BD,'v','希腊ν→v');a(0x03BF,'o','希腊ο→o');
+a(0x03C1,'p','希腊ρ→p');a(0x03C5,'u','希腊υ→u');a(0x03C7,'x','希腊χ→x');
+const MR=[[0x1D400,0x1D433],[0x1D434,0x1D467],[0x1D468,0x1D49B],[0x1D49C,0x1D4CF],[0x1D4D0,0x1D503],[0x1D504,0x1D537],[0x1D56C,0x1D59F],[0x1D5A0,0x1D5D3],[0x1D5D4,0x1D607],[0x1D608,0x1D63B],[0x1D63C,0x1D66F],[0x1D670,0x1D6A3],[0x1D7CE,0x1D7D7],[0x1D7D8,0x1D7E1],[0x1D7E2,0x1D7EB],[0x1D7EC,0x1D7F5],[0x1D7F6,0x1D7FF]];
+const SU=new Set([...'⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿ'].map(c=>c.codePointAt(0)));
+const SB=new Set([...'₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎'].map(c=>c.codePointAt(0)));
+const JP=new Set([0x3001,0x3002,0x300A,0x300B,0x300C,0x300D,0x300E,0x300F,0x3010,0x3011,0x3014,0x3015,0x3016,0x3017]);
+function inR(cp,rs){for(const[a,b]of rs)if(cp>=a&&cp<=b)return true;return false}
+function isCf(cp){try{return/\p{Cf}/u.test(String.fromCodePoint(cp))}catch(e){return false}}
+function cls(cp){
+  if(ZW.has(cp))return{c:C1,l:'零宽/隐藏'};
+  if(DR.has(cp))return{c:C4,l:'方向控制'};
+  if(inR(cp,VS))return{c:C1,l:'变体选择符'};
+  if(inR(cp,TG))return{c:C1,l:'标签字符'};
+  if(FL.has(cp))return{c:C1,l:'填充字符'};
+  if(cp===SH)return{c:C1,l:'软连字符'};
+  if(SP.has(cp))return{c:C2,l:'异常空格'};
+  if(LA[cp])return{c:C3,l:'易混淆'};
+  if(inR(cp,MR))return{c:C3,l:'数学字母'};
+  if(SU.has(cp))return{c:C3,l:'上标字符'};
+  if(SB.has(cp))return{c:C3,l:'下标字符'};
+  if(ST.has(cp))return{c:C4,l:'结构控制'};
+  if(JP.has(cp))return{c:C5,l:'中文标点'};
+  if(cp>=0xFF01&&cp<=0xFF5E&&!LA[cp])return{c:C5,l:'全角符号'};
+  if(isCf(cp)&&cp>0x7F)return{c:C6,l:'格式字符'};
+  if(cp<0x20&&cp!==9&&cp!==10&&cp!==13)return{c:C6,l:'控制字符'};
+  if(cp===0x7F)return{c:C6,l:'DEL'};
+  return null;
+}
+function gn(cp){
+  const N={0x200B:'ZERO WIDTH SPACE',0x200C:'ZERO WIDTH NON-JOINER',0x200D:'ZERO WIDTH JOINER',0x2060:'WORD JOINER',0xFEFF:'BOM',0x00AD:'SOFT HYPHEN (软连字符)',0x200E:'LRM 左→右标记',0x200F:'RLM 右→左标记',0x202A:'LRE 左→右嵌入',0x202B:'RLE 右→左嵌入',0x202C:'PDF 方向弹出',0x202D:'LRO 左→右覆盖',0x202E:'RLO 右→左覆盖 ⚠️翻转文本!',0x2066:'LRI 左→右隔离',0x2067:'RLI 右→左隔离',0x2068:'FSI 首强隔离',0x2069:'PDI 弹出方向隔离',0x00A0:'NO-BREAK SPACE',0x1680:'OGHAM SPACE MARK',0x202F:'NARROW NO-BREAK SPACE',0x205F:'MEDIUM MATH SPACE',0x3000:'IDEOGRAPHIC SPACE 全角空格',0x2800:'BRAILLE PATTERN BLANK 盲文空格',0x2028:'LINE SEPARATOR ⚠️断行',0x2029:'PARAGRAPH SEPARATOR ⚠️断段',0xFFF9:'INTERLINEAR ANNOTATION ANCHOR',0xFFFA:'INTERLINEAR ANNOTATION SEPARATOR',0xFFFB:'INTERLINEAR ANNOTATION TERMINATOR',0xFFFC:'OBJECT REPLACEMENT CHARACTER',0x0640:'ARABIC TATWEEL 卡希达',0x180E:'MONGOLIAN VOWEL SEPARATOR',0x3164:'HANGUL FILLER 谚文填充',0x115F:'HANGUL CHOSEONG FILLER',0x1160:'HANGUL JUNGSEONG FILLER'};
+  if(N[cp])return N[cp];
+  if(cp>=0xFE00&&cp<=0xFE0F)return'VS-'+(cp-0xFE00+1);
+  if(cp>=0xE0100&&cp<=0xE01EF)return'VS-'+(cp-0xE0100+17);
+  if(cp===0xE0001)return'LANGUAGE TAG';
+  if(cp>=0xE0020&&cp<=0xE007F)return'TAG '+(cp-0xE0020+32).toString(16).toUpperCase();
+  return'U+'+cp.toString(16).toUpperCase();
+}
+function es(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+let LI=[],FC=null;
+function uDet(){
+  const raw=document.getElementById('uI').value;
+  if(!raw){document.getElementById('uS').innerHTML='';document.getElementById('uH').innerHTML='';document.getElementById('uC').innerHTML='';document.getElementById('uL').innerHTML='<div class="empty">请粘贴文本后点击检测</div>';return}
+  const ch=[...raw],iss=[];const ct={[C1]:0,[C2]:0,[C3]:0,[C4]:0,[C5]:0,[C6]:0};
+  for(let i=0;i<ch.length;i++){const cp=ch[i].codePointAt(0);const info=cls(cp);if(info){const nm=gn(cp);const sg=LA[cp]?LA[cp][1]:null;const rp=LA[cp]?LA[cp][0]:null;iss.push({p:i,cp,c:ch[i],info,nm,sg,rp});ct[info.c]++}}
+  LI=iss;FC=null;const T=iss.length;
+  document.getElementById('uS').innerHTML=`<div class="stats"><div class="sc ${T?'w':'ok'}"><div class="n">${T}</div><div class="l">可疑</div></div><div class="sc i"><div class="n">${ch.length}</div><div class="l">总字符</div></div>${[C1,C2,C3,C4,C5,C6].map(c=>`<div class="sc ${ct[c]?'w':'ok'}"><div class="n">${ct[c]}</div><div class="l">${CN[c]}</div></div>`).join('')}</div>`;
+  const iS=new Set(iss.map(x=>x.p));let h='';
+  for(let i=0;i<ch.length;i++){const cp=ch[i].codePointAt(0);let d=cp===10?'↵':cp===9?'⇥':es(ch[i]);
+  if(iS.has(i)){const it=iss.find(x=>x.p===i);const inv=ZW.has(cp)||cp===0xFEFF||DR.has(cp)||inR(cp,VS)||inR(cp,TG)||FL.has(cp)||cp===SH;const dp=inv?'⏐':d;
+  h+=`<span class="hw ${it.info.c}" data-i="${i}" data-info="U+${cp.toString(16).toUpperCase().padStart(4,'0')} ${it.nm}${it.sg?' | '+it.sg:''}">${dp}</span>`}else h+=d}
+  document.getElementById('uH').innerHTML=T?`<div class="st">高亮预览</div><div class="hb">${h}</div>`:'';
+  const uc=[...new Set(iss.map(x=>x.info.c))];let cH='<div class="ct">';cH+=`<span class="a" onclick="uFl(null,this)">全部(${T})</span>`;
+  for(const c of uc)cH+=`<span onclick="uFl('${c}',this)">${CN[c]}(${ct[c]})</span>`;cH+='</div>';
+  document.getElementById('uC').innerHTML=cH;rL(iss);
+}
+function rL(items){
+  if(!items.length){document.getElementById('uL').innerHTML='<div class="empty" style="color:#2e7d32">✅ 无可疑字符</div>';return}
+  let h=`<div class="st">详情(${items.length}项)</div>`;
+  for(const it of items){const inv=ZW.has(it.cp)||it.cp===0xFEFF||DR.has(it.cp)||inR(it.cp,VS)||inR(it.cp,TG)||FL.has(it.cp)||it.cp===SH;const dp=inv?'⏐':es(it.c);const hx='U+'+it.cp.toString(16).toUpperCase().padStart(4,'0');
+  h+=`<div class="ci"><span class="cb" style="background:${CC[it.info.c]}">${it.info.l}</span><span style="font-size:16px;min-width:20px;text-align:center;font-family:monospace">${dp}</span><span style="font-family:monospace;color:#555;font-size:11px">${hx}</span><span style="color:#333;font-size:11px;font-weight:600">${it.nm}</span>${it.sg?`<span style="color:#e65100;font-size:10px">⚠${it.sg}</span>`:''}<span style="color:#aaa;font-size:10px;margin-left:auto">位${it.p}</span></div>`}
+  document.getElementById('uL').innerHTML=h;
+}
+function uFl(c,el){FC=c;document.querySelectorAll('#ud .ct span').forEach(s=>s.classList.remove('a'));el.classList.add('a');rL(c?LI.filter(x=>x.info.c===c):LI)}
+function uClr(){document.getElementById('uI').value='';document.getElementById('uS').innerHTML='';document.getElementById('uH').innerHTML='';document.getElementById('uC').innerHTML='';document.getElementById('uL').innerHTML='<div class="empty">请粘贴文本后点击检测</div>'}
+function uDemo(){
+  const d=[
+    `订单号${String.fromCodePoint(0x200C)}A1100000MK00521613（零宽不连字）`,
+    `价格${String.fromCodePoint(0x200B)}999（零宽空格）`,
+    `BOM${String.fromCodePoint(0xFEFF)}开头的文本`,
+    `不换行${String.fromCodePoint(0x00A0)}空格`,
+    `全角${String.fromCodePoint(0x3000)}空格`,
+    `盲文${String.fromCodePoint(0x2800)}空格（看不见但占位）`,
+    `软连字符${String.fromCodePoint(0x00AD)}mid-word`,
+    `谚文填充${String.fromCodePoint(0x3164)}字符`,
+    `电话${String.fromCodePoint(0x2013)}1234${String.fromCodePoint(0x2014)}5678（短/长划线）`,
+    `${String.fromCodePoint(0x201C)}弯引号${String.fromCodePoint(0x201D)}和${String.fromCodePoint(0x2018)}单引号${String.fromCodePoint(0x2019)}`,
+    `p${String.fromCodePoint(0x0430)}ypal.com（西里尔钓鱼）`,
+    `全角数字${String.fromCodePoint(0xFF10)}${String.fromCodePoint(0xFF11)}2`,
+    `全角逗号${String.fromCodePoint(0xFF0C)}分号${String.fromCodePoint(0xFF1B)}`,
+    `RLO攻击${String.fromCodePoint(0x202E)}txt.exe（方向翻转）`,
+    `行分隔${String.fromCodePoint(0x2028)}段落分隔${String.fromCodePoint(0x2029)}`,
+    `变体选择${String.fromCodePoint(0xFE0F)}符`,
+    `数学粗体${String.fromCodePoint(0x1D400)}BC`,
+    `上标${[...'⁰¹²³'].join('')} 下标${[...'₀₁₂₃'].join('')}`,
+    `希腊钓鱼 Ρ${String.fromCodePoint(0x03A1)}ay`,
+    `卡希达${String.fromCodePoint(0x0640)}拉长`,
+  ].join('\n');
+  document.getElementById('uI').value=d;uDet();
+}
+function uCp(){
+  const raw=document.getElementById('uI').value;if(!raw)return;
+  const cl=[...raw].map(ch=>{const cp=ch.codePointAt(0);if(ZW.has(cp)||cp===0xFEFF||DR.has(cp)||inR(cp,VS)||inR(cp,TG)||FL.has(cp)||cp===SH||SP.has(cp)&&cp!==0x00A0)return'';if(LA[cp])return LA[cp][0];return ch}).join('').replace(/\u00A0/g,' ').replace(/\u3000/g,' ');
+  navigator.clipboard.writeText(cl).then(()=>{const b=document.querySelectorAll('#ud .bt');const t=b[b.length-1];const o=t.textContent;t.textContent='✅ 已复制';setTimeout(()=>t.textContent=o,1200)});
+}
+document.addEventListener('mouseover',e=>{if(e.target.classList.contains('hw')){const t=document.getElementById('uTT');t.textContent=e.target.dataset.info;t.style.display='block'}});
+document.addEventListener('mousemove',e=>{const t=document.getElementById('uTT');if(t.style.display==='block'){t.style.left=(e.clientX+10)+'px';t.style.top=(e.clientY-28)+'px'}});
+document.addEventListener('mouseout',e=>{if(e.target.classList.contains('hw'))document.getElementById('uTT').style.display='none'});
+document.getElementById('uL').innerHTML='<div class="empty">请粘贴文本后点击检测</div>';
+</script>
+</div>
