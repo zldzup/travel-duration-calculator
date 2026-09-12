@@ -183,13 +183,10 @@ function dbPut(rec){ return openDB().then(db=>new Promise((res,rej)=>{ const tx=
 function dbAll(){ return openDB().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(STORE,'readonly'); const rq=tx.objectStore(STORE).getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error); })); }
 function dbDel(id){ return openDB().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); })); }
 function getPlayerByPid(pid){ return document.querySelector('.player[data-pid="'+pid+'"]'); }
-// ---- 下载格式：直接下载录音原始文件（webm / mp4） ----
+// ---- 下载格式：固定下载录音原始 webm（不再走 mp4/ogg） ----
 function downloadTake(url,name0,mime){
   try{
-    let ext='.webm';
-    if(mime && mime.indexOf('mp4')>=0) ext='.mp4';
-    else if(mime && mime.indexOf('ogg')>=0) ext='.ogg';
-    const a=document.createElement('a'); a.href=url; a.download=name0+ext;
+    const a=document.createElement('a'); a.href=url; a.download=name0+'.webm';
     document.body.appendChild(a); a.click(); a.remove();
   }catch(e){ alert('下载失败：'+(e&&e.message?e.message:e)); }
 }
