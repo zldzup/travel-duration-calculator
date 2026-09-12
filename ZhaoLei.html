@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>赵雷「没有信号」鸟巢站 · 跟唱播放器</title>
+<style>
+  :root{--bg:#f6f5f2;--panel:#fff;--ink:#1c1a17;--ink-2:#5b554d;--ink-3:#8d857a;--line:#e6e2da;--accent:#b4442f;--accent-soft:#fbf0ed;
+    --c-2011:#b07a1e;--c-2011-bg:#fdf5e6;--c-2014:#2f7d54;--c-2014-bg:#eef8f1;--c-2016:#2c5f9e;--c-2016-bg:#eef3fb;--c-2022:#6b4ea8;--c-2022-bg:#f4f0fc;--c-single:#7a7469;--c-single-bg:#f2f1ee}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.6}
+  .wrap{max-width:1080px;margin:0 auto;padding:36px 22px 80px}
+  header.top{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 28px;margin-bottom:20px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .kicker{font-size:12px;letter-spacing:.18em;color:var(--accent);font-weight:700;text-transform:uppercase;margin-bottom:8px}
+  h1{margin:0 0 6px;font-size:27px;letter-spacing:-.01em;line-height:1.3}
+  h1 span{color:var(--accent)}
+  .meta{color:var(--ink-2);font-size:13.5px;margin-bottom:14px}.meta b{color:var(--ink);font-weight:600}
+  .tip{background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:8px;padding:11px 14px;font-size:12.8px;color:#6d3a2e;line-height:1.65}.tip b{color:var(--accent)}
+  .toolbar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}.toolbar button{font-size:12.5px;padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:#fcfbf9;color:var(--ink-2);cursor:pointer;transition:all .15s}.toolbar button:hover{color:var(--accent);border-color:#e2c3bb;background:var(--accent-soft)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{font-size:11.5px;padding:3px 10px;border-radius:99px;font-weight:600;border:1px solid transparent}
+  .chip.a2011{color:var(--c-2011);background:var(--c-2011-bg);border-color:#f0e0c0}.chip.a2014{color:var(--c-2014);background:var(--c-2014-bg);border-color:#d3ead9}.chip.a2016{color:var(--c-2016);background:var(--c-2016-bg);border-color:#d5e2f4}.chip.a2022{color:var(--c-2022);background:var(--c-2022-bg);border-color:#e0d6f6}.chip.asin{color:var(--c-single);background:var(--c-single-bg);border-color:#e3e1db}
+  .chapter{margin-top:26px}.chapter h2{font-size:14.5px;margin:0 0 12px;display:flex;align-items:center;gap:10px;color:var(--ink-2);font-weight:600}.chapter h2::before{content:"";width:14px;height:2px;background:var(--accent);border-radius:2px}.chapter h2 em{font-style:normal;color:var(--ink-3);font-weight:400;font-size:12.5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+  .song{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 15px 13px;display:flex;flex-direction:column;gap:9px;transition:border-color .15s,box-shadow .15s,opacity .25s,filter .25s}
+  .song:hover{border-color:#d6cfc2;box-shadow:0 2px 10px rgba(0,0,0,.045)}
+  .song.warn{border-color:#e9c9a0}
+  /* 播放时聚焦当前歌曲，灰化其它 */
+  body.focus .song:not(.is-current){opacity:.4;filter:grayscale(.55)}
+  body.focus .song.is-current{box-shadow:0 6px 22px rgba(180,68,47,.14);border-color:#e2c3bb}
+  .s-head{display:flex;align-items:baseline;gap:9px}.num{flex:none;width:24px;height:24px;border-radius:7px;background:#f0ede7;color:var(--ink-2);font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+  .t{font-size:15.5px;font-weight:700}.s-head .chip{margin-left:auto;flex:none}
+  .hook{font-size:13.2px;color:#3c3730;background:#faf9f6;border-radius:8px;padding:9px 11px;line-height:1.62;border:1px solid #f0ece4}.hook::before{content:"♪ ";color:var(--accent);font-weight:700}
+  .note{font-size:12.2px;color:var(--ink-3);line-height:1.6}
+  .lyric-wrap{margin-top:4px}
+  .lt{font-size:13px;color:var(--accent);margin:12px 0 4px;font-weight:700}
+  .player{background:#fbfaf7;border:1px solid #efeae1;border-radius:10px;padding:10px 12px}
+  .player.on{border-color:#e2c3bb;box-shadow:0 0 0 3px var(--accent-soft)}
+  .ctrl{display:flex;align-items:center;gap:10px}
+  .play{flex:none;font-size:13px;font-weight:700;padding:7px 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;transition:all .15s;touch-action:manipulation}
+  .play:hover{background:#9c3a27}.play.on{background:#fff;color:var(--accent)}
+  .rec{flex:none;font-size:13px;font-weight:700;padding:7px 14px;border-radius:8px;border:1px solid #8a3a2f;background:#fff;color:#8a3a2f;cursor:pointer;transition:all .15s;touch-action:manipulation}
+  .rec:hover{background:#fbeeea}
+  .rec.on{background:#c0392b;color:#fff;border-color:#c0392b;animation:recpulse 1s infinite}
+  @keyframes recpulse{0%{box-shadow:0 0 0 0 rgba(192,57,43,.5)}70%{box-shadow:0 0 0 8px rgba(192,57,43,0)}100%{box-shadow:0 0 0 0 rgba(192,57,43,0)}}
+  .recarea{margin-top:10px;padding-top:10px;border-top:1px dashed #e0d8c8}
+  .recarea .rinfo{font-size:12px;color:#8a3a2f;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px;line-height:1.5}
+  .recarea .dot{width:8px;height:8px;border-radius:50%;background:#c0392b;animation:recpulse 1s infinite;flex:none}
+  .recarea audio{width:100%;height:36px}
+  .recarea .rbtns{display:flex;gap:8px;margin-top:7px}
+  .recarea .rbtns button{font-size:12px;padding:5px 13px;border-radius:7px;border:1px solid var(--line);background:#fcfbf9;color:var(--ink-2);cursor:pointer;transition:all .15s}
+  .recarea .rbtns button:hover{color:var(--accent);border-color:#e2c3bb;background:var(--accent-soft)}
+  .recarea .rlist{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+  .recarea .ritem{background:#fbfaf7;border:1px solid #efeae1;border-radius:9px;padding:8px 10px}
+  .recarea .ritem .rinfo{margin-bottom:4px}
+  .recarea .ritem audio{margin:2px 0 4px}
+  .bar{flex:1;height:8px;background:#ece7dd;border-radius:99px;position:relative;cursor:pointer;overflow:hidden}
+  .fill{position:absolute;left:0;top:0;height:100%;width:0;background:linear-gradient(90deg,#c75a44,#b4442f);border-radius:99px}
+  .time{flex:none;font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:84px;text-align:right}
+  .lyricwrap2{position:relative;margin-top:10px}
+  .lyricbox{max-height:300px;overflow-y:auto;padding:46px 2px;scroll-behavior:smooth;position:relative;touch-action:pan-y;cursor:default}
+  .lyricwrap2::before,.lyricwrap2::after{content:"";position:absolute;left:0;right:0;height:30px;pointer-events:none;z-index:2}
+  .lyricwrap2::before{top:0;background:linear-gradient(#fbfaf7,rgba(251,250,247,0))}
+  .lyricwrap2::after{bottom:0;background:linear-gradient(rgba(251,250,247,0),#fbfaf7)}
+  .lyricbox::-webkit-scrollbar{width:6px}.lyricbox::-webkit-scrollbar-thumb{background:#ddd6c8;border-radius:3px}
+  .ln{margin:0;padding:5px 8px;border-radius:6px;font-size:14px;line-height:1.7;color:#57514a;cursor:pointer;transition:color .2s,background .2s,transform .2s;user-select:none}
+  .ln:hover{background:#f1ece2}
+  .ln.active{color:var(--accent);font-weight:700;background:var(--accent-soft);transform:translateX(2px)}
+  .playhead{position:absolute;left:6px;right:6px;top:50%;height:0;border-top:1px dashed rgba(180,68,47,.55);transform:translateY(-50%);pointer-events:none;display:none;z-index:3}
+  .playhead span{position:absolute;right:2px;top:-9px;font-size:10px;color:var(--accent);background:#fbfaf7;padding:0 4px;font-weight:700}
+  .player.on .playhead{display:block}
+  .nolyric{background:#fbfaf7;border:1px dashed #e0d8c8;border-radius:8px;padding:12px 14px;font-size:13px;color:#9a7b4f;margin-top:10px}
+  /* 歌曲快速切换条（吸顶、可横滑） */
+  .songbar{position:sticky;top:54px;z-index:20;background:rgba(246,245,242,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:0 -22px 20px;padding:8px 14px}
+  .songbar-in{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .songbar-in::-webkit-scrollbar{display:none}
+  .songbar button{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;border:1px solid var(--line);background:#fff;border-radius:9px;padding:5px 10px;cursor:pointer;transition:all .15s;min-width:56px;touch-action:manipulation}
+  .songbar button b{font-size:13px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.1}
+  .songbar button i{font-size:10px;color:var(--ink-3);font-style:normal;white-space:nowrap;max-width:78px;overflow:hidden;text-overflow:ellipsis}
+  .songbar button:hover{border-color:#e2c3bb;background:var(--accent-soft)}
+  .songbar button.active{border-color:var(--accent);background:var(--accent-soft)}
+  .song .flash{animation:flashk 1.2s ease}
+  @keyframes flashk{0%{box-shadow:0 0 0 3px var(--accent);border-color:var(--accent)}100%{box-shadow:none;border-color:var(--line)}}
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3);line-height:1.85}.footer b{color:var(--ink-2)}
+  /* 顶部 Tab 切换：跟唱 / 我的录音 */
+  .tabs{position:sticky;top:0;z-index:30;display:flex;gap:8px;background:rgba(246,245,242,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:0 -22px 20px;padding:8px 22px}
+  .tabs button{font-size:14px;font-weight:700;padding:9px 18px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink-2);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;touch-action:manipulation}
+  .tabs button:hover{border-color:#e2c3bb}
+  .tabs button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .tabs .rec-count{font-size:11px;font-weight:700;background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;min-width:18px;text-align:center;line-height:1.6}
+  .tabs button.active .rec-count{background:rgba(255,255,255,.28);color:#fff}
+  .tab-pane{display:block}
+  .tab-pane[hidden]{display:none}
+  .rectab{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:20px}
+  .rectab-head{font-size:13px;color:var(--ink-2);font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .recgroup{margin-bottom:18px}
+  .recgroup h3{font-size:14px;margin:0 0 10px;color:var(--accent);display:flex;align-items:center;gap:8px;font-weight:700}
+  .recgroup .rgcount{font-size:11.5px;font-weight:600;color:var(--ink-3);background:#f2f1ee;border:1px solid var(--line);border-radius:99px;padding:1px 9px}
+  .recgroup .rlist{display:flex;flex-direction:column;gap:10px}
+  .recgroup .ritem{background:#fbfaf7;border:1px solid #efeae1;border-radius:9px;padding:8px 10px}
+  .recgroup .ritem .rinfo{font-size:12px;color:#8a3a2f;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px;line-height:1.5}
+  .recgroup .ritem audio{width:100%;height:36px;margin:2px 0 4px}
+  .recgroup .rbtns{display:flex;gap:8px}
+  .recgroup .rbtns button{font-size:12px;padding:5px 13px;border-radius:7px;border:1px solid var(--line);background:#fcfbf9;color:var(--ink-2);cursor:pointer;transition:all .15s}
+  .recgroup .rbtns button:hover{color:var(--accent);border-color:#e2c3bb;background:var(--accent-soft)}
+  .rec-empty{text-align:center;color:var(--ink-3);font-size:13px;padding:30px 10px}
+  @media(max-width:600px){
+    .wrap{padding:16px 12px 56px}
+    h1{font-size:20px;line-height:1.35}
+    .meta{font-size:12.5px}
+    .tip{font-size:12px;line-height:1.6}
+    .grid{grid-template-columns:1fr}
+    .song{padding:12px 12px 11px;gap:8px}
+    .s-head .t{font-size:14.5px}
+    .hook{font-size:12.6px}
+    .note{font-size:11.8px}
+    .ctrl{flex-wrap:wrap;gap:8px}
+    .play,.rec{flex:1 1 calc(50% - 4px);padding:11px 0;font-size:14px;text-align:center}
+    .bar{order:3;flex:1 1 auto;height:10px}
+    .time{order:4;flex:1 1 auto;min-width:0;text-align:right}
+    .lyricbox{max-height:240px;padding:38px 2px}
+    .ln{font-size:15px;padding:6px 8px}
+    .legend .chip{font-size:10.5px;padding:2px 8px}
+    .toolbar button{font-size:12px;padding:6px 12px}
+    .recarea .rbtns{gap:6px}
+    .tabs{margin:0 -12px 14px;padding:7px 12px;border-radius:0}
+    .tabs button{flex:1;justify-content:center;padding:11px 0;font-size:14px}
+    .songbar{margin:0 -12px 14px;padding:7px 10px;top:60px}
+    .songbar button{min-width:50px;padding:4px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tabs">
+    <button data-tab="sing" class="active">🎤 跟唱</button>
+    <button data-tab="rec">📼 我的录音 <span class="rec-count" hidden>0</span></button>
+  </div>
+  <section id="tab-sing" class="tab-pane">
+    <header class="top">
+      <div class="kicker">Zhao Lei · No Signal · Birds Nest</div>
+      <h1>赵雷「没有信号」<span>鸟巢站</span> · 跟唱播放器</h1>
+      <div class="meta"><b>2026.09.12 – 09.13</b> 19:00 · 北京国家体育场（鸟巢）·「没有信号」巡演收官站 · 歌单流出共 <b>31</b> 项</div>
+      <div class="tip"><b>用法：</b>点 <b>▶ 跟唱</b> 按真实时长逐行高亮、自动居中。<b>位置联动：</b>点进度条跳转；<b>鼠标在歌词上拖动</b>即进度条（歌词位置↔进度双向同步）；<b>触屏点行</b>跳转、<b>滑动</b>自由浏览。歌词框正中虚线即「当前演唱位置」。<b>录音：</b>点 <b>🎙 录音跟唱</b> 会同时开麦+启动歌词，跟着唱，再点一次停止，可回放/下载对比（麦克风同时只能录一首）。一首在播时其它自动暂停。</div>
+      <div class="toolbar">
+        <button onclick="resetAll()">全部归零</button>
+        <button onclick="document.querySelectorAll('.player').forEach(p=>pause(p))">全部暂停</button>
+      </div>
+      <div class="legend"><span class="chip a2011">赵小雷 2011</span><span class="chip a2014">吉姆餐厅 2014</span><span class="chip a2016">无法长大 2016</span><span class="chip a2022">署前街少年 2022</span><span class="chip asin">单曲 / 早期作品</span></div>
+    </header>
+    <nav class="songbar"><div class="songbar-in"><button data-target="1"><b>1</b><i>阿卜杜拉</i></button><button data-target="2"><b>2</b><i>开往北京的火车</i></button><button data-target="3"><b>3</b><i>凌晨计程车</i></button><button data-target="4"><b>4</b><i>少女</i></button><button data-target="5"><b>5</b><i>少年锦时</i></button><button data-target="6"><b>6</b><i>小行迹</i></button><button data-target="7"><b>7</b><i>十九岁</i></button><button data-target="8"><b>8</b><i>雨后的绽放</i></button><button data-target="9"><b>9</b><i>阿刁</i></button><button data-target="10"><b>10</b><i>南方姑娘</i></button><button data-target="11"><b>11</b><i>吉姆餐厅</i></button><button data-target="12"><b>12</b><i>背影</i></button><button data-target="13"><b>13</b><i>玛丽</i></button><button data-target="14"><b>14</b><i>署前街少年</i></button><button data-target="15"><b>15</b><i>朵</i></button><button data-target="16"><b>16</b><i>船长</i></button><button data-target="17"><b>17</b><i>彩虹下面</i></button><button data-target="18"><b>18</b><i>无法长大</i></button><button data-target="19"><b>19</b><i>理想</i></button><button data-target="20"><b>20</b><i>难受</i></button><button data-target="21"><b>21</b><i>小屋</i></button><button data-target="22"><b>22</b><i>咬春</i></button><button data-target="23"><b>23</b><i>画</i></button><button data-target="24"><b>24</b><i>未给姐姐递出的信</i></button><button data-target="25"><b>25</b><i>人家</i></button><button data-target="26"><b>26</b><i>我们的时光</i></button><button data-target="27"><b>27</b><i>鼓楼</i></button><button data-target="28"><b>28</b><i>成都</i></button><button data-target="29"><b>29</b><i>程艾影</i></button><button data-target="30"><b>30</b><i>我记得 + 送别</i></button><button data-target="31"><b>31</b><i>辞行</i></button></div></nav>
+    <main><section class="chapter"><h2>开篇 <em>第 1–5 首 · 从旅途的起点开始</em></h2><div class="grid"><article class="song"><div class="s-head"><span class="num">1</span><span class="t">阿卜杜拉</span><span class="chip a2022">署前街少年 · 2022</span></div><div class="hook">闹市里的寂寞餐厅，总有喝醉的人踢倒空的啤酒瓶</div><div class="note">巡演开场曲。「阿卜杜拉」是赵雷常去的那家回民餐馆，也是《吉姆餐厅》的延续。</div><div class="lyric-wrap"><div class="player" data-pid="1" data-dur="321.000"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:21</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="0.000">阿卜杜拉 - 赵雷</p><p class="ln" data-t="45.350">阿卜杜拉的街今天格外得静</p><p class="ln" data-t="53.370">只有夜晚还和从前一样年轻</p><p class="ln" data-t="61.410">人们吃完喝完在碗旁留下钱</p><p class="ln" data-t="69.200">在欢笑声中撞响最后一杯酒说再见</p><p class="ln" data-t="77.400">我在微醺中离开阿卜杜拉</p><p class="ln" data-t="85.080">今夜要早些回去陪我的爸爸</p><p class="ln" data-t="93.130">他除了我之外只剩下一台电视机</p><p class="ln" data-t="101.190">我了解孤独的人就像了解自己</p><p class="ln" data-t="109.430">阿卜杜拉 闹市里的寂寞餐厅</p><p class="ln" data-t="117.430">总有喝醉的人踢倒空的啤酒瓶</p><p class="ln" data-t="125.390">没有温度的城</p><p class="ln" data-t="127.660">会不会在风吹来时抱你</p><p class="ln" data-t="132.390">如果你很好 就当我自言自语</p><p class="ln" data-t="141.400">阿卜杜拉的门前是一个高台阶</p><p class="ln" data-t="149.440">送信的人一眼就可以分辨</p><p class="ln" data-t="157.040">天上的灯关了阿卜杜拉也会留一盏</p><p class="ln" data-t="165.100">目送着踏上天阶的灵魂走远</p><p class="ln" data-t="201.400">阿卜杜拉 希望你能够带上我一起</p><p class="ln" data-t="209.370">跟随着你可以躺在星星的怀里</p><p class="ln" data-t="217.400">枯干的油瓶 微弱的灯芯</p><p class="ln" data-t="225.860">一个是我 一个是你</p><p class="ln" data-t="231.410">阿卜杜拉 等待盛开</p><p class="ln" data-t="239.380">希望你在风中醒来</p><p class="ln" data-t="247.420">阿卜杜拉 没有告别的意义</p><p class="ln" data-t="256.380">不是所有人都会在意你</p><p class="ln" data-t="267.880">木吉他：赵雷</p><p class="ln" data-t="269.710">电吉他：刘磊/谢星/孔德岳/高飞</p><p class="ln" data-t="273.470">尾奏木吉他SOLO：PUPU朴朴</p><p class="ln" data-t="278.900">小号：鲁潇霖/Toby Mak</p><p class="ln" data-t="280.670">Organ：赵雷</p><p class="ln" data-t="281.470">MIDI制作：闵博俊/赵雷</p><p class="ln" data-t="283.700">采样：PUPU朴朴</p><p class="ln" data-t="284.930">录音师：李越/张俊/时俊峰</p><p class="ln" data-t="287.550">混音师：姜北生</p><p class="ln" data-t="291.460">母带工程室：Sterling Sound</p><p class="ln" data-t="292.840">母带工程师：Randy Merrill</p><p class="ln" data-t="294.220">封面设计：韩东/小强/阿穆隆</p><p class="ln" data-t="297.000">特别感谢：鼓手文烽老师</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">2</span><span class="t">开往北京的火车</span><span class="chip a2011">赵小雷 · 2011</span></div><div class="hook">开往北京的火车，一路沉默 / 我还快乐</div><div class="note">2007 年他穿行川藏、云南途中写下，2011 年收入首张专辑。</div><div class="lyric-wrap"><div class="player" data-pid="2" data-dur="267.530"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:28</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="19.610">开往北京的火车 一路沉默</p><p class="ln" data-t="28.600">开往北京的火车 我还快乐</p><p class="ln" data-t="38.520">这样下去不是办法 这只是暂时的快活</p><p class="ln" data-t="47.200">但却是两个极端 从快活开进了失落</p><p class="ln" data-t="56.850">开往北京的火车 由南向北沉默的驶着</p><p class="ln" data-t="65.340">开往北京的火车 走走停停就要进站了</p><p class="ln" data-t="73.270">要装作很快乐 即使重蹈覆辙</p><p class="ln" data-t="82.270">开往北京的火车 今夜我就要无眠了</p><p class="ln" data-t="105.789">久违了我的住所 我的小床它开始想念我了</p><p class="ln" data-t="114.270">暂别的小巷里 路灯下的路也会寂寞</p><p class="ln" data-t="124.300">即使我还是个穷人 但这里还是有期待我的人</p><p class="ln" data-t="132.660">即使北京再拥挤 还是给我留了一个位置的</p><p class="ln" data-t="140.680">我已觉得很累了 有谁在等待我</p><p class="ln" data-t="149.730">开往北京的火车 今夜我就要回家了</p><p class="ln" data-t="157.500">回家了</p><p class="ln" data-t="187.810">即使我还是个穷人 但这里还是有期待我的人</p><p class="ln" data-t="195.820">即使北京再拥挤 还是给我留了一个位置的</p><p class="ln" data-t="204.600">开往北京的火车 我已经开始坐立不安了</p><p class="ln" data-t="212.670">开往北京的火车 走走停停就要进站了</p><p class="ln" data-t="220.300">要装作很快乐 即使重蹈覆辙</p><p class="ln" data-t="229.550">开往北京的火车 今夜我就要回家了</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">3</span><span class="t">凌晨计程车</span><span class="chip a2022">署前街少年 · 2022</span></div><div class="hook">仅剩便利店的灯在亮着，我是夜班车唯一的乘客</div><div class="note">专辑里的深夜城市速写，跟《小行迹》是一路的漂泊感。</div><div class="lyric-wrap"><div class="player" data-pid="3" data-dur="252.000"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:12</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="0.000">凌晨计程车 - 赵雷</p><p class="ln" data-t="20.410">凌晨的计程车</p><p class="ln" data-t="25.610">车里是什么乘客</p><p class="ln" data-t="29.640">她用右耳朵面对我</p><p class="ln" data-t="34.820">她的眼神在闪躲</p><p class="ln" data-t="38.880">街灯抚过所有乘客</p><p class="ln" data-t="43.980">抚过抽烟的胳膊</p><p class="ln" data-t="48.130">她们回家还是刚出门</p><p class="ln" data-t="53.260">还是在脱离孤枕</p><p class="ln" data-t="57.250">我像一辆大洒水车</p><p class="ln" data-t="62.490">雨夜并不需要我</p><p class="ln" data-t="66.600">我是空驶来的计程车</p><p class="ln" data-t="71.760">唯有清风搭乘我</p><p class="ln" data-t="77.980">哦仅剩便利店的灯在亮着</p><p class="ln" data-t="87.190">啊我是夜班车唯一的乘客</p><p class="ln" data-t="112.650">欢迎收听午夜广播</p><p class="ln" data-t="117.780">此刻你在想什么</p><p class="ln" data-t="121.900">继续走还是买瓶酒</p><p class="ln" data-t="127.030">在街头故作洒脱</p><p class="ln" data-t="131.120">我是凌晨的计程车</p><p class="ln" data-t="136.330">红灯正在看着我</p><p class="ln" data-t="140.320">我是打烊了的计程车</p><p class="ln" data-t="145.560">招手的别责怪我</p><p class="ln" data-t="149.580">我像一辆大洒水车</p><p class="ln" data-t="154.780">雨夜并不需要我</p><p class="ln" data-t="158.830">我是空驶来的计程车</p><p class="ln" data-t="164.010">唯有清风搭乘我</p><p class="ln" data-t="170.330">哦仅剩便利店的灯在亮着</p><p class="ln" data-t="177.380">啊我是夜班车唯一的乘客</p><p class="ln" data-t="189.250">木吉他：赵雷</p><p class="ln" data-t="190.400">电吉他：董长跃</p><p class="ln" data-t="193.210">手风琴：齐静</p><p class="ln" data-t="195.220">口白：旭东</p><p class="ln" data-t="196.090">录音师：张俊</p><p class="ln" data-t="197.180">混音师：时俊峰</p><p class="ln" data-t="199.950">录音助理：陈彬彬/朱莉</p><p class="ln" data-t="202.210">母带工程室：Sterling Sound</p><p class="ln" data-t="203.740">母带工程师：Randy Merrill</p><p class="ln" data-t="205.280">封面设计：韩东/小强/阿穆隆</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">4</span><span class="t">少女</span><span class="chip a2022">署前街少年 · 2022</span></div><div class="hook">（全曲短而干净，副歌轻声反复）</div><div class="note">赵雷写给身边一位北漂女性朋友，专辑里最短、最不留痕迹的一首。</div><div class="lyric-wrap"><div class="player" data-pid="4" data-dur="249.910"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:10</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="30.030">偶尔化一化妆吧</p><p class="ln" data-t="33.900">我们从来就不会老</p><p class="ln" data-t="37.500">那是镜子的玩笑</p><p class="ln" data-t="43.920">在玻璃窗前伸伸你的懒腰</p><p class="ln" data-t="49.350">找出你褶皱的裙子趁阳光高照</p><p class="ln" data-t="58.230">穿给你的影子看</p><p class="ln" data-t="62.250">风和刘海肆意地交谈</p><p class="ln" data-t="65.220">不需要任何语言</p><p class="ln" data-t="72.180">你送走昨天 轻轻落下脚尖</p><p class="ln" data-t="77.550">转身与你重复道别的人已走远</p><p class="ln" data-t="86.160">哦 别回望少女</p><p class="ln" data-t="88.680">那是逆流的往昔</p><p class="ln" data-t="93.930">你舞动的俏影</p><p class="ln" data-t="100.560">隔着玻璃</p><p class="ln" data-t="102.720">提醒你时刻要保护好自己</p><p class="ln" data-t="107.640">忧伤会忘记帆布鞋上的你</p><p class="ln" data-t="116.430">在梅雨的黑夜里</p><p class="ln" data-t="120.390">在无所谓的方向里</p><p class="ln" data-t="123.480">装满晚风的外衣</p><p class="ln" data-t="130.350">树影拂掠过末班车的眼睛</p><p class="ln" data-t="135.840">孤单的人坐在最后一排座椅</p><p class="ln" data-t="144.210">哦 仰起头 少女</p><p class="ln" data-t="146.820">从来没有什么真正属于你</p><p class="ln" data-t="152.670">也不曾失去</p><p class="ln" data-t="158.430">因为你是少女</p><p class="ln" data-t="161.040">不需要解释也不需要在意</p><p class="ln" data-t="165.810">就让提问的人继续猜下去</p><p class="ln" data-t="245.200">木吉他：赵雷</p><p class="ln" data-t="245.500">电吉他：董长跃</p><p class="ln" data-t="246.970">手风琴：齐静</p><p class="ln" data-t="247.560">口哨：祝子</p><p class="ln" data-t="247.850">录音师：张俊</p><p class="ln" data-t="248.140">混音师：时俊峰</p><p class="ln" data-t="248.730">录音助理：陈彬彬、朱莉</p><p class="ln" data-t="249.030">母带工程室：Sterling Sound</p><p class="ln" data-t="249.320">母带工程师：Randy Merrill</p><p class="ln" data-t="249.610">封面设计：韩东、小强、阿穆隆</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">5</span><span class="t">少年锦时</span><span class="chip a2014">吉姆餐厅 · 2014</span></div><div class="hook">又回到春末的五月，凌晨的集市人不多</div><div class="note">前奏一响就回到回不去的那年纪，全场跟唱的固定曲目。</div><div class="lyric-wrap"><div class="player" data-pid="5" data-dur="308.600"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:09</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="44.970">又回到春末的五月</p><p class="ln" data-t="50.150">凌晨的集市人不多</p><p class="ln" data-t="55.100">小孩在门前唱着歌</p><p class="ln" data-t="60.270">阳光它照暖了西河</p><p class="ln" data-t="65.420">柳絮乘着大风吹</p><p class="ln" data-t="70.350">树影下的人想睡</p><p class="ln" data-t="75.490">沉默的人 从此刻</p><p class="ln" data-t="77.630">开始快乐起来</p><p class="ln" data-t="80.590">脱掉寒冬的傀儡</p><p class="ln" data-t="85.830">我忧郁的白衬衫</p><p class="ln" data-t="90.780">青春口袋里面的</p><p class="ln" data-t="94.000">第一支香烟</p><p class="ln" data-t="96.990">情窦初开的 我</p><p class="ln" data-t="101.560">从不敢和你说</p><p class="ln" data-t="106.250">仅有辆进城的公车</p><p class="ln" data-t="111.170">还没有咖啡馆和奢侈品商店</p><p class="ln" data-t="117.280">晴朗蓝天下 昂头的笑脸</p><p class="ln" data-t="122.430">爱很简单</p><p class="ln" data-t="147.090">钟声敲响了日落</p><p class="ln" data-t="152.170">柏油路跃过山坡</p><p class="ln" data-t="157.330">一直通向北方的</p><p class="ln" data-t="160.370">是我们想象</p><p class="ln" data-t="162.200">长大后也未曾经过</p><p class="ln" data-t="167.000">爬满青藤的房子</p><p class="ln" data-t="172.550">屋檐下的邻居</p><p class="ln" data-t="174.760">在黄昏中飞驰</p><p class="ln" data-t="178.470">秋天的时候 柿子树一熟</p><p class="ln" data-t="183.500">够我们吃很久</p><p class="ln" data-t="187.960">收音机靠坐在床头</p><p class="ln" data-t="192.990">贪玩的少年抱着漫画书不放手</p><p class="ln" data-t="198.930">陪我入睡的 是月亮的忧愁</p><p class="ln" data-t="203.910">和装满幻梦的枕头</p><p class="ln" data-t="208.620">沾满口水的枕头</p><p class="ln" data-t="223.930">我忧郁的白衬衫</p><p class="ln" data-t="228.720">青春口袋里面的</p><p class="ln" data-t="231.770">第一支香烟</p><p class="ln" data-t="234.890">情窦初开的 我</p><p class="ln" data-t="239.360">从不敢和你说</p><p class="ln" data-t="244.110">仅有辆进城的公车</p><p class="ln" data-t="249.090">还没有咖啡馆和奢侈品商店</p><p class="ln" data-t="255.010">晴朗蓝天下 昂头的笑脸</p><p class="ln" data-t="260.150">爱很简单</p><p class="ln" data-t="265.060">爱很简单</p><p class="ln" data-t="270.770">爱很简单</p><p class="ln" data-t="275.980">爱很简单</p><p class="ln" data-t="282.460">爱很简单</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article></div></section><section class="chapter"><h2>旅途与市井 <em>第 6–11 首 · 街巷、旅店与烟火气</em></h2><div class="grid"><article class="song"><div class="s-head"><span class="num">6</span><span class="t">小行迹</span><span class="chip a2022">署前街少年 · 2022</span></div><div class="hook">去向同样地方的人很多，而走在角落的人却只有我</div><div class="note">2020 年生日当天第一次曝光，写他四处旅行的经历。</div><div class="lyric-wrap"><div class="player" data-pid="6" data-dur="277.490"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:37</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="42.810">你想预定哪一国的早餐</p><p class="ln" data-t="48.030">等一杯不加糖的咖啡取暖</p><p class="ln" data-t="53.400">坐在阳台望着对面的山</p><p class="ln" data-t="58.560">山尖的雪总是一尘不染</p><p class="ln" data-t="63.960">去向同样地方的人很多</p><p class="ln" data-t="69.390">而走在角落的人却只有我</p><p class="ln" data-t="74.670">我只想静静离开独自徘徊</p><p class="ln" data-t="79.980">在这陌生却最自由的时刻</p><p class="ln" data-t="85.380">一场雨揉进乡间的朦胧</p><p class="ln" data-t="90.630">在湖边回忆往昔的每分钟</p><p class="ln" data-t="96.000">你是否在仰望潮湿的星</p><p class="ln" data-t="101.310">还是陷入了闹市的霓虹中</p><p class="ln" data-t="106.770">吃遍了所有小饭馆</p><p class="ln" data-t="110.010">海市的便利店</p><p class="ln" data-t="112.650">走失在迷宫一样的地铁站</p><p class="ln" data-t="117.210">行李箱与我跌撞地转</p><p class="ln" data-t="120.570">寻找下家旅店</p><p class="ln" data-t="123.270">走酸的双脚无处停站</p><p class="ln" data-t="149.340">去向同样地方的人很多</p><p class="ln" data-t="154.770">而走在角落的人却只有我</p><p class="ln" data-t="160.020">我只想静静离开独自徘徊</p><p class="ln" data-t="165.240">在这陌生却最自由的时刻</p><p class="ln" data-t="170.670">一场雨揉进乡间的朦胧</p><p class="ln" data-t="175.950">在湖边回忆往昔的每分钟</p><p class="ln" data-t="181.380">你是否在仰望潮湿的星</p><p class="ln" data-t="186.630">还是陷入了闹市的霓虹中</p><p class="ln" data-t="192.390">吃遍了所有小饭馆</p><p class="ln" data-t="195.330">海市的便利店</p><p class="ln" data-t="198.030">走失在迷宫一样的地铁站</p><p class="ln" data-t="202.530">行李箱与我跌撞地转</p><p class="ln" data-t="205.920">寻找下家旅店</p><p class="ln" data-t="208.680">走酸的双脚无处停站</p><p class="ln" data-t="213.390">跟着冬青树一路向南</p><p class="ln" data-t="216.600">再见了富士山</p><p class="ln" data-t="219.270">行迹在地图上画下曲线</p><p class="ln" data-t="224.040">数着飞机飞回的日子</p><p class="ln" data-t="227.310">回到旧的城市</p><p class="ln" data-t="229.980">你的旅行还剩下多少天</p><p class="ln" data-t="255.990">翻看着照片里的笑脸</p><p class="ln" data-t="259.440">丢掉手中的烟</p><p class="ln" data-t="262.230">你的心情有没有好一点</p><p class="ln" data-t="273.550">木吉他：赵雷</p><p class="ln" data-t="273.850">电吉他：刘磊</p><p class="ln" data-t="274.460">打击乐：刘恒</p><p class="ln" data-t="274.760">班卓琴：刘磊</p><p class="ln" data-t="275.060">口风琴：祝子</p><p class="ln" data-t="275.670">录音师：李越</p><p class="ln" data-t="275.970">混音师：时俊峰</p><p class="ln" data-t="276.580">母带工程室：Sterling Sound</p><p class="ln" data-t="276.880">母带工程师：Randy Merrill</p><p class="ln" data-t="277.180">封面设计：韩东、小强、阿穆隆</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">7</span><span class="t">十九岁</span><span class="chip asin">单曲 · 2018</span></div><div class="hook">我想发寻你的传单，可是我没有你的照片</div><div class="note">2015 巡演发布会哼过片段，2017「浮游」首唱，2018 发行。歌里全是北京地标。</div><div class="lyric-wrap"><div class="player" data-pid="7" data-dur="233.380"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 3:53</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="8.000">小提琴 : 李朋</p><p class="ln" data-t="9.000">口琴 : 晓月</p><p class="ln" data-t="17.690">走过初识你的地点</p><p class="ln" data-t="21.610">揣着多天来的期盼</p><p class="ln" data-t="25.620">如果我不能再次把你遇见</p><p class="ln" data-t="30.530">我会日夜期盼</p><p class="ln" data-t="33.510">我不是伟岸的正经人</p><p class="ln" data-t="37.490">我承认吸引我的是你的脸</p><p class="ln" data-t="41.570">在这隐忍的夏天 冰淇淋里面</p><p class="ln" data-t="46.420">谁愿与孤单为伴</p><p class="ln" data-t="49.530">我的心情总是失落</p><p class="ln" data-t="53.740">我懂女孩子是矜持的</p><p class="ln" data-t="57.580">你的耳机里到底听的是什么</p><p class="ln" data-t="62.310">有没有我熟悉的歌</p><p class="ln" data-t="65.590">我想发寻你的传单</p><p class="ln" data-t="69.440">可是我没有你的照片</p><p class="ln" data-t="73.370">只好写初识游泳馆 大厅的里面</p><p class="ln" data-t="78.420">我们不见不散</p><p class="ln" data-t="97.650">康铭旋转门转不休</p><p class="ln" data-t="101.400">宽街没有另外路口</p><p class="ln" data-t="105.420">我在红绿灯下面等了你很久</p><p class="ln" data-t="110.370">你是否朝交道口走</p><p class="ln" data-t="113.460">我不是油嘴滑舌的人</p><p class="ln" data-t="117.570">你可知19岁的天真</p><p class="ln" data-t="121.460">布满皱纹的城市都在因为你</p><p class="ln" data-t="126.370">而变得越来越青春</p><p class="ln" data-t="129.670">我的心情总是失落</p><p class="ln" data-t="133.700">我懂女孩子是矜持的</p><p class="ln" data-t="137.640">你的耳机里到底听的是什么</p><p class="ln" data-t="142.350">有没有我熟悉的歌</p><p class="ln" data-t="153.590">我想发寻你的传单</p><p class="ln" data-t="157.400">可是我没有你的照片</p><p class="ln" data-t="161.360">只好写初识游泳馆 大厅的里面</p><p class="ln" data-t="166.390">我们不见不散</p><p class="ln" data-t="169.450">我想发寻你的传单</p><p class="ln" data-t="173.340">可是我没有你的照片</p><p class="ln" data-t="177.250">我猜在南锣的里面 中戏的门前</p><p class="ln" data-t="182.400">或许你会再次出现</p><p class="ln" data-t="185.370">我猜在南锣的里面 书店的门前</p><p class="ln" data-t="190.540">你也等待我的出现</p><p class="ln" data-t="193.400">我会在南锣的里面 江湖的门前</p><p class="ln" data-t="198.430">握着啤酒等你出现</p><p class="ln" data-t="201.380">我猜在19岁这一天 青春的一半</p><p class="ln" data-t="206.430">我与你会注定擦肩</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song warn"><div class="s-head"><span class="num">8</span><span class="t">雨后的绽放</span><span class="chip asin">待确认</span></div><div class="hook">（公开渠道未查到发行记录）</div><div class="note">本轮歌单里的生面孔，疑为新歌或未发布曲目。注意别和《朵》里「雨后的花儿卸去了妆」混淆。</div><div class="lyric-wrap"><div class="nolyric">（歌词暂无，无法跟唱）</div></div></article><article class="song"><div class="s-head"><span class="num">9</span><span class="t">阿刁</span><span class="chip a2016">无法长大 · 2016</span></div><div class="hook">甘于平凡却不甘平凡的腐烂 / 你是阿刁，你是自由的鸟</div><div class="note">以西藏为背景。2018 张韶涵翻唱后爆红，但原唱这版更沉。</div><div class="lyric-wrap"><div class="player" data-pid="8" data-dur="374.120"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 6:14</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="6.000">电吉他 : 喜子</p><p class="ln" data-t="7.000">箱琴 : 赵雷</p><p class="ln" data-t="8.000">MIDI : 喜子/赵雷</p><p class="ln" data-t="9.000">童声 : 朵儿</p><p class="ln" data-t="47.910">阿刁 住在西藏的某个地方</p><p class="ln" data-t="56.760">秃鹫一样 栖息在山顶上</p><p class="ln" data-t="66.890">阿刁 大昭寺门前铺满阳光</p><p class="ln" data-t="75.680">打一壶甜茶 我们聊着过往</p><p class="ln" data-t="105.430">阿刁 你总把自己打扮得像</p><p class="ln" data-t="114.160">男孩子一样 可比格桑还顽强</p><p class="ln" data-t="124.320">阿刁 狡猾的人有千百种笑</p><p class="ln" data-t="133.370">你何时下山 记得带上卓玛刀</p><p class="ln" data-t="142.990">灰色帽檐下 凹陷的脸颊</p><p class="ln" data-t="147.600">你很少说话 简单的回答</p><p class="ln" data-t="152.410">明天在哪里 谁会在意你</p><p class="ln" data-t="157.180">即使死在路上格桑 妮可 阿七 石榴 东措 大冰 安子 浮游 赵雷 三文鱼 浩子 小友 卓玛 阿达 彬子 回锅肉</p><p class="ln" data-t="201.350">阿刁 明天是否能吃顿饱饭</p><p class="ln" data-t="210.460">你已习惯 饥饿是一种信仰</p><p class="ln" data-t="220.530">阿刁 不会被现实磨平棱角</p><p class="ln" data-t="229.380">你不是这世界的人 没必要在乎真相</p><p class="ln" data-t="239.260">命运多舛 痴迷 淡然</p><p class="ln" data-t="243.590">挥别了青春 数不尽的车站</p><p class="ln" data-t="248.350">甘于平凡却不甘平凡的腐烂</p><p class="ln" data-t="253.260">你是阿刁 你是自由的鸟</p><p class="ln" data-t="277.270">灰色帽檐下 凹陷的脸颊</p><p class="ln" data-t="281.840">你很少说话 简单的回答</p><p class="ln" data-t="286.570">明天在哪里 谁会在意你</p><p class="ln" data-t="291.460">即使死在路上</p><p class="ln" data-t="296.300">命运多舛 痴迷 淡然</p><p class="ln" data-t="300.930">挥别了青春 数不尽的车站</p><p class="ln" data-t="305.750">甘于平凡却不甘平凡的腐烂</p><p class="ln" data-t="310.610">你是阿刁</p><p class="ln" data-t="345.320">阿刁 爱情是粒悲伤的种子</p><p class="ln" data-t="353.750">你是一棵树 你永远都不会枯</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">10</span><span class="t">南方姑娘</span><span class="chip a2011">赵小雷 · 2011</span></div><div class="hook">北方的村庄住着一个南方的姑娘 / 南方姑娘，你是否爱上了北方</div><div class="note">首张专辑的主打，也是让更多人认识赵雷的那首。</div><div class="lyric-wrap"><div class="player" data-pid="9" data-dur="332.640"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:33</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="57.880">北方的村庄住着一个南方的姑娘</p><p class="ln" data-t="66.030">她总是喜欢穿着带花的裙子站在路旁</p><p class="ln" data-t="74.650">她的话不多但笑起来是那么平静优雅</p><p class="ln" data-t="82.570">她柔弱的眼神里装的是什么 是思念的忧伤</p><p class="ln" data-t="93.010">南方的小镇阴雨的冬天没有北方冷</p><p class="ln" data-t="101.330">她不需要臃肿的棉衣去遮盖她似水的面容</p><p class="ln" data-t="109.940">她在来去的街头留下影子芳香在回眸人的心头</p><p class="ln" data-t="118.060">眨眼的时间芳香已飘散影子已不见</p><p class="ln" data-t="128.340">南方姑娘 你是否习惯北方的秋凉</p><p class="ln" data-t="136.530">南方姑娘 你是否喜欢北方人的直爽</p><p class="ln" data-t="148.920">日子过的就像那些不眠的晚上</p><p class="ln" data-t="158.070">她嚼着口香糖对墙漫谈着理想</p><p class="ln" data-t="165.480">南方姑娘 我们都在忍受着漫长</p><p class="ln" data-t="173.540">南方姑娘 是不是高楼遮住了你的希望</p><p class="ln" data-t="220.030">昨日的雨曾淋漓过她瘦弱的肩膀</p><p class="ln" data-t="228.260">夜空的北斗也没有让她找到迷途的方向</p><p class="ln" data-t="237.000">阳光里她在院子中央晾晒着衣裳</p><p class="ln" data-t="244.670">在四季的风中她散着头发安慰着时光</p><p class="ln" data-t="253.210">南方姑娘 你是否爱上了北方</p><p class="ln" data-t="261.290">南方姑娘 你说今天你就要回到你的家乡</p><p class="ln" data-t="273.860">思念让人心伤 她呼唤着你的泪光</p><p class="ln" data-t="283.020">南方的果子已熟 那是最简单的理想</p><p class="ln" data-t="291.170">啦……啦……</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">11</span><span class="t">吉姆餐厅</span><span class="chip a2014">吉姆餐厅 · 2014</span></div><div class="hook">吉姆餐厅，米尔大哥在忙着 / 不灭的月亮下是不夜的街</div><div class="note">写给母亲：「米尔」从母亲名字延续出来。</div><div class="lyric-wrap"><div class="player" data-pid="10" data-dur="354.640"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:55</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="68.131">吉姆餐厅米尔大哥在忙着</p><p class="ln" data-t="75.882">不灭的月亮下是不夜的街</p><p class="ln" data-t="83.851">生意不错忙碌的人把一切忘了</p><p class="ln" data-t="91.858">端起酒杯流泪的男人还没醉</p><p class="ln" data-t="99.925">我不知道该和你说什么我没有吉他就唱不出歌</p><p class="ln" data-t="107.884">我只知道我不能体会任何人的快乐</p><p class="ln" data-t="115.937">如果吉姆知道的话请为他做上一碗面吧</p><p class="ln" data-t="123.881">每当到你的生日你就很想她</p><p class="ln" data-t="131.935">吉姆餐厅雪把人们堵在家中</p><p class="ln" data-t="139.886">米尔就望着那棵树不说话</p><p class="ln" data-t="147.887">夜空清澈吉姆的眼不停止闪烁</p><p class="ln" data-t="155.940">别担心她你看她从不会寂寞</p><p class="ln" data-t="163.991">快剪掉那忧愁的长发吧</p><p class="ln" data-t="167.891">离开这个荒冷的村庄吧</p><p class="ln" data-t="171.942">这里没有人会唱吉姆唱过的那些老歌</p><p class="ln" data-t="179.944">快烧掉那陈旧的忧伤</p><p class="ln" data-t="184.160">穿上那件未见过太阳的新衣裳</p><p class="ln" data-t="187.998">我想吉姆她和我一样也这样希望</p><p class="ln" data-t="227.978">我要走了米尔大哥</p><p class="ln" data-t="231.879">你也快走快把以前忘了</p><p class="ln" data-t="235.879">会再见的吉姆餐厅</p><p class="ln" data-t="239.529">你先上了那辆离开时间的车</p><p class="ln" data-t="243.931">别再见了米尔大哥回不去的时光乐土</p><p class="ln" data-t="251.934">挥不去的都写满面孔和青春一起褪落</p><p class="ln" data-t="260.339">沉睡吧吉姆餐厅沉睡呀儿时乐土</p><p class="ln" data-t="267.889">再也不会有谁牵绊着你踏上远方的路</p><p class="ln" data-t="275.841">沉睡吧吉姆餐厅沉睡呀不用牵挂</p><p class="ln" data-t="283.893">再也不会有谁让你感到钻心的痛苦</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article></div></section><section class="chapter"><h2>故事与叙事 <em>第 12–16 首 · 短篇小说式的歌</em></h2><div class="grid"><article class="song"><div class="s-head"><span class="num">12</span><span class="t">背影</span><span class="chip a2011">赵小雷 · 2011</span></div><div class="hook">天空很远，夕阳很近，顺着那条小路是你回家的方向</div><div class="note">早期作品里最像短篇小说的一首。</div><div class="lyric-wrap"><div class="player" data-pid="11" data-dur="352.960"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:53</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="13.250">我们正需要一场瓢泼的雨</p><p class="ln" data-t="19.210">来冲洗这旧日的不幸</p><p class="ln" data-t="26.280">鸟儿都飞到房檐下的新巢</p><p class="ln" data-t="32.350">淋湿的身影要归去哪里</p><p class="ln" data-t="42.940">昨日是庆幸着 为何今日要感伤</p><p class="ln" data-t="49.360">让烦恼都随雨流进下水道</p><p class="ln" data-t="56.050">只是我不能抑制自己的感伤</p><p class="ln" data-t="62.320">那就让我随波逐流去放荡</p><p class="ln" data-t="69.260">天空很远 夕阳很近</p><p class="ln" data-t="75.450">顺着那条小路是你回家的方向</p><p class="ln" data-t="81.920">那个黄昏有最温馨的晚餐和慈祥的脸庞</p><p class="ln" data-t="88.820">月亮如水 在有星星下的路口</p><p class="ln" data-t="95.110">那是迫不及待寻找已久的温柔</p><p class="ln" data-t="101.650">那个有理想的青年是多么轻松和自由</p><p class="ln" data-t="108.320">对留下的脚印 回头 挥挥手</p><p class="ln" data-t="144.800">昨日是庆幸着 为何今日要感伤</p><p class="ln" data-t="151.090">让烦恼都随雨流进下水道</p><p class="ln" data-t="157.840">只是我不能抑制自己的感伤</p><p class="ln" data-t="164.020">那就让我随波逐流去放荡</p><p class="ln" data-t="170.900">天空很远 夕阳很近</p><p class="ln" data-t="177.210">顺着那条小路是你回家的方向</p><p class="ln" data-t="183.660">那个黄昏有最温馨的晚餐和慈祥的脸庞</p><p class="ln" data-t="190.680">月亮如水 在有星星下的路口</p><p class="ln" data-t="196.630">那是迫不及待寻找已久的温柔</p><p class="ln" data-t="203.490">那个有理想的青年是多么轻松和自由</p><p class="ln" data-t="210.220">对留下的脚印 回头 挥挥手</p><p class="ln" data-t="224.370">月亮如水 在有星星下的路口</p><p class="ln" data-t="231.190">那是迫不及待寻找已久的温柔</p><p class="ln" data-t="236.870">那个有理想的青年是多么轻松和自由</p><p class="ln" data-t="243.640">对留下的脚印 回头</p><p class="ln" data-t="255.030">挥挥手</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">13</span><span class="t">玛丽</span><span class="chip a2016">无法长大 · 2016</span></div><div class="hook">（童真与离别，旋律比词更抓人）</div><div class="note">专辑里少见的柔软段落。</div><div class="lyric-wrap"><div class="player" data-pid="12" data-dur="281.980"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:42</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="6.000">电吉他 : 喜子</p><p class="ln" data-t="7.000">箱琴 : 赵雷</p><p class="ln" data-t="8.000">小号 : 王华兴</p><p class="ln" data-t="9.000">口风琴 : 祝子</p><p class="ln" data-t="10.000">MIDI : 喜子</p><p class="ln" data-t="12.000">童声 : 朵儿</p><p class="ln" data-t="28.130">飘在异乡的雪 覆盖了春天</p><p class="ln" data-t="34.700">我没能看到灿烂的时节</p><p class="ln" data-t="41.400">亲爱的玛丽 我会想念着你</p><p class="ln" data-t="48.490">我是多么的讨厌分离</p><p class="ln" data-t="55.340">加油站旁的海鸥 机场路上的松柏</p><p class="ln" data-t="62.060">挥挥手眼泪就落下来</p><p class="ln" data-t="68.980">我多想和那些光阴永远住下来</p><p class="ln" data-t="75.920">我不能 我不能</p><p class="ln" data-t="110.490">飘在黄昏的雪 覆盖了黑夜</p><p class="ln" data-t="116.860">我不想在清晨睁开眼</p><p class="ln" data-t="123.770">亲爱的玛丽 我的家乡在哭泣</p><p class="ln" data-t="130.530">没见过你的人 不懂难舍的思绪</p><p class="ln" data-t="137.850">月光守望的木屋 天使停落的窗台</p><p class="ln" data-t="144.420">欢笑声把烦心事掩盖</p><p class="ln" data-t="151.500">我多想能和你一样做一个小孩</p><p class="ln" data-t="157.980">我不能 我不能</p><p class="ln" data-t="165.620">你听日落的晚钟 填满归去的心海</p><p class="ln" data-t="171.860">等待下一个春天回来</p><p class="ln" data-t="179.160">我多想和时光一样潇洒的离开</p><p class="ln" data-t="185.810">我没能 我没能</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">14</span><span class="t">署前街少年</span><span class="chip a2022">署前街少年 · 2022</span></div><div class="hook">我是渠边偷偷抽烟枪已上了膛的少年</div><div class="note">专辑同名曲。署前街是北京房山的一条街。</div><div class="lyric-wrap"><div class="player" data-pid="13" data-dur="303.690"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:04</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="37.530">如果你到西街旅店为我带包烟</p><p class="ln" data-t="45.060">无名胡同拐进十五米是那商店</p><p class="ln" data-t="52.440">红色夕阳微微照着行乞人的脸</p><p class="ln" data-t="59.850">如果有零钱的话请全部交给他</p><p class="ln" data-t="69.030">红墙水泥地的商店配的是红瓦</p><p class="ln" data-t="76.470">柜台前的老人在和客人讲笑话</p><p class="ln" data-t="83.910">西街浴池蒸气腾腾没人想回家</p><p class="ln" data-t="91.200">怎么一下子连个人影都不见了</p><p class="ln" data-t="98.610">昊天塔下偷钱的少年已回来了</p><p class="ln" data-t="106.020">淹没膝盖的白雪它们去哪了</p><p class="ln" data-t="113.310">学校门前辍学的青年在等我吗</p><p class="ln" data-t="120.690">是否还记得我眼角上面的伤疤</p><p class="ln" data-t="128.440">呜 我不是懦夫 不想在你面前哭</p><p class="ln" data-t="142.700">呜 署前街的黄昏 只有我一个人</p><p class="ln" data-t="187.130">再次回到西街一切就像是昨天</p><p class="ln" data-t="194.580">卑微的 叛逆的 被迫蒙住了双眼</p><p class="ln" data-t="202.020">时光无法缝补那块破碎的黑板</p><p class="ln" data-t="209.370">虚荣的少年与署前街越来越远</p><p class="ln" data-t="233.970">越来越远</p><p class="ln" data-t="238.980">我的家离我越来越远</p><p class="ln" data-t="283.200">如果你到西街旅店为我带包烟</p><p class="ln" data-t="290.580">无名胡同拐进十五米是那伤…</p><p class="ln" data-t="298.980">木吉他：赵雷</p><p class="ln" data-t="299.280">电吉他：刘磊</p><p class="ln" data-t="299.860">鼓手：王斌</p><p class="ln" data-t="300.750">小号：鲁潇霖</p><p class="ln" data-t="301.040">笛子：祝子</p><p class="ln" data-t="301.330">MIDI制作：PUPU朴朴</p><p class="ln" data-t="301.920">录音师：张俊</p><p class="ln" data-t="302.220">混音师：姜北生</p><p class="ln" data-t="302.800">母带工程室：Sterling Sound</p><p class="ln" data-t="303.100">母带工程师：Randy Merrill</p><p class="ln" data-t="303.390">封面设计：韩东、小强、阿穆隆</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">15</span><span class="t">朵</span><span class="chip a2016">无法长大 · 2016</span></div><div class="hook">我多么想你能摆脱这世间给予的浮夸</div><div class="note">专辑第一首，理想化的女性形象，最后落到母亲身上。</div><div class="lyric-wrap"><div class="player" data-pid="14" data-dur="292.010"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:52</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="6.000">箱琴 : 赵雷/喜子</p><p class="ln" data-t="7.000">电吉他 : 喜子</p><p class="ln" data-t="8.000">MIDI : 喜子/赵雷/小田</p><p class="ln" data-t="39.820">五颜六色的花丛 没有一个特别喜欢的颜色</p><p class="ln" data-t="52.450">我爱天上的云朵 但我手脏不能将它触摸</p><p class="ln" data-t="64.340">许我一个女子 给我没日没夜的快活</p><p class="ln" data-t="76.670">若她只是件衣裳 那我就没有必要隐藏欲望</p><p class="ln" data-t="112.830">最美的是月亮 岁月无法改变她的模样</p><p class="ln" data-t="125.060">雨后的花儿卸去了妆 还我一张真实的脸庞</p><p class="ln" data-t="136.820">我爱这世间美貌的女子</p><p class="ln" data-t="142.900">可是她们却不是我的</p><p class="ln" data-t="148.990">我多么想你能变成我永不凋零的花朵</p><p class="ln" data-t="154.920">但时间不会让你永远的停泊</p><p class="ln" data-t="209.160">所以我爱这世间清纯的女子</p><p class="ln" data-t="215.720">可是她们的话分不清真假</p><p class="ln" data-t="221.600">我多么想你能摆脱这世间给予的浮夸</p><p class="ln" data-t="227.660">就像我母亲年轻时那样的无华</p><p class="ln" data-t="245.670">她是一个不会轻易被打动的女孩</p><p class="ln" data-t="248.760">只有洁净的人才能进入她的心怀</p><p class="ln" data-t="251.820">她住在被寂寞包围着的那片花海</p><p class="ln" data-t="254.820">我渴望能够变成一只小鸟带她离开</p><p class="ln" data-t="258.170">做个小孩做个小孩 永远不被伤害</p><p class="ln" data-t="260.760">快点长大但却不被风霜割伤脸颊</p><p class="ln" data-t="263.830">愿她在四季的多变之中自由摇摆</p><p class="ln" data-t="266.850">即使枯萎后也不会沾染世间的尘埃</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">16</span><span class="t">船长</span><span class="chip a2022">署前街少年 · 2022</span></div><div class="hook">海北的路上没有信号 / 海北的灯光比繁星亮</div><div class="note">巡演主题「没有信号」出自这里。写台湾环岛摩旅。</div><div class="lyric-wrap"><div class="player" data-pid="15" data-dur="350.930"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:51</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="8.360">请告诉我寂寞的时长</p><p class="ln" data-t="15.710">那里是否铺满花儿的香</p><p class="ln" data-t="21.670">在海上漂了很久会觉得岸上很晃</p><p class="ln" data-t="29.470">雨打湿了衣裳就适应了海水的凉</p><p class="ln" data-t="36.610">海北的路上没有信号</p><p class="ln" data-t="43.500">海北的灯光比繁星亮</p><p class="ln" data-t="50.430">海北的机车妹匆匆忙</p><p class="ln" data-t="57.530">海北的空调像是冬天一样冷得让我</p><p class="ln" data-t="63.770">缩成一只小鸟 缩成一只小鸟</p><p class="ln" data-t="70.560">可是没有人知道</p><p class="ln" data-t="73.870">我是刚刚经过暴风雨回到岸上的船长</p><p class="ln" data-t="80.800">回到岸的船长</p><p class="ln" data-t="84.260">而我却迷失方向</p><p class="ln" data-t="87.840">像是气球一样四处撞</p><p class="ln" data-t="119.710">槟榔一定配香烟才够爽</p><p class="ln" data-t="123.290">海北的男孩讲话有些娘娘腔</p><p class="ln" data-t="126.570">尽管看上去他们更强壮</p><p class="ln" data-t="130.040">但是我有胆量去征服海洋</p><p class="ln" data-t="133.830">上天没有给我华丽的皮囊</p><p class="ln" data-t="137.060">至今学不会打领结穿西装</p><p class="ln" data-t="140.760">海北没有适合我的衣裳</p><p class="ln" data-t="144.050">我喜欢光着膀子露出胸膛</p><p class="ln" data-t="147.770">吃饱的乌鸦在叫</p><p class="ln" data-t="151.100">迟到的学生在跑</p><p class="ln" data-t="154.880">妩媚的夜让我想念我的船和那些被雨淋湿的海鸟</p><p class="ln" data-t="161.650">哭泣的乌云在飘</p><p class="ln" data-t="165.320">沉默的大地在摇</p><p class="ln" data-t="168.860">我开始习惯热流里涌来的爆米花味道</p><p class="ln" data-t="203.770">我的心总有一些问号</p><p class="ln" data-t="207.240">我的心总有一些孤傲</p><p class="ln" data-t="210.600">我的心总有一些潦倒</p><p class="ln" data-t="213.160">但从来没有任何事能把我困扰</p><p class="ln" data-t="217.530">我的心总有一些荒谬</p><p class="ln" data-t="221.060">我的心总有一些寂寥</p><p class="ln" data-t="224.520">我的心总有一些征兆</p><p class="ln" data-t="227.740">所以我停靠海北</p><p class="ln" data-t="233.540">来到海北 在海北</p><p class="ln" data-t="241.320">这里的人也会因为爱情喝得烂醉</p><p class="ln" data-t="246.750">一样拥挤的海北</p><p class="ln" data-t="250.640">璀璨的海北</p><p class="ln" data-t="254.860">哦 baby</p><p class="ln" data-t="256.880">我无法入睡</p><p class="ln" data-t="347.490">打击乐：刘恒、Chris Trzcinski</p><p class="ln" data-t="347.800">Organ：赵二</p><p class="ln" data-t="348.110">口风琴：祝子</p><p class="ln" data-t="348.730">录音师：张俊</p><p class="ln" data-t="349.050">混音师：时俊峰</p><p class="ln" data-t="349.670">录音助理：陈彬彬、朱莉</p><p class="ln" data-t="349.980">母带工程室：Sterling Sound</p><p class="ln" data-t="350.290">母带工程师：Randy Merrill</p><p class="ln" data-t="350.610">封面设计：韩东、小强、阿穆隆</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article></div></section><section class="chapter"><h2>时代与回响 <em>第 17–24 首 · 理想、成长与旧时光</em></h2><div class="grid"><article class="song"><div class="s-head"><span class="num">17</span><span class="t">彩虹下面</span><span class="chip asin">单曲 · 2018</span></div><div class="hook">继续走吧，再快一点 / 那些神奇的歌声在把我召唤</div><div class="note">电影《西虹市首富》推广曲。</div><div class="lyric-wrap"><div class="player" data-pid="16" data-dur="282.880"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:43</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="45.060">黄昏淹没倒影中的桅杆</p><p class="ln" data-t="50.410">夕阳目送我离开岸</p><p class="ln" data-t="55.980">经过了乌云孩子般的天</p><p class="ln" data-t="61.550">看到了月亮的笑脸</p><p class="ln" data-t="67.220">那是船才能开向的天边</p><p class="ln" data-t="72.710">阳光把冬天晒的很暖</p><p class="ln" data-t="78.270">经过了冰川再次扬起帆</p><p class="ln" data-t="83.840">歌声就在彩虹的下面</p><p class="ln" data-t="88.470">继续走吧再快一点</p><p class="ln" data-t="93.730">热情的土著人已经把篝火点燃</p><p class="ln" data-t="99.640">继续走吧挥动衬衫</p><p class="ln" data-t="105.630">那些神奇的歌声在把我召唤</p><p class="ln" data-t="134.250">这里有与世无争的笑颜</p><p class="ln" data-t="139.720">娇艳的花开满山间</p><p class="ln" data-t="145.360">雨后山谷里传来一首歌</p><p class="ln" data-t="150.800">歌词的意思是这样的</p><p class="ln" data-t="159.000">最美不过头顶彩虹的村庄</p><p class="ln" data-t="164.350">彩虹下的歌声笑语中嘹亮</p><p class="ln" data-t="170.150">拉起低下头抿嘴笑的姑娘</p><p class="ln" data-t="175.470">编一支花环为她戴在头上</p><p class="ln" data-t="181.260">喝掉杯中的酒暖一暖心房</p><p class="ln" data-t="186.710">趁着年轻的火焰烧的正旺</p><p class="ln" data-t="192.380">晚霞里的风已吹干了衣裳</p><p class="ln" data-t="197.620">彩虹下的人不会迷失方向</p><p class="ln" data-t="202.700">歌声悠悠鼓声激荡</p><p class="ln" data-t="208.280">跳舞的姑娘牙齿白的像月光</p><p class="ln" data-t="213.680">烧肉飘香晚风清爽</p><p class="ln" data-t="220.190">不知不觉人们就唱到了天亮</p><p class="ln" data-t="259.880">经过了冰川再次扬起帆</p><p class="ln" data-t="266.120">歌声就在彩虹的下面</p><p class="ln" data-t="277.680">打击乐：小黑</p><p class="ln" data-t="280.680">手风琴：齐静</p><p class="ln" data-t="281.680">笛子/口琴/口弦：祝子</p><p class="ln" data-t="282.680">合声：路默依 赵雷</p><p class="ln" data-t="285.680">录音棚：S.A.G</p><p class="ln" data-t="287.680">感谢：王旭东 肖兵</p><p class="ln" data-t="288.680">企划营销：奔跑怪物</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">18</span><span class="t">无法长大</span><span class="chip a2016">无法长大 · 2016</span></div><div class="hook">时光拿走了你的美丽，岁月带走了我的脾气</div><div class="note">专辑原想叫《阿刁》/《朵》，最后落回《无法长大》。</div><div class="lyric-wrap"><div class="player" data-pid="17" data-dur="287.870"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:48</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="17.240">我知道 我做的不对</p><p class="ln" data-t="21.140">我总是喜欢说说</p><p class="ln" data-t="25.130">对不起 我欠你太多的怀抱</p><p class="ln" data-t="33.420">总是觉得工作太忙</p><p class="ln" data-t="37.280">常常被冷眼灼伤</p><p class="ln" data-t="41.380">对不起 总是让你受委屈</p><p class="ln" data-t="49.590">人和人总是有差距</p><p class="ln" data-t="57.730">日子里总要遇难题</p><p class="ln" data-t="65.970">总是盼望太多 最后如不如意都被时间浇熄</p><p class="ln" data-t="73.140">哦 Baby 你说你不是很在意</p><p class="ln" data-t="82.280">多想和你游遍世界</p><p class="ln" data-t="85.290">那样活着才有意义</p><p class="ln" data-t="90.280">我知道你和我都不喜欢逃避</p><p class="ln" data-t="98.500">时光拿走了你的美丽</p><p class="ln" data-t="102.460">岁月带走了我的脾气</p><p class="ln" data-t="106.410">对不起 我还欠你一场婚礼</p><p class="ln" data-t="114.790">说着说着 我又开始不切实际</p><p class="ln" data-t="122.930">说着说着 我就醉在了你的怀里</p><p class="ln" data-t="131.070">三十岁的眼泪还流有青春余味</p><p class="ln" data-t="139.060">爱情是否能解除生活的狼狈</p><p class="ln" data-t="147.280">别要求太多 学着时间一样洒脱</p><p class="ln" data-t="154.490">哦 Baby 我性格不是这样的</p><p class="ln" data-t="163.610">婚姻会不会让我们感到乏味</p><p class="ln" data-t="171.690">那么就这样 不去理睬这浮躁的社会</p><p class="ln" data-t="179.870">既然无法长大 那就不要学着别人去挣扎</p><p class="ln" data-t="186.820">哦 Baby 但愿我们能相随</p><p class="ln" data-t="196.120">既然无法长大 那就不要学着别人去挣扎</p><p class="ln" data-t="203.130">哦 Baby 但愿我们能相随</p><p class="ln" data-t="257.320">我知道我做的不对</p><p class="ln" data-t="261.460">我只是有些疲惫</p><p class="ln" data-t="265.410">哦 Baby 别留我一个人睡</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">19</span><span class="t">理想</span><span class="chip a2014">吉姆餐厅 · 2014</span></div><div class="hook">理想今年你几岁 / 理想永远都年轻，你让我倔强地反抗着命运</div><div class="note">北漂共鸣曲。2017《歌手》舞台唱过。</div><div class="lyric-wrap"><div class="player" data-pid="18" data-dur="313.910"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:14</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="35.170">一个人住在这城市</p><p class="ln" data-t="38.310">为了填饱肚子就已精疲力尽</p><p class="ln" data-t="42.690">还谈什么理想</p><p class="ln" data-t="45.670">那是我们的美梦</p><p class="ln" data-t="52.030">梦醒后 还是依然奔波在风雨的街头</p><p class="ln" data-t="59.100">有时候想哭就把泪 咽进一腔热血的胸口</p><p class="ln" data-t="68.940">公车上我睡过了车站</p><p class="ln" data-t="77.410">一路上我望着霓虹的北京</p><p class="ln" data-t="85.830">我的理想把我丢在这个拥挤的人潮</p><p class="ln" data-t="92.740">车窗外已经是一片白雪茫茫</p><p class="ln" data-t="100.710">又一个四季在轮回</p><p class="ln" data-t="104.450">而我一无所获地坐在街头</p><p class="ln" data-t="109.430">只有理想在支撑着那些麻木的血肉</p><p class="ln" data-t="117.260">理想今年你几岁</p><p class="ln" data-t="121.690">你总是诱惑着年轻的朋友</p><p class="ln" data-t="126.560">你总是谢了又开 给我惊喜</p><p class="ln" data-t="130.220">又让我沉入失望的生活里</p><p class="ln" data-t="176.190">公车上我睡过了车站</p><p class="ln" data-t="184.600">一路上我望着霓虹的北京</p><p class="ln" data-t="193.080">我的理想把我丢在这个拥挤的人潮</p><p class="ln" data-t="200.160">车窗外已经是一片白雪茫茫</p><p class="ln" data-t="208.350">又一个四季在轮回</p><p class="ln" data-t="211.910">而我一无所获的坐在街头</p><p class="ln" data-t="216.750">只有理想在支撑着那些麻木的血肉</p><p class="ln" data-t="224.540">理想今年你几岁</p><p class="ln" data-t="229.120">你总是诱惑着年轻的朋友</p><p class="ln" data-t="233.870">你总是谢了又开 给我惊喜</p><p class="ln" data-t="237.610">又让我沉入失望的生活里</p><p class="ln" data-t="241.940">又一个年代在变换</p><p class="ln" data-t="245.690">我已不是无悔的那个青年</p><p class="ln" data-t="250.200">青春被时光抛弃</p><p class="ln" data-t="253.830">已是当父亲的年纪</p><p class="ln" data-t="258.370">理想永远都年轻</p><p class="ln" data-t="262.970">你让我倔强地反抗着命运</p><p class="ln" data-t="267.590">你让我变得苍白</p><p class="ln" data-t="269.670">却依然天真的相信花儿会再次的盛开</p><p class="ln" data-t="288.020">阳光之中 到处可见奔忙的人们</p><p class="ln" data-t="296.120">被拥挤着 被一晃而飞的光阴忽略过</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song warn"><div class="s-head"><span class="num">20</span><span class="t">难受</span><span class="chip asin">早期作品</span></div><div class="hook">我的生活不能再重复着寂寞，要升起一把火</div><div class="note">2010《快乐男声》50 进 35 原创；2016 部分平台下架。</div><div class="lyric-wrap"><div class="player" data-pid="19" data-dur="298.000"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:58</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="10.280">我的心像是今天的天气突然阴了下去</p><p class="ln" data-t="20.550">我搭一辆零路的公共汽车随便他去哪里</p><p class="ln" data-t="30.830">无所谓是让我见到漂亮还是让我恶心的风景</p><p class="ln" data-t="41.100">有所谓的只是我自己</p><p class="ln" data-t="51.380">还有我可怕的情绪</p><p class="ln" data-t="61.660">天上的星星如果不亮了要从何找原因</p><p class="ln" data-t="71.930">我的心儿就像是一块石头</p><p class="ln" data-t="82.210">他沉寂在午夜里</p><p class="ln" data-t="92.480">我现在想想要是开始放肆</p><p class="ln" data-t="102.760">是不是有点违心</p><p class="ln" data-t="113.030">可是我不打开窗户滴话</p><p class="ln" data-t="123.310">我就呼吸不到新鲜的空气</p><p class="ln" data-t="133.590">太阳它起又落</p><p class="ln" data-t="143.860">脚下不停的是列车</p><p class="ln" data-t="154.140">姑娘她坐在华丽的轿车里</p><p class="ln" data-t="164.410">抬起头炫耀着</p><p class="ln" data-t="174.690">我的生活不能再重复着寂寞</p><p class="ln" data-t="184.970">要升起一把火</p><p class="ln" data-t="195.240">此时我真想捧起你的奶子</p><p class="ln" data-t="205.520">它是什么味道的</p><p class="ln" data-t="215.790">无所谓的态度去对待着结果</p><p class="ln" data-t="226.070">我就不必难过</p><p class="ln" data-t="236.340">看一看身上我的衣装</p><p class="ln" data-t="246.620">还有几分姿色</p><p class="ln" data-t="256.900">得不到想要的</p><p class="ln" data-t="267.170">失去的走远了</p><p class="ln" data-t="277.450">叔叔你别哭你看看孩子</p><p class="ln" data-t="287.720">是怎么得到的快乐</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">21</span><span class="t">小屋</span><span class="chip a2014">吉姆餐厅 · 2014</span></div><div class="hook">只有你小屋，让我觉得舒服 / 只有你小屋，里面装满了宽恕</div><div class="note">十几平米出租屋的自白。</div><div class="lyric-wrap"><div class="player" data-pid="20" data-dur="371.280"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 6:11</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="19.330">我的小屋</p><p class="ln" data-t="36.332">我的小屋不贵的房租柜子上面摆着很多电影和书</p><p class="ln" data-t="47.253">我的小屋在星星下面在城市的楼群之间</p><p class="ln" data-t="58.630">我的小屋门外有棵大树风儿吹着树叶敲打我的窗户</p><p class="ln" data-t="68.270">我的小屋如果我要离开请你不要哭</p><p class="ln" data-t="78.967">我的小屋我喜欢给你唱歌我喜欢坐在门外看日落日出</p><p class="ln" data-t="89.869">我的小屋我可以光着屁股让你看到我的肌肉和肋骨</p><p class="ln" data-t="100.319">我的小屋不用和他们一样累的时候我不用去故作笑容</p><p class="ln" data-t="110.571">我的小屋黑夜里的眼睛望着我的全部</p><p class="ln" data-t="121.802">我的小屋已经上了岁数门上的油漆已经看不清楚</p><p class="ln" data-t="132.503">小屋你可感到我来去的脚步在你心脏里我躲不去孤独</p><p class="ln" data-t="142.253">只有你小屋我觉得舒服</p><p class="ln" data-t="152.869">只有你小屋你装满了宽恕</p><p class="ln" data-t="212.211">我的小屋我喜欢给你唱歌我喜欢坐在门外看日落日出</p><p class="ln" data-t="223.068">我的小屋我可以光着屁股让你看到我的肌肉和肋骨</p><p class="ln" data-t="233.519">我的小屋不用和他们一样累的时候我不用去故作笑容</p><p class="ln" data-t="244.282">我的小屋黑夜里的眼睛望着我的全部</p><p class="ln" data-t="254.932">我的小屋已经上了岁数门上的油漆已经看不清楚</p><p class="ln" data-t="265.387">小屋你可感到我来去的脚步在你心脏里我躲不去孤独</p><p class="ln" data-t="275.588">只有你小屋我觉得舒服</p><p class="ln" data-t="286.317">只有你小屋里面装满了宽恕</p><p class="ln" data-t="297.419">我的小屋已经上了岁数门上的油漆已经看不清楚</p><p class="ln" data-t="308.171">小屋你可感到我来去的脚步在你心脏里我躲不去孤独</p><p class="ln" data-t="318.323">只有你小屋我觉得舒服</p><p class="ln" data-t="328.955">只有你小屋里面装满了宽恕装满了宽恕</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song warn"><div class="s-head"><span class="num">22</span><span class="t">咬春</span><span class="chip a2011">赵小雷 · 2011</span></div><div class="hook">那好吧我就再等上一等，等到冰化枝芽绿</div><div class="note">2007 川藏云南路上写。2015 曾被列入网络音乐管理黑名单。</div><div class="lyric-wrap"><div class="player" data-pid="21" data-dur="270.000"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:30</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="10.380">大风都感动了街市的大树</p><p class="ln" data-t="20.770">轻飘飘的我怎能不动摇</p><p class="ln" data-t="31.150">悠悠的松弛我紧绷的身躯</p><p class="ln" data-t="41.540">给我你的柔情和甜蜜</p><p class="ln" data-t="51.920">月历和人们的嘴里报的春</p><p class="ln" data-t="62.310">连个影子都没相遇</p><p class="ln" data-t="72.690">那好吧我就再等上一等</p><p class="ln" data-t="83.080">等到冰化枝芽绿</p><p class="ln" data-t="93.460">哦 哦 哦 别把心关在你的房子里</p><p class="ln" data-t="103.850">哦 哦 哦 在那些无所谓的时间里</p><p class="ln" data-t="114.230">那月历和人们的嘴里报的春</p><p class="ln" data-t="124.620">连个影子都没相遇</p><p class="ln" data-t="135.000">那好吧我就再等上一等</p><p class="ln" data-t="145.380">等到冰化枝芽绿</p><p class="ln" data-t="155.770">那月历和人们的嘴里报的春</p><p class="ln" data-t="166.150">连个影子都没相遇</p><p class="ln" data-t="176.540">那好吧我就再等上一等</p><p class="ln" data-t="186.920">等到冰化枝芽绿</p><p class="ln" data-t="197.310">哦 哦 哦 别把时间浪费在你的被窝里</p><p class="ln" data-t="207.690">哦 哦 哦 在那些等待却错过的清晨里</p><p class="ln" data-t="218.080">无聊的夜里有收音机</p><p class="ln" data-t="228.460">还有高跟鞋走来走去</p><p class="ln" data-t="238.850">在吱吱作响的大床上</p><p class="ln" data-t="249.230">谁又压的谁喘不过气</p><p class="ln" data-t="259.620">哦 哦 哦</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">23</span><span class="t">画</span><span class="chip a2011">赵小雷 · 2011</span></div><div class="hook">为寂寞的夜空画上一个月亮</div><div class="note">2014《中国好歌曲》被刘欢选中。</div><div class="lyric-wrap"><div class="player" data-pid="22" data-dur="228.130"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 3:48</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="26.340">为寂寞的夜空画上一个月亮</p><p class="ln" data-t="31.650">把我画在那月亮下面歌唱</p><p class="ln" data-t="36.790">为冷清的房子画上一扇大窗</p><p class="ln" data-t="42.140">再画上一张床</p><p class="ln" data-t="47.120">画一个姑娘陪着我</p><p class="ln" data-t="52.580">再画个花边的被窝</p><p class="ln" data-t="57.840">画上灶炉与柴火</p><p class="ln" data-t="63.020">我们一起生来一起活</p><p class="ln" data-t="89.110">画一群鸟儿围着我</p><p class="ln" data-t="94.300">再画上绿岭和青坡</p><p class="ln" data-t="99.550">画上宁静与祥和</p><p class="ln" data-t="104.690">雨点儿在稻田上飘落</p><p class="ln" data-t="109.970">画上有你能用手触到的彩虹</p><p class="ln" data-t="115.090">画中有我决定不灭的星空</p><p class="ln" data-t="120.090">画上弯曲无尽平坦的小路</p><p class="ln" data-t="125.320">尽头的人家梦已入</p><p class="ln" data-t="131.010">画上母亲安详的姿势</p><p class="ln" data-t="135.960">还有橡皮能擦去的争执</p><p class="ln" data-t="141.140">画上四季都不愁的粮食</p><p class="ln" data-t="146.260">悠闲的人从没心事</p><p class="ln" data-t="193.290">我没有擦去争吵的橡皮</p><p class="ln" data-t="198.450">只有一支画着孤独的笔</p><p class="ln" data-t="203.720">那夜空的月也不再亮</p><p class="ln" data-t="208.990">只有个忧郁的孩子在唱</p><p class="ln" data-t="214.170">为寂寞的夜空画上一个月亮</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">24</span><span class="t">未给姐姐递出的信</span><span class="chip a2011">赵小雷 · 2011</span></div><div class="hook">姐姐若能看到我这边的月亮该多好</div><div class="note">一封没寄出的家书，结尾念了一串日期。</div><div class="lyric-wrap"><div class="player" data-pid="23" data-dur="310.960"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:11</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="15.729">姐姐若能看到我这边的月亮该多好</p><p class="ln" data-t="23.600">我就住在月亮笑容下面的小街道</p><p class="ln" data-t="31.349">我的邻女清早起床总是会大喊大叫</p><p class="ln" data-t="39.049">每当不高兴的时候</p><p class="ln" data-t="41.299">就出去晒一晒太阳</p><p class="ln" data-t="47.099">我这边每到黄昏的时候</p><p class="ln" data-t="49.790">就开始刮起风了</p><p class="ln" data-t="54.359">但那些放了学不回家的孩子们正玩得热闹</p><p class="ln" data-t="62.699">鼓楼这边的人和车</p><p class="ln" data-t="64.619">比前两年多了很多</p><p class="ln" data-t="70.679">我很少出门偶尔发现过去的景色不见了</p><p class="ln" data-t="78.199">姐姐我这边的一切总的来说还算如意</p><p class="ln" data-t="86.199">你应该很了解我就是个孩子的脾气</p><p class="ln" data-t="93.830">最近我失去了爱情</p><p class="ln" data-t="95.699">生活一下子变得冷清</p><p class="ln" data-t="101.790">可是姐姐你不必为我担心</p><p class="ln" data-t="125.020">姐姐你那边的天空是不是</p><p class="ln" data-t="128.099">总有太阳高照</p><p class="ln" data-t="132.660">老外们总是笑着接吻拥抱</p><p class="ln" data-t="136.100">看上去很友好</p><p class="ln" data-t="140.780">你已经是两个小伙子心中</p><p class="ln" data-t="143.800">最美丽的母亲</p><p class="ln" data-t="148.660">在家庭的争纷之后</p><p class="ln" data-t="150.660">你是先让步的贤妻</p><p class="ln" data-t="156.090">姐姐如果感到疲惫</p><p class="ln" data-t="158.500">的时候去海边静一静</p><p class="ln" data-t="163.970">我也特别希望有天</p><p class="ln" data-t="165.910">你能回来定居在北京</p><p class="ln" data-t="171.660">我知道有一些烦恼</p><p class="ln" data-t="173.720">你不愿在电话里和我讲起</p><p class="ln" data-t="179.280">你会说Don&#x27;t worry</p><p class="ln" data-t="181.220">傻傻一笑说一切会好</p><p class="ln" data-t="190.910">一切会好</p><p class="ln" data-t="199.100">一切会好</p><p class="ln" data-t="211.060">姐姐我这边的一切总的来说还算如意</p><p class="ln" data-t="218.870">你应该很了解我就是个孩子的脾气</p><p class="ln" data-t="226.390">最近我失去了爱情</p><p class="ln" data-t="228.600">生活一下子变得冷清</p><p class="ln" data-t="234.070">可是姐姐你不必为我担心</p><p class="ln" data-t="241.630">姐姐如果感到疲惫</p><p class="ln" data-t="244.200">的时候去海边静一静</p><p class="ln" data-t="249.890">我也特别希望有天</p><p class="ln" data-t="251.890">你能回来定居在北京</p><p class="ln" data-t="257.900">我知道有一些烦恼</p><p class="ln" data-t="259.700">你不愿在电话里和我讲起</p><p class="ln" data-t="265.130">你会说Don&#x27;t worry</p><p class="ln" data-t="267.060">傻傻一笑说一切会好</p><p class="ln" data-t="276.500">一切会好</p><p class="ln" data-t="283.240">二零一零年十月</p><p class="ln" data-t="287.170">二零一零年十二月</p><p class="ln" data-t="291.600">二零一一年一月</p><p class="ln" data-t="296.280">二零一一年二月</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article></div></section><section class="chapter"><h2>合唱与返场 <em>第 25–31 首 · 全场大合唱区</em></h2><div class="grid"><article class="song"><div class="s-head"><span class="num">25</span><span class="t">人家</span><span class="chip a2011">赵小雷 · 2011</span></div><div class="hook">而我只是一个穷小子 / 我只不过是一个唱歌的孩子</div><div class="note">之后接乐手介绍 + 儿歌串烧。</div><div class="lyric-wrap"><div class="player" data-pid="24" data-dur="323.370"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:23</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="16.900">人家有车</p><p class="ln" data-t="19.709">人家有房</p><p class="ln" data-t="23.860">人家有大批的存款入到账</p><p class="ln" data-t="29.999">人家是花</p><p class="ln" data-t="34.890">人家是公主</p><p class="ln" data-t="37.669">人家不能受委屈 和你一起吃苦</p><p class="ln" data-t="58.569">人家的父母</p><p class="ln" data-t="61.598">是公司的干部</p><p class="ln" data-t="65.419">人家的一句话 是你几年的辛苦</p><p class="ln" data-t="72.469">人家是什么</p><p class="ln" data-t="76.219">我又算什么</p><p class="ln" data-t="79.479">我只能坐在街边沉默的妄想着</p><p class="ln" data-t="88.209">而我只是一个穷小子</p><p class="ln" data-t="95.190">生活简单的就像是一块石子</p><p class="ln" data-t="102.590">我只不过是一个唱歌的孩子</p><p class="ln" data-t="109.999">只要能填饱我的肚子</p><p class="ln" data-t="116.190">我家的车是一辆老旧的二八车</p><p class="ln" data-t="122.999">蹬起来有劲 坐上去潇洒</p><p class="ln" data-t="130.399">我租来的房子 只有十四五平米大</p><p class="ln" data-t="136.899">用花布装饰的墙 特别温馨特别暖</p><p class="ln" data-t="145.499">人家和我不是一路货色</p><p class="ln" data-t="152.499">我该放弃对美梦的拥有和执着</p><p class="ln" data-t="159.289">酸甜苦辣独享其中的快活</p><p class="ln" data-t="165.689">只要家人健康平安的活着</p><p class="ln" data-t="200.989">而我只是一个穷小子</p><p class="ln" data-t="208.499">生活简单的就像是一块石子</p><p class="ln" data-t="214.459">我只不过是一个唱歌的孩子</p><p class="ln" data-t="221.959">只要能填饱我的肚子</p><p class="ln" data-t="228.969">人家和我不是一路货色</p><p class="ln" data-t="235.928">我该放弃对美梦的拥有和执着</p><p class="ln" data-t="242.809">酸甜苦辣独享其中的快活</p><p class="ln" data-t="249.429">只要家人健康平安的活着</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">26</span><span class="t">我们的时光</span><span class="chip a2014">吉姆餐厅 · 2014</span></div><div class="hook">那些路上的脚印，永远不会被掩藏</div><div class="note">写厦门，骑行巡演时期热血曲。</div><div class="lyric-wrap"><div class="player" data-pid="25" data-dur="270.750"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:31</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="32.900">头顶的太阳燃烧着青春的余热</p><p class="ln" data-t="38.900">它从来不会放弃照耀着我们行进</p><p class="ln" data-t="44.400">寒冬不经过这里那只是迷雾的山林</p><p class="ln" data-t="49.700">走完苍老的石桥感到潮湿的味道</p><p class="ln" data-t="55.900">翻过了青山你说你看头顶斗笠的人们</p><p class="ln" data-t="61.899">海风拂过椰树吹散一路的风尘</p><p class="ln" data-t="66.700">这里就像与闹市隔绝的又一个世界</p><p class="ln" data-t="72.799">让我们疲倦的身体在这里长久地停歇</p><p class="ln" data-t="101.700">翻过了青山你说你看头顶斗笠的人们</p><p class="ln" data-t="106.799">海风拂过椰树吹散一路的风尘</p><p class="ln" data-t="112.799">这里就像与闹市隔绝的又一个世界</p><p class="ln" data-t="118.799">让我们疲倦的身体在这里长久地停歇</p><p class="ln" data-t="124.400">厦门的时光是我们的时光</p><p class="ln" data-t="130.399">大海的波浪翻滚着我们的向往</p><p class="ln" data-t="135.899">山谷里何时会再传来我们的歌声</p><p class="ln" data-t="141.399">那一些欢笑已过去那些往昔会铭记</p><p class="ln" data-t="147.399">我们的时光是无忧的时光</p><p class="ln" data-t="152.699">精彩的年月不会被什么改写</p><p class="ln" data-t="158.799">放纵的笑语时常回荡在我们耳旁</p><p class="ln" data-t="163.699">那些路上的脚印永远不会被掩藏</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">27</span><span class="t">鼓楼</span><span class="chip a2016">无法长大 · 2016</span></div><div class="hook">我走在鼓楼下面，路在堵着 / 我是个沉默不语的靠着墙壁晒太阳的过客</div><div class="note">107 路、什刹海、后海都在词里。</div><div class="lyric-wrap"><div class="player" data-pid="26" data-dur="281.000"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 4:41</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="6.000">箱琴 : 赵雷</p><p class="ln" data-t="7.000">口琴 : 赵雷</p><p class="ln" data-t="8.000">MIDI : 喜子</p><p class="ln" data-t="25.600">我走在鼓楼下面 路在堵着</p><p class="ln" data-t="33.790">雨后的阳光散落 人们都出来了</p><p class="ln" data-t="41.780">执着的迷惘的文艺青年很多</p><p class="ln" data-t="49.970">如果我无聊了就会来这里坐坐</p><p class="ln" data-t="57.920">我是个沉默不语的靠着墙壁晒太阳的过客</p><p class="ln" data-t="66.070">如果我有些倦意了 就让我在这里独自醒过</p><p class="ln" data-t="75.260">我站在鼓楼上面 一切繁华与我无关</p><p class="ln" data-t="82.790">这是个拥挤的地方  而我却很平凡</p><p class="ln" data-t="106.900">我走在鼓楼下面 淋湿的咖啡馆</p><p class="ln" data-t="114.960">睡不着的后海边 月亮还在抽着烟</p><p class="ln" data-t="123.150">喝醉的亲吻着 快活的人不眠</p><p class="ln" data-t="131.250">唯有我倚着围栏 对过往说晚安</p><p class="ln" data-t="171.880">我是个沉默不语的靠着车窗想念你的乘客</p><p class="ln" data-t="179.890">当107路再次经过 时间是带走青春的电车</p><p class="ln" data-t="189.070">我站在什刹海边一切甜蜜与我无关</p><p class="ln" data-t="196.550">这是个拥挤的地方 而我却很孤单</p><p class="ln" data-t="204.250">我在鼓楼 我在鼓楼</p><p class="ln" data-t="212.270">我在鼓楼</p><p class="ln" data-t="220.270">我在鼓楼 我在鼓楼</p><p class="ln" data-t="228.340">我在鼓楼</p><p class="ln" data-t="276.002">电琴：喜子</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">28</span><span class="t">成都</span><span class="chip a2016">无法长大 · 2016</span></div><div class="hook">和我在成都的街头走一走 / 分别总是在九月，回忆是思念的愁</div><div class="note">全场大合唱保留曲目。</div><div class="lyric-wrap"><div class="player" data-pid="27" data-dur="328.360"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:28</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="18.744">让我掉下眼泪的</p><p class="ln" data-t="22.138">不止昨夜的酒</p><p class="ln" data-t="26.187">让我依依不舍的</p><p class="ln" data-t="30.218">不止你的温柔</p><p class="ln" data-t="34.185">余路还要走多久</p><p class="ln" data-t="38.218">你攥着我的手</p><p class="ln" data-t="42.176">让我感到为难的</p><p class="ln" data-t="45.984">是挣扎的自由</p><p class="ln" data-t="52.186">分别总是在九月</p><p class="ln" data-t="55.935">回忆是思念的愁</p><p class="ln" data-t="59.878">深秋嫩绿的垂柳</p><p class="ln" data-t="63.802">亲吻着我额头</p><p class="ln" data-t="67.696">在那座阴雨的小城里</p><p class="ln" data-t="71.835">我从未忘记你</p><p class="ln" data-t="75.877">成都 带不走的 只有你</p><p class="ln" data-t="83.740">和我在成都的街头走一走</p><p class="ln" data-t="91.721">直到所有的灯都熄灭了也不停留</p><p class="ln" data-t="99.451">你会挽着我的衣袖</p><p class="ln" data-t="103.392">我会把手揣进裤兜</p><p class="ln" data-t="107.297">走到玉林路的尽头</p><p class="ln" data-t="111.364">坐在小酒馆的门口</p><p class="ln" data-t="151.189">分别总是在九月</p><p class="ln" data-t="154.726">回忆是思念的愁</p><p class="ln" data-t="158.523">深秋嫩绿的垂柳</p><p class="ln" data-t="162.552">亲吻着我额头</p><p class="ln" data-t="166.530">在那座阴雨的小城里</p><p class="ln" data-t="170.650">我从未忘记你</p><p class="ln" data-t="174.459">成都 带不走的 只有你</p><p class="ln" data-t="182.260">和我在成都的街头走一走</p><p class="ln" data-t="190.433">直到所有的灯都熄灭了也不停留</p><p class="ln" data-t="198.294">你会挽着我的衣袖</p><p class="ln" data-t="202.022">我会把手揣进裤兜</p><p class="ln" data-t="206.142">走到玉林路的尽头</p><p class="ln" data-t="210.164">坐在小酒馆的门口</p><p class="ln" data-t="218.409">和我在成都的街头走一走</p><p class="ln" data-t="226.065">直到所有的灯都熄灭了也不停留</p><p class="ln" data-t="234.019">和我在成都的街头走一走</p><p class="ln" data-t="241.809">直到所有的灯都熄灭了也不停留</p><p class="ln" data-t="249.659">你会挽着我的衣袖</p><p class="ln" data-t="253.564">我会把手揣进裤兜</p><p class="ln" data-t="257.530">走到玉林路的尽头</p><p class="ln" data-t="261.581">走过小酒馆的门口</p><p class="ln" data-t="276.177">和我在成都的街头走一走</p><p class="ln" data-t="283.454">直到所有的灯都熄灭了也不停留</p><p class="ln" data-t="325.027">箱琴 : 赵雷/喜子</p><p class="ln" data-t="325.582">笛子 : 祝子</p><p class="ln" data-t="327.802">童声 : 朵朵/天天</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">29</span><span class="t">程艾影</span><span class="chip a2022">署前街少年 · 2022</span></div><div class="hook">漫山遍野你的脸庞，唯有遗忘是最漫长</div><div class="note">借胡兰成与张爱玲故事写旧时代爱情。</div><div class="lyric-wrap"><div class="player" data-pid="28" data-dur="300.390"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:00</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="41.830">伍岚正和程艾影从上海到武汉</p><p class="ln" data-t="49.600">他们要坐十天马车三天两夜的轮船</p><p class="ln" data-t="60.780">泥路上艾影含着糖靠着岚正的肩膀</p><p class="ln" data-t="68.520">马车经过村庄 石路颠簸不渝的情肠</p><p class="ln" data-t="76.670">一路望 跌跌撞 午夜流星何去何往</p><p class="ln" data-t="85.060">路海长 青夜旷 越过群山追斜阳</p><p class="ln" data-t="111.430">拨开面纱回望故乡 只见潮湿的月亮</p><p class="ln" data-t="119.170">雨水冲不掉常德路上爬满蛛网的门窗</p><p class="ln" data-t="128.030">梦里回到他的身旁 蜜语中风不再凉</p><p class="ln" data-t="135.810">永远都像初次见你那样 使我心荡漾</p><p class="ln" data-t="143.700">没有奇迹 没有惊喜 尘埃里花不会哭泣</p><p class="ln" data-t="152.330">没有质疑 没有道理 褶皱的信乘飞雨</p><p class="ln" data-t="178.070">一路望 跌跌撞 午夜流星何去何往</p><p class="ln" data-t="186.070">路海长 青夜旷 越过群山追斜阳</p><p class="ln" data-t="194.580">没有奇迹 没有惊喜 尘埃里花不会哭泣</p><p class="ln" data-t="202.700">没有质疑 没有道理 褶皱的信乘飞雨</p><p class="ln" data-t="252.200">漫山遍野你的脸庞 唯有遗忘是最漫长</p><p class="ln" data-t="260.130">这是一条必经的路 没有指引出口的光</p><p class="ln" data-t="295.630">木吉他：赵雷</p><p class="ln" data-t="295.870">电吉他：董长跃</p><p class="ln" data-t="296.100">木吉他SOLO：PUPU朴朴</p><p class="ln" data-t="296.820">Double Bass：大中</p><p class="ln" data-t="297.060">大提琴：张乃文</p><p class="ln" data-t="297.290">打击乐：Chris Trzcinski</p><p class="ln" data-t="297.530">合成器：赵二</p><p class="ln" data-t="297.770">采样：PUPU朴朴</p><p class="ln" data-t="298.010">笛子：祝子</p><p class="ln" data-t="298.250">口琴：赵雷</p><p class="ln" data-t="298.720">录音师：张俊</p><p class="ln" data-t="298.960">混音师：姜北生</p><p class="ln" data-t="299.440">录音助理：陈彬彬、朱莉</p><p class="ln" data-t="299.670">母带工程室：Sterling Sound</p><p class="ln" data-t="299.910">母带工程师：Randy Merrill</p><p class="ln" data-t="300.150">封面设计：韩东、小强、阿穆隆</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song"><div class="s-head"><span class="num">30</span><span class="t">我记得 + 送别</span><span class="chip a2022">署前街少年 · 2022</span></div><div class="hook">我带着比身体重的行李，游入尼罗河底 / 长亭外，古道边，芳草碧连天</div><div class="note">两首连唱。《我记得》写给母亲；《送别》李叔同词，现场收束。</div><div class="lyric-wrap"><h4 class="lt">我记得</h4><div class="player" data-pid="29" data-dur="329.890"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 5:30</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="28.150">我带着比身体重的行李 游入尼罗河底  经过几道闪电  看到一堆光圈 不确定是不是这里</p><p class="ln" data-t="41.780">我看到几个人站在一起 他们拿着剪刀摘走我的行李 擦拭我的脑袋 没有机会返回去</p><p class="ln" data-t="55.870">直到我听见一个声音 我确定是你</p><p class="ln" data-t="64.130">可你怎记得我</p><p class="ln" data-t="69.200">我带来了另界的消息 可我怎么告知你</p><p class="ln" data-t="77.940">注定失忆着相遇</p><p class="ln" data-t="83.390">我记得这里是片树林 后面有个山坡 山坡上的枣树每当秋天到来 我们把枣装满口袋</p><p class="ln" data-t="97.270">我记得除了朋友我还 做过你的叔父 你总喜欢跟在我的屁股后面 只是为了那几个铜钱</p><p class="ln" data-t="110.960">我记得我们曾是恋人 后来战争爆发 你上战场后就再也没有回来 直到收不到你的信</p><p class="ln" data-t="124.540">我们总这样重复分离 却要重新开始 相互送别对方 说着来世再见 再次失忆着相聚</p><p class="ln" data-t="138.540">呜 呜 呜 呜…</p><p class="ln" data-t="143.350">快来抱抱 快来抱抱我</p><p class="ln" data-t="151.680">呜 呜 呜 呜…</p><p class="ln" data-t="154.030">快来抱抱 快来抱抱我</p><p class="ln" data-t="193.150">在路上我遇到了一位故去多年的人 她是如此年轻 扎着过肩马尾 露出和你一样的笑</p><p class="ln" data-t="206.780">她和我讲了很多关于你成长的故事 在星空另一端 思念从未停止 如同墓碑上的名字</p><p class="ln" data-t="220.580">不要哭我最亲爱的人 我最好的玩伴 时空是个圆圈 直行或是转弯 我们最终都会相见</p><p class="ln" data-t="234.130">在城池的某个拐角处 在夕阳西下时 在万家灯火的某一扇窗纱里 人们失忆着相聚</p><p class="ln" data-t="248.470">呜 快来抱抱 快来抱抱我</p><p class="ln" data-t="261.620">呜 快来抱抱 快来抱抱我 我终于找到你</p><p class="ln" data-t="303.420">呜 快来抱抱 快来抱抱我 我终于找到你</p><p class="ln" data-t="325.200">电吉他：刘磊、谢星</p><p class="ln" data-t="326.450">打击乐：刘恒、Chris Trzcinski</p><p class="ln" data-t="326.760">Organ：赵雷</p><p class="ln" data-t="327.070">口琴：赵雷</p><p class="ln" data-t="327.690">录音师：张俊</p><p class="ln" data-t="328.010">混音师：时俊峰</p><p class="ln" data-t="328.630">录音助理：陈彬彬、朱莉</p><p class="ln" data-t="328.940">母带工程室：Sterling Sound</p><p class="ln" data-t="329.250">母带工程师：Randy Merrill</p><p class="ln" data-t="329.570">封面设计：韩东、小强、阿穆隆</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div><h4 class="lt">送别</h4><div class="player" data-pid="30" data-dur="168.280"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 2:48</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="17.360">长亭外 古道边 芳草碧连天</p><p class="ln" data-t="27.929">晚风拂柳笛声残 夕阳山外山</p><p class="ln" data-t="38.524">天之涯 地之角 知交半零落</p><p class="ln" data-t="49.149">一壶浊酒尽余欢 今宵别梦寒</p><p class="ln" data-t="61.125">情千缕 酒一杯 声声离笛催</p><p class="ln" data-t="71.671">问君此去几时还 来时莫徘徊</p><p class="ln" data-t="82.265">天之涯 地之角 知交半零落</p><p class="ln" data-t="92.919">一壶浊酒尽余欢 今宵别梦寒</p><p class="ln" data-t="127.004">天之涯 地之角 知交半零落</p><p class="ln" data-t="137.613">问君此去几时还 来时莫徘徊</p><p class="ln" data-t="148.184">问君此去几时还 来时莫徘徊</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article><article class="song warn"><div class="s-head"><span class="num">31</span><span class="t">辞行</span><span class="chip asin">早期作品</span></div><div class="hook">曾相聚就不枉此行</div><div class="note">2010《快乐男声》12 强赛早期作品，全场结束曲。</div><div class="lyric-wrap"><div class="player" data-pid="31" data-dur="141.000"><div class="ctrl"><button class="play">▶ 跟唱</button><button class="rec">🎙 录音跟唱</button><div class="bar"><div class="fill"></div></div><div class="time">00:00 / 2:21</div></div><div class="lyricwrap2"><div class="lyricbox"><p class="ln" data-t="8.290">停留在树梢的鸟儿</p><p class="ln" data-t="16.590">穿过了四季去山林</p><p class="ln" data-t="24.880">把我的时间交给你</p><p class="ln" data-t="33.180">让我来代替你去飞行</p><p class="ln" data-t="41.470">可悲的人有太多挂念</p><p class="ln" data-t="49.760">遗憾我不能与你同行</p><p class="ln" data-t="58.060">生命是开花结果凋零</p><p class="ln" data-t="66.350">墓碑下的人才彻底平静</p><p class="ln" data-t="74.650">路灯下的脚步依然匆匆</p><p class="ln" data-t="82.940">趁着人们都沉睡就上路</p><p class="ln" data-t="91.240">不必留下太多的话语</p><p class="ln" data-t="99.530">曾相聚就不枉此行</p><p class="ln" data-t="107.820">月亮下的脚步依然匆匆</p><p class="ln" data-t="116.120">趁着人们都沉睡就上路</p><p class="ln" data-t="124.410">不必留下太多的话语</p><p class="ln" data-t="132.710">曾相聚就不枉此行</p></div><div class="playhead"><span>♪ 当前</span></div></div><div class="recarea" hidden></div></div></div></article></div></section></main>
+    <footer>
+      <b>说明：</b><br>
+      1. 歌单来自歌迷群流出，<b>非官方定稿</b>，以实际演出为准。<br>
+      2. 时间轴取自歌词 LRC 时间戳 + 歌曲时长，按现场跟唱排版；早期曲《难受》《咬春》《辞行》平台无正版 LRC，按已知/估算时长做均匀时间轴，仅作跟唱节奏参考。<br>
+      3. 《雨后的绽放》未发布，暂无歌词。<br>
+      4. 本页仅供个人学习、现场跟唱，歌词著作权归赵雷及版权方所有。
+    </footer>
+  </section>
+  <section id="tab-rec" class="tab-pane" hidden>
+    <div class="rectab">
+      <div class="rectab-head">已保存的跟唱录音 · 按歌曲分组（刷新 / 重开浏览器仍保留）</div>
+      <div id="rec-list"></div>
+      <div id="rec-empty" class="rec-empty" hidden>还没有录音。回到「🎤 跟唱」点 🎙 录音跟唱，录一段试试。</div>
+    </div>
+  </section>
+</div>
+<script>
+const active = new Map();
+let recBusy = null;                 // 正在录音的 player（麦克风同时只能录一首）
+const recMap = new Map();           // p -> {rec,chunks,stream,url,timer,start}
+function fmt(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function fmtDateTime(d){const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());}
+// ---- 录音持久化（IndexedDB，刷新后仍在） ----
+const DB_NAME='zhaoLeiRec', STORE='takes'; let _db=null;
+function openDB(){ return new Promise((res,rej)=>{ if(_db) return res(_db);
+  if(!window.indexedDB) return rej('no idb');
+  const r=indexedDB.open(DB_NAME,1);
+  r.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE,{keyPath:'id',autoIncrement:true}); };
+  r.onsuccess=e=>{ _db=e.target.result; res(_db); }; r.onerror=()=>rej('idb open err'); }); }
+function dbPut(rec){ return openDB().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(STORE,'readwrite'); const os=tx.objectStore(STORE); const k=os.add(rec); k.onsuccess=()=>{ rec.id=k.result; }; tx.oncomplete=()=>res(rec.id); tx.onerror=()=>rej(tx.error); })); }
+function dbAll(){ return openDB().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(STORE,'readonly'); const rq=tx.objectStore(STORE).getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error); })); }
+function dbDel(id){ return openDB().then(db=>new Promise((res,rej)=>{ const tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); })); }
+function getPlayerByPid(pid){ return document.querySelector('.player[data-pid="'+pid+'"]'); }
+// ---- 下载格式：直接下载录音原始文件（webm / mp4） ----
+function downloadTake(url,name0,mime){
+  try{
+    let ext='.webm';
+    if(mime && mime.indexOf('mp4')>=0) ext='.mp4';
+    else if(mime && mime.indexOf('ogg')>=0) ext='.ogg';
+    const a=document.createElement('a'); a.href=url; a.download=name0+ext;
+    document.body.appendChild(a); a.click(); a.remove();
+  }catch(e){ alert('下载失败：'+(e&&e.message?e.message:e)); }
+}
+function centerLine(p,idx){
+  const box=p.querySelector('.lyricbox'); const lines=p.querySelectorAll('.ln');
+  if(idx<0||!lines[idx]) return;
+  box.scrollTop=lines[idx].offsetTop-box.clientHeight/2+lines[idx].clientHeight/2;
+}
+function setActive(p,idx){
+  const lines=p.querySelectorAll('.ln');
+  lines.forEach(l=>l.classList.remove('active'));
+  if(idx>=0&&lines[idx]) lines[idx].classList.add('active');
+}
+// 把播放进度跳到 t，并同步进度条/时间/高亮（不直接滚动，滚动由调用方决定）
+function scrubTo(p,t){
+  const st=active.get(p); if(!st) return;
+  st.dur=parseFloat(p.dataset.dur); st.el=t;
+  if(st.playing) st.start=performance.now()-t*1000;
+  st.idx=-1;
+  p.querySelector('.fill').style.width=(t/st.dur*100)+'%';
+  p.querySelector('.time').textContent=fmt(t)+' / '+fmt(st.dur);
+  const lines=[...p.querySelectorAll('.ln')];
+  let idx=-1;
+  for(let i=0;i<lines.length;i++){ if(parseFloat(lines[i].dataset.t)<=t+0.05) idx=i; else break; }
+  setActive(p,idx);
+  return idx;
+}
+function tick(p){
+  const st=active.get(p); if(!st||!st.playing) return;
+  let el=(performance.now()-st.start)/1000;
+  if(el>=st.dur){el=st.dur; st.playing=false; st.el=el; const b=p.querySelector('.play'); b.textContent='↻ 重播'; b.classList.remove('on'); p.classList.remove('on');
+    p.querySelector('.fill').style.width='100%'; p.querySelector('.time').textContent=fmt(el)+' / '+fmt(st.dur);
+    if(recBusy===p) stopRec(p); return;}
+  st.el=el;
+  p.querySelector('.fill').style.width=(el/st.dur*100)+'%';
+  p.querySelector('.time').textContent=fmt(el)+' / '+fmt(st.dur);
+  const lines=[...p.querySelectorAll('.ln')];
+  let idx=-1;
+  for(let i=0;i<lines.length;i++){ if(parseFloat(lines[i].dataset.t)<=el+0.05) idx=i; else break; }
+  if(idx!==st.idx){
+    setActive(p,idx); st.idx=idx;
+    if(!st.lockScroll) centerLine(p,idx);
+  }
+  if(st.playing) requestAnimationFrame(()=>tick(p));
+}
+function play(p){
+  if(active.has(p)&&active.get(p).playing){ pause(p); return; }
+  document.querySelectorAll('.player').forEach(o=>{ if(o!==p) pause(o); });
+  const st=active.get(p)||{dur:parseFloat(p.dataset.dur),el:0,idx:-1,playing:false,start:0,lockScroll:false};
+  if(st.el>=st.dur) st.el=0;
+  st.dur=parseFloat(p.dataset.dur); st.playing=true; st.lockScroll=false; st.start=performance.now()-st.el*1000;
+  active.set(p,st);
+  p.classList.add('on');
+  p.querySelector('.play').textContent='⏸ 暂停'; p.querySelector('.play').classList.add('on');
+  syncFocus();
+  tick(p);
+}
+function pause(p){
+  const st=active.get(p); if(!st) return;
+  st.playing=false;
+  const btn=p.querySelector('.play');
+  if(st.el>=st.dur) btn.textContent='↻ 重播'; else btn.textContent='▶ 跟唱';
+  btn.classList.remove('on'); p.classList.remove('on');
+  syncFocus();
+}
+function startRec(p){
+  if(recBusy && recBusy!==p){ alert('一次只能录一首，请先停止当前录音'); return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ alert('当前环境不支持录音：请用 https 或 localhost 打开本页。'); return; }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    let mr;
+    try{ mr=new MediaRecorder(stream); }catch(e){ alert('浏览器不支持 MediaRecorder 录音。'); stream.getTracks().forEach(t=>t.stop()); return; }
+    const chunks=[];
+    mr.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop=()=>{
+      const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
+      const url=URL.createObjectURL(blob);
+      const st=recMap.get(p)||{}; st.url=url;
+      const elapsed=(performance.now()-(st.start||performance.now()))/1000;
+      const dur=Math.max(0, elapsed); st.duration=dur; recMap.set(p,st);
+      const startISO=st.startClock?st.startClock.toISOString():new Date().toISOString();
+      const pid=p.dataset.pid;
+      const song=(p.closest('.song')?p.closest('.song').querySelector('.t').textContent.trim():'跟唱');
+      const item=renderRec(p,url,startISO,dur,blob.type);
+      dbPut({pid:pid, song:song, startISO:startISO, mime:blob.type, blob:blob, duration:dur}).then(id=>{ item.dataset.id=id; }).catch(()=>{});
+      refreshRecBadge();
+      stream.getTracks().forEach(t=>t.stop());
+    };
+    mr.start(200);
+    const st={rec:mr,chunks,stream,url:null,start:performance.now(),startClock:new Date(),timer:null};
+    recMap.set(p,st); recBusy=p;
+    const btn=p.querySelector('.rec'); btn.classList.add('on'); btn.textContent='⏹ 停止';
+    play(p); // 同步启动歌词滚动
+    const area=p.querySelector('.recarea'); area.hidden=false;
+    let list=area.querySelector('.rlist');
+    if(!list){ list=document.createElement('div'); list.className='rlist'; area.appendChild(list); }
+    const info=document.createElement('div'); info.className='rinfo recording';
+    info.innerHTML='<span class="dot"></span>录音中 <span class="rt">00:00</span>（跟着歌词唱，再点一次停止）';
+    area.insertBefore(info, area.firstChild);
+    st.timer=setInterval(()=>{ const s=(performance.now()-st.start)/1000; const rt=area.querySelector('.rt'); if(rt) rt.textContent=fmt(s); },250);
+  }).catch(err=>{
+    alert('无法访问麦克风：'+(err&&err.message?err.message:err)+'\n请允许麦克风权限，并通过 https 或 localhost 打开本页。');
+  });
+}
+function stopRec(p){
+  const st=recMap.get(p); if(!st || !st.rec) return;
+  if(st.rec.state!=='inactive'){ try{ st.rec.stop(); }catch(e){} }
+  if(st.timer) clearInterval(st.timer);
+  const btn=p.querySelector('.rec'); btn.classList.remove('on'); btn.textContent='🎙 录音跟唱';
+  if(recBusy===p) recBusy=null;
+  pause(p);
+}
+function addTakeItem(p,url,startISO,idx,duration,mime){
+  const area=p.querySelector('.recarea'); area.hidden=false;
+  let list=area.querySelector('.rlist');
+  if(!list){ list=document.createElement('div'); list.className='rlist'; area.appendChild(list); }
+  const clk=startISO?fmtDateTime(new Date(startISO)):'';
+  const durtxt=(duration&&isFinite(duration)&&duration>0)?fmt(duration):'…';
+  const item=document.createElement('div'); item.className='ritem';
+  item.innerHTML='<div class="rinfo">✅ 第 '+idx+' 遍 · 开始 '+clk+' · 时长 <span class="dur">'+durtxt+'</span></div>'
+    +'<audio controls src="'+url+'"></audio>'
+    +'<div class="rbtns"><button class="r-dl">下载</button><button class="r-del">删除</button></div>';
+  // 真实时长已由录制时实测（duration 入参）；仅在缺失时回退到音频元数据
+  if(!(duration&&isFinite(duration)&&duration>0)){
+    const au=item.querySelector('audio');
+    au.addEventListener('loadedmetadata',()=>{ const d=au.duration; const sp=item.querySelector('.dur');
+      if(sp && isFinite(d) && d>0) sp.textContent=fmt(d); });
+  }
+  const songName=(p.closest('.song')?p.closest('.song').querySelector('.t').textContent.trim():'跟唱');
+  const name0=songName+'_第'+idx+'遍';
+  item.querySelector('.r-dl').addEventListener('click',()=>downloadTake(url,name0,mime));
+  item.querySelector('.r-del').addEventListener('click',()=>{ if(item.dataset.id) dbDel(parseInt(item.dataset.id)).catch(()=>{}); URL.revokeObjectURL(url); item.remove(); refreshRecBadge(); });
+  list.appendChild(item);
+  return item;
+}
+function renderRec(p,url,startISO,duration,mime){
+  const area=p.querySelector('.recarea');
+  let list=area.querySelector('.rlist'); if(!list){ list=document.createElement('div'); list.className='rlist'; area.appendChild(list); }
+  const idx=list.children.length+1;
+  const item=addTakeItem(p,url,startISO,idx,duration,mime);
+  const info=area.querySelector('.rinfo.recording'); if(info) info.remove();
+  return item;
+}
+function restoreTakes(){
+  dbAll().then(recs=>{
+    const byPid={}; recs.forEach(r=>{ (byPid[r.pid]=byPid[r.pid]||[]).push(r); });
+    Object.keys(byPid).forEach(pid=>{
+      const p=getPlayerByPid(pid); if(!p) return;
+      const arr=byPid[pid].sort((a,b)=>a.startISO<b.startISO?-1:1);
+      arr.forEach((r,i)=>{ const url=URL.createObjectURL(r.blob); const item=addTakeItem(p,url,r.startISO,i+1,r.duration,r.mime); item.dataset.id=r.id; });
+    });
+    refreshRecBadge(recs.length);
+  }).catch(()=>{});
+}
+// ---- 我的录音 Tab ----
+function refreshRecBadge(n){
+  const badge=document.querySelector('.rec-count'); if(!badge) return;
+  const set=c=>{ badge.textContent=c; badge.hidden=c<=0; };
+  if(typeof n==='number'){ set(n); return; }
+  dbAll().then(r=>set(r.length)).catch(()=>set(0));
+}
+function buildRecItem(song,r,idx,url){
+  const item=document.createElement('div'); item.className='ritem'; item.dataset.id=r.id;
+  const clk=r.startISO?fmtDateTime(new Date(r.startISO)):'';
+  const durtxt=(r.duration&&isFinite(r.duration)&&r.duration>0)?fmt(r.duration):'…';
+  item.innerHTML='<div class="rinfo">✅ 第 '+idx+' 遍 · 开始 '+clk+' · 时长 <span class="dur">'+durtxt+'</span></div>'
+    +'<audio controls src="'+url+'"></audio>'
+    +'<div class="rbtns"><button class="r-dl">下载</button><button class="r-del">删除</button></div>';
+  if(!(r.duration&&isFinite(r.duration)&&r.duration>0)){
+    const au=item.querySelector('audio');
+    au.addEventListener('loadedmetadata',()=>{ const d=au.duration; const sp=item.querySelector('.dur'); if(sp&&isFinite(d)&&d>0) sp.textContent=fmt(d); });
+  }
+  const name0=song+'_第'+idx+'遍';
+  item.querySelector('.r-dl').addEventListener('click',()=>downloadTake(url,name0,r.mime));
+  item.querySelector('.r-del').addEventListener('click',()=>{
+    dbDel(parseInt(r.id)).then(()=>{ URL.revokeObjectURL(url); item.remove(); refreshRecBadge();
+      if(!document.querySelector('#rec-list .ritem')) document.getElementById('rec-empty').hidden=false;
+    }).catch(()=>{});
+  });
+  return item;
+}
+function loadAllTakes(){
+  const wrap=document.getElementById('rec-list');
+  const empty=document.getElementById('rec-empty');
+  wrap.innerHTML='';
+  dbAll().then(recs=>{
+    if(!recs.length){ empty.hidden=false; refreshRecBadge(0); return; }
+    empty.hidden=true;
+    const groups={};
+    recs.forEach(r=>{ (groups[r.song]=groups[r.song]||[]).push(r); });
+    const order=[...document.querySelectorAll('.song')].map(s=>({num:parseInt(s.querySelector('.num').textContent.trim(),10),title:s.querySelector('.t').textContent.trim()}));
+    order.sort((a,b)=>a.num-b.num);
+    const frag=document.createDocumentFragment();
+    order.forEach(o=>{
+      const arr=(groups[o.title]||[]).sort((a,b)=>a.startISO<b.startISO?-1:1);
+      if(!arr.length) return;
+      const sec=document.createElement('div'); sec.className='recgroup';
+      const h=document.createElement('h3'); h.appendChild(document.createTextNode(o.title));
+      const c=document.createElement('span'); c.className='rgcount'; c.textContent=arr.length+' 遍'; h.appendChild(c);
+      sec.appendChild(h);
+      const list=document.createElement('div'); list.className='rlist';
+      arr.forEach((r,i)=>{ const url=URL.createObjectURL(r.blob); list.appendChild(buildRecItem(o.title,r,i+1,url)); });
+      sec.appendChild(list); frag.appendChild(sec);
+    });
+    wrap.appendChild(frag);
+    refreshRecBadge(recs.length);
+  }).catch(()=>{ empty.hidden=false; });
+}
+function switchTab(name){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.hidden=true);
+  const t=document.getElementById('tab-'+name); if(t) t.hidden=false;
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  if(name==='rec') loadAllTakes();
+}
+function syncFocus(){ // 播放时聚焦当前歌曲，灰化其它；同步歌曲条高亮
+  let on=null;
+  active.forEach((st,p)=>{ if(st.playing) on=p; });
+  document.body.classList.toggle('focus', !!on);
+  document.querySelectorAll('.song').forEach(s=> s.classList.toggle('is-current', !!(on && s.contains(on))));
+  // 歌曲条：高亮正在播放的歌曲（停止播放时保留上一次高亮，便于定位）
+  const barBtns=document.querySelectorAll('.songbar button');
+  if(on){
+    const num=on.closest('.song')?on.closest('.song').querySelector('.num').textContent.trim():null;
+    barBtns.forEach(b=> b.classList.toggle('active', !!num && b.dataset.target===num));
+  }
+}
+function resetAll(){
+  if(recBusy) stopRec(recBusy);
+  document.querySelectorAll('.player').forEach(p=>{
+    pause(p);
+    const st=active.get(p)||{}; st.el=0; st.idx=-1; active.set(p,st);
+    p.querySelector('.fill').style.width='0%';
+    p.querySelector('.time').textContent='00:00 / '+fmt(parseFloat(p.dataset.dur));
+    setActive(p,-1); p.querySelector('.lyricbox').scrollTop=0;
+  });
+  syncFocus();
+}
+function lockScroll(p,ms){ // 手动浏览时暂时关闭自动居中
+  const st=active.get(p); if(!st) return;
+  st.lockScroll=true; clearTimeout(st._lt);
+  st._lt=setTimeout(()=>{const s=active.get(p); if(s) s.lockScroll=false;},ms);
+}
+function lineAt(box,clientY){
+  const lines=[...box.querySelectorAll('.ln')]; if(!lines.length) return null;
+  let best=null,bd=1e9;
+  for(const l of lines){ const r=l.getBoundingClientRect(); const c=r.top+r.height/2; const d=Math.abs(c-clientY);
+    if(d<bd){bd=d;best=l;} }
+  return best;
+}
+document.querySelectorAll('.player').forEach(p=>{
+  const box=p.querySelector('.lyricbox');
+  p.querySelector('.play').addEventListener('click',()=>play(p));
+  p.querySelector('.rec').addEventListener('click',()=>{
+    const st=recMap.get(p);
+    if(st && st.rec && st.rec.state!=='inactive') stopRec(p); else startRec(p);
+  });
+  // 进度条点击跳转
+  p.querySelector('.bar').addEventListener('click',e=>{
+    const r=e.currentTarget.getBoundingClientRect();
+    const st=active.get(p)||{dur:parseFloat(p.dataset.dur),el:0,idx:-1,playing:false};
+    const t=(e.clientX-r.left)/r.width*st.dur;
+    st.dur=parseFloat(p.dataset.dur); active.set(p,st);
+    const idx=scrubTo(p,t);
+    if(!st.playing) centerLine(p,idx); // 未播放时也把那行滚到中间
+    else lockScroll(p,1500);
+  });
+  // 歌词区：鼠标拖动=拖动进度条；触屏点=跳转、触屏滑=自由浏览
+  let down=false,startY=0,moved=false,scrub=false;
+  box.addEventListener('pointerdown',e=>{
+    if(!box.querySelector('.ln')) return;
+    down=true; startY=e.clientY; moved=false; scrub=(e.pointerType==='mouse');
+    const st=active.get(p)||{dur:parseFloat(p.dataset.dur),el:0,idx:-1,playing:false};
+    if(scrub){ st.lockScroll=true; try{box.setPointerCapture(e.pointerId);}catch(_){} }
+    active.set(p,st);
+    if(scrub){ const l=lineAt(box,e.clientY); if(l) scrubTo(p,parseFloat(l.dataset.t)); }
+  });
+  box.addEventListener('pointermove',e=>{
+    if(!down) return;
+    if(Math.abs(e.clientY-startY)>4) moved=true;
+    if(scrub){ e.preventDefault(); const l=lineAt(box,e.clientY); if(l) scrubTo(p,parseFloat(l.dataset.t)); }
+    else if(moved){ lockScroll(p,1500); } // 触屏滑动=自由浏览，暂停自动居中
+  });
+  box.addEventListener('pointerup',e=>{
+    if(!down) return; down=false;
+    const st=active.get(p);
+    if(scrub){
+      if(st&&st.playing) st.start=performance.now()-st.el*1000;
+      if(st) lockScroll(p,1500);
+      try{box.releasePointerCapture(e.pointerId);}catch(_){}
+    } else if(!moved){ // 触屏轻点 = 跳到该行
+      const l=lineAt(box,e.clientY); if(l){ const idx=scrubTo(p,parseFloat(l.dataset.t)); if(st&&st.playing) lockScroll(p,1500); else centerLine(p,idx); }
+    }
+    scrub=false;
+  });
+  box.addEventListener('wheel',()=>lockScroll(p,1500),{passive:true});
+});
+// 顶部歌曲条：点击平滑滚动定位并高亮
+const songEls=[...document.querySelectorAll('.song')];
+document.querySelectorAll('.songbar button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const n=b.dataset.target;
+    const el=songEls.find(s=>s.querySelector('.num').textContent.trim()===n);
+    if(!el) return;
+    document.querySelectorAll('.songbar button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1200);
+  });
+});
+// 顶部 Tab 切换：跟唱 / 我的录音
+document.querySelectorAll('.tabs button').forEach(b=> b.addEventListener('click',()=>switchTab(b.dataset.tab)) );
+restoreTakes(); // 刷新后从 IndexedDB 还原已保存的录音，并刷新录音数量徽标
+</script>
+</body>
+</html>
